@@ -19,7 +19,7 @@ int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 #endif
 
 static char *frametypes[] = {
-	"CARRIER LOST",		/* -3 */
+	"Carrier Lost",		/* -3 */
 	"TIMEOUT",		/* -2 */
 	"ERROR",		/* -1 */
 #define FTOFFSET 3

@@ -1,4 +1,4 @@
-#define VERSION "sz 1.14 09-06-86"
+#define VERSION "sz 1.17 10-23-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -O -K -DCRCTABLE -DREADCHECK sz.c -lx -o sz; size sz
@@ -166,7 +166,7 @@ char *argv[];
 	char **patts;
 	static char xXbuf[BUFSIZ];
 
-	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rsh")))
+	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 
 	Rxtimeout = 600;
@@ -838,38 +838,46 @@ register char *s,*t;
 	return NULL;
 }
 
+char *babble[] = {
+	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
+	"	(Y) = Option applies to YMODEM only",
+	"	(Z) = Option applies to ZMODEM only",
+	"Usage:	sz [-12+adefkLlNnquvXy] [-] file ...",
+	"	sz [-1eqv] -c COMMAND",
+	"	1 Use stdout for modem input",
+#ifdef CSTOPB
+	"	2 Use 2 stop bits",
+#endif
+	"	+ Append to existing destination file (Z)",
+	"	a (ASCII) change NL to CR/LF",
+	"	c send COMMAND (Z)",
+	"	d Change '.' to '/' in pathnames (Y/Z)",
+	"	e Escape all control characters (Z)",
+	"	f send Full pathname (Y/Z)",
+	"	i send COMMAND, ack Immediately (Z)",
+	"	k Send 1024 byte packets (Y)",
+	"	L N Limit packet length to N bytes (Z)",
+	"	l N Limit frame length to N bytes (l>=L) (Z)",
+	"	n send file if source Newer or longer (Z)",
+	"	N send file if source different length or date (Z)",
+	"	p Protect existing destination file (Z)",
+	"	r Resume/Recover interrupted file transfer (Z)",
+	"	q Quiet (no progress reports)",
+	"	u Unlink file after transmission",
+	"	v Verbose - debugging information",
+	"	X XMODEM protocol - send no pathnames",
+	"	y Yes, overwrite existing file (Z)",
+	"- as pathname sends standard input as sPID.sz or environment ONAME",
+	""
+};
+
 usage()
 {
-	fprintf(stderr,"\nSend file(s) with ZMODEM/YMODEM/XMODEM Protocol\n");
-	fprintf(stderr,"	(Y) = Option applies to YMODEM only\n");
-	fprintf(stderr,"	(Z) = Option applies to ZMODEM only\n");
-	fprintf(stderr,"%s for %s by Chuck Forsberg\n", VERSION, OS);
-	fprintf(stderr,"Usage:	sz [-12+adefknquvXy] [-] file ...\n");
-	fprintf(stderr,"	sz [-1eqv] -c COMMAND\n");
-	fprintf(stderr,"	1 Use stdout for modem input\n");
-#ifdef CSTOPB
-	fprintf(stderr,"	2 Use 2 stop bits\n");
-#endif
-	fprintf(stderr,"	+ Append to existing destination file (Z)\n");
-	fprintf(stderr,"	a (ASCII) change NL to CR/LF\n");
-	fprintf(stderr,"	c send COMMAND (Z)\n");
-	fprintf(stderr,"	d Change '.' to '/' in pathnames (Y/Z)\n");
-	fprintf(stderr,"	e Escape control characters (Z)\n");
-	fprintf(stderr,"	f send Full pathname (Y/Z)\n");
-	fprintf(stderr,"	i send COMMAND, ack Immediately (Z)\n");
-	fprintf(stderr,"	k Send 1024 byte packets (Y)\n");
-	fprintf(stderr,"	L N Limit packet length to N bytes (Z)\n");
-	fprintf(stderr,"	l N Limit frame length to N bytes (l>=L) (Z)\n");
-	fprintf(stderr,"	n send file if Newer|longer (Z)\n");
-	fprintf(stderr,"	N send file if different length|date (Z)\n");
-	fprintf(stderr,"	p Protect existing destination file (Z)\n");
-	fprintf(stderr,"	r Resume/Recover interrupted file transfer (Z)\n");
-	fprintf(stderr,"	q Quiet (no progress reports)\n");
-	fprintf(stderr,"	u Unlink file after transmission\n");
-	fprintf(stderr,"	v Verbose - debugging information\n");
-	fprintf(stderr,"	X XMODEM protocol - send no pathnames\n");
-	fprintf(stderr,"	y Yes, overwrite existing file (Z)\n");
-	fprintf(stderr,"- as pathname sends standard input as sPID.sz or environment ONAME\n");
+	char **pp;
+
+	for (pp=babble; **pp; ++pp)
+		fprintf(stderr, "%s\n", *pp);
+	fprintf(stderr, "%s for %s by Chuck Forsberg  ", VERSION, OS);
 	exit(1);
 }
 
@@ -894,7 +902,7 @@ getzrxinit()
 			continue;
 		case ZRINIT:
 			Rxflags = 0377 & Rxhdr[ZF0];
-			Rxbuflen = (0337 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
+			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
 			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
 			if ( !Fromcu)
 				signal(SIGINT, SIG_IGN);

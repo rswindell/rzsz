@@ -1,9 +1,14 @@
-/*% shar zmodem.h zm.c sz.c>/tmp/rzsz1.sh;shar rz.c rbsb.c rz.1 sz.1 gz>/tmp/rzsz2.sh
+/*% shar -v zmodem.h zm.c sz.c>/tmp/rzsz1.sh;shar -v rz.c rbsb.c rz.1 sz.1 gz>/tmp/rzsz2.sh; shar -v zmodem.h zm.c sz.c rz.c rbsb.c rz.1 sz.1 gz>/tmp/rzsz1et2.sh
+ *
  * -rev 08-17-86
- * mode function and most of the rest of the system dependent
- * stuff for rb.c and sb.c   This file is #included so the includer
- * can set parameters such as HOWMANY.  See the main file (rz.c/sz.c)
- * for compile instructions.
+ *  This file contains Unix specific stuff for setting terminal modes,
+ *  very little is specific to ZMODEM or YMODEM per se (that stuff is in
+ *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
+ *  are also in this file, an iterative version, and a fast table driven macro
+ *  version, selected by #define CRCTABLE
+ *
+ *   This file is #included so the includer can set parameters such as HOWMANY.
+ *   See the main files (rz.c/sz.c) for compile instructions.
  */
 
 #ifdef V7

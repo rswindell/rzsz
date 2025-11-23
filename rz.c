@@ -1,4 +1,4 @@
-#define VERSION "1.08 09-15-86"
+#define VERSION "1.09 09-24-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -DNFGVMIN -DCRCTABLE -K -O % -o rz; size rz
@@ -96,7 +96,6 @@ int Firstsec;
 int Eofseen;		/* indicates cpm eof (^Z) has been received */
 int errors;
 int Restricted=0;	/* restricted; no /.. or ../ in filenames */
-int Badclose = 0;	/* Error on last close */
 #ifdef ONEREAD
 /* Sorry, Regulus and some others don't work right in raw mode! */
 int Readnum = 1;	/* Number of bytes to ask for in read() from modem */
@@ -135,6 +134,7 @@ jmp_buf tohere;		/* For the interrupt on RX timeout */
 
 #include "zm.c"
 
+int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
 
 alrm()
 {
@@ -162,7 +162,7 @@ char *argv[];
 
 	Rxtimeout = 100;
 	setbuf(stderr, NULL);
-	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rsh")))
+	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 
 	chkinvok(virgin=argv[0]);	/* if called as [-]rzCOMMAND set flag */
@@ -869,7 +869,7 @@ tryz()
 #else
 		Txhdr[ZF0] = CANFDX|CANOVIO;
 #endif
-		zshhdr(Badclose?ZFERR:ZRINIT, Txhdr);
+		zshhdr(tryzhdrtype, Txhdr);
 again:
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZRQINIT:
@@ -882,7 +882,7 @@ again:
 			zconv = Rxhdr[ZF0];
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
-			Badclose = FALSE;
+			tryzhdrtype = ZRINIT;
 			if (zrdata(secbuf, KSIZE) == GOTCRCW)
 				return ZFILE;
 			zshhdr(ZNAK, Txhdr);
@@ -968,8 +968,7 @@ rzfile()
 
 	Eofseen=FALSE;
 	if (procheader(secbuf) == ERROR) {
-		zshhdr(ZSKIP, Txhdr);
-		return ZSKIP;
+		return (tryzhdrtype = ZSKIP);
 	}
 
 	n = 10; rxbytes = 0l;
@@ -995,7 +994,7 @@ nxthdr:
 				continue;
 			}
 			if (closeit()) {
-				Badclose = TRUE;
+				tryzhdrtype = ZFERR;
 				vfile("rzfile: closeit returned <> 0");
 				return ERROR;
 			}

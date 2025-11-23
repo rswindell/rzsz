@@ -1,5 +1,10 @@
 # Changelog
 
+## [RZ 1.09 / SZ 1.17] - 1986-10-23
+
+  - Fixed typo in masking of ZP0 byte value in received ZRINIT
+  - Reduce expected receive CAN count back from 5 to 2
+
 ## [RZ 1.08 / SZ 1.14] - 1986-09-15
 
 Chuck's corresponding USENET announcement follows:
