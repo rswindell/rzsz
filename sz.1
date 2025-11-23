@@ -1,5 +1,5 @@
 '\" Revision Level 
-'\" Last Delta     01-15-87
+'\" Last Delta     03-10-87
 .TH SZ 1 OMEN
 .SH NAME
 sz \- XMODEM, YMODEM, ZMODEM Batch file Send
@@ -141,15 +141,9 @@ By default, file descriptor 0 is used.
 This option allows
 .B sz
 to be used with the
-.I cu
-~$
+.I Professional-YAM
+$
 command.
-If the calling program has spawned a separate process to
-read characters from the modem,
-that process 
-must be disabled for
-.I rz
-to operate properly.
 .TP
 .B a
 Convert NL characters in the transmitted file to CR/LF.
@@ -269,8 +263,9 @@ This single command transfers all .c files in the current Unix directory
 with conversion
 .RB ( -a )
 to end of line conventions appropriate to the receiving environment.
-With ZMODEM AutoDownload enabled, Professional-YAM automatically recieves
-the files after performing a security challenge.
+With ZMODEM AutoDownload enabled, Professional-YAM  and ZCOMM
+will automatically recieve
+the files after performing a security check.
 
 .B "ZMODEM Command Download"
 .br
@@ -320,9 +315,8 @@ translating Unix newlines to DOS CR/LF.
 rz(omen),
 ZMODEM.DOC,
 YMODEM.DOC,
-Professional-YAM manual,
+Professional-YAM,
 IMP(CP/M),
-cu(1),
 sq(omen),
 todos(omen),
 tocpm(omen),
@@ -402,5 +396,3 @@ direction of high speed transmissson is reversed.
 The environment variable ZNULLS may be used to specify the number of nulls to
 send before a ZDATA frame.
 Values of 101 for a 4.77 mHz PC and 124 for an AT are typical.
-
-Some versions of Unix cu(1) do not operate properly with this program.

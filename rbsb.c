@@ -1,11 +1,10 @@
-/*% shar -v zmodem.h zm.c sz.c>/tmp/rzsz1.sh;shar -v rz.c rbsb.c rz.1 sz.1 gz>/tmp/rzsz2.sh; shar -v zmodem.h zm.c sz.c rz.c rbsb.c rz.1 sz.1 gz>/tmp/rzsz1et2.sh
+/*% shar -f /tmp/rzsz README zmodem.h zm.c sz.c rz.c rbsb.c minirb.c *.1 gz ptest.sh; shar -f /tmp/rzsz1et2 -m 1000000 zmodem.h zm.c sz.c rz.c rbsb.c minirb.c *.1 gz ptest.sh
  *
- * -rev 01-01-87
+ * -rev 03-10-87
  *  This file contains Unix specific stuff for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that stuff is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
- *  are also in this file, an iterative version, and a fast table driven macro
- *  version, selected by #define CRCTABLE
+ *  are also in this file, a fast table driven macro version
  *
  *   This file is #included so the main file can set parameters such as HOWMANY.
  *   See the main files (rz.c/sz.c) for compile instructions.
@@ -78,6 +77,7 @@ int iofd = 0;		/* File descriptor for ioctls & reads */
 
 /*
  * mode(n)
+ *  3: save old tty stat, set raw mode with flow control
  *  2: set a cbreak, XON/XOFF control mode if using Pro-YAM's -g option
  *  1: save old tty stat, set raw mode 
  *  0: restore original tty mode
@@ -103,24 +103,25 @@ mode(n)
 		if (Twostop)
 			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
 
+		tty.c_lflag = 
 #ifdef XCLUDE
-		tty.c_lflag = XCLUDE | ISIG;
-#else
-		tty.c_lflag = ISIG;
+		  XCLUDE |
 #endif
+		  Zmodem ? 0 : ISIG;
 
-		tty.c_cc[VINTR] = Zmodem ? 03:030;	/* Interrupt char */
+		tty.c_cc[VINTR] = 030;		/* Interrupt char */
 		tty.c_cc[VMIN] = 1;
 
 		(void) ioctl(iofd, TCSETAW, &tty);
 		did0 = TRUE;
 		return OK;
 	case 1:
+	case 3:
 		if(!did0)
 			(void) ioctl(iofd, TCGETA, &oldtty);
 		tty = oldtty;
 
-		tty.c_iflag = IGNBRK;
+		tty.c_iflag = n==3 ? (IGNBRK|IXOFF) : IGNBRK;
 
 		 /* No echo, crlf mapping, INTR, QUIT, delays, no erase/kill */
 		tty.c_lflag &= ~(ECHO | ICANON | ISIG);
@@ -134,7 +135,11 @@ mode(n)
 		tty.c_cflag |= CS8;	/* Set character size = 8 */
 		if (Twostop)
 			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
+#ifdef NFGVMIN
+		tty.c_cc[VMIN] = 1; /* This many chars satisfies reads */
+#else
 		tty.c_cc[VMIN] = HOWMANY; /* This many chars satisfies reads */
+#endif
 		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
 		(void) ioctl(iofd, TCSETAW, &tty);
 		did0 = TRUE;
@@ -159,6 +164,7 @@ mode(n)
 		did0 = TRUE;
 		return OK;
 	case 1:
+	case 3:
 		if(!did0) {
 			ioctl(iofd, TIOCEXCL, 0);
 			ioctl(iofd, TIOCGETP, &oldtty);
@@ -242,7 +248,6 @@ rdchk(f)
 #endif
 
 
-#ifdef CRCTABLE
 /* crctab calculated by Mark G. Mendel, Network Systems Corporation */
 static unsigned short crctab[256] = {
     0x0000,  0x1021,  0x2042,  0x3063,  0x4084,  0x50a5,  0x60c6,  0x70e7,
@@ -292,33 +297,6 @@ static unsigned short crctab[256] = {
  */
 
 #define updcrc(cp, crc) ( crctab[((crc >> 8) & 255)] ^ (crc << 8) ^ cp)
-
-#else
-
-unsigned short updcrc();
-
-/* update CRC */
-unsigned short
-updcrc(c, crc)
-register c;
-register unsigned crc;
-{
-	register count;
-
-	for (count=8; --count>=0;) {
-		if (crc & 0x8000) {
-			crc <<= 1;
-			crc += (((c<<=1) & 0400)  !=  0);
-			crc ^= 0x1021;
-		}
-		else {
-			crc <<= 1;
-			crc += (((c<<=1) & 0400)  !=  0);
-		}
-	}
-	return crc;	
-}
-#endif
 
 /*
  * Copyright (C) 1986 Gary S. Brown.  You may use this program, or

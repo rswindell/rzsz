@@ -1,18 +1,20 @@
-#define VERSION "sz 1.25 01-18-87"
+#define VERSION "sz 1.26 03-10-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -O -K -i -DCRCTABLE -DREADCHECK sz.c -lx -o sz; size sz
+/*% cc -O -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
+ *  (above for SYS III/V Xenix)
 
  * sz.c By Chuck Forsberg
  *
  *	cc -O sz.c -o sz		USG (SYS III/V) Unix
  *	cc -O -DSVR2 sz.c -o sz		Sys V Release 2 with non-blocking input
  *					Define to allow reverse channel checking
- * 	cc -O -DV7  sz.c -o sz		Unix Version 7, 2.8 - 4.3 BSD
+ *	cc -O -DV7  sz.c -o sz		Unix Version 7, 2.8 - 4.3 BSD
+ *
+ *	cc -O -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz	Xenix
  *
  *	ln sz sb			**** All versions ****
  *
- *		define CRCTABLE to use table driven CRC
  *
  *  ******* Some systems (Venix, Coherent, Regulus) do not *******
  *  ******* support tty raw mode read(2) identically to    *******
@@ -927,10 +929,11 @@ getzrxinit()
 			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
 			if ( !Fromcu)
 				signal(SIGINT, SIG_IGN);
-#ifndef READCHECK
 #ifdef USG
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */
-#else
+#endif
+#ifndef READCHECK
+#ifndef USG
 			/* Use 1024 byte frames if no sample/interrupt */
 			if (Rxbuflen < 32 || Rxbuflen > 1024) {
 				Rxbuflen = 1024;
@@ -1089,6 +1092,9 @@ waitack:
 			case CAN:
 			case ZPAD:
 				goto waitack;
+			case XOFF:		/* Wait a while for an XON */
+			case XOFF|0200:
+				readline(100);
 			}
 		}
 #endif
@@ -1124,6 +1130,9 @@ waitack:
 						ioctl(iofd, TCFLSH, 1);
 #endif
 						goto waitack;
+					case XOFF:	/* Wait for XON */
+					case XOFF|0200:
+						readline(100);
 					}
 				}
 #endif
@@ -1181,6 +1190,9 @@ waitack:
 				/* zcrce - dinna wanna start a ping-pong game */
 				zsdata(txbuf, 0, ZCRCE);
 				goto waitack;
+			case XOFF:		/* Wait a while for an XON */
+			case XOFF|0200:
+				readline(100);
 			}
 		}
 #endif

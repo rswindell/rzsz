@@ -1,7 +1,8 @@
-#define VERSION "1.16 01-25-87"
+#define VERSION "1.18 02-18-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc  -DNFGVMIN -DCRCTABLE -K -O -i % -o rz; size rz
+/*% cc  -K -O -i % -o rz; size rz
+ *  (above for Xenix SYS V 2.2 delta+)
  *
  * rz.c By Chuck Forsberg
  *
@@ -14,7 +15,6 @@
  *					login shell. rzrmail then calls
  *					rmail(1) to deliver mail.
  *
- *		define CRCTABLE to use table driven CRC
  *
  *  Unix is a trademark of Western Electric Company
  *
@@ -31,8 +31,8 @@
  *
  *  Alarm signal handling changed to work with 4.2 BSD 7-15-84 CAF 
  *
- *  NFGVMIN Added 1-13-85 CAF for PC-AT Xenix systems where c_cc[VMIN]
- *  doesn't seem to work (even though it compiles without error!).
+ *  NFGVMIN Updated 2-18-87 CAF for Xenix systems where c_cc[VMIN]
+ *  doesn't work properly (even though it compiles without error!),
  *
  *  HOWMANY should be tuned for best performance
  *
@@ -55,7 +55,7 @@ FILE *popen();
 /*
  * Max value for HOWMANY is 255.
  *   A larger value reduces system overhead but may evoke kernel bugs.
- *   133 corresponds to a XMODEM/CRC sector
+ *   133 corresponds to an XMODEM/CRC sector
  */
 #ifndef HOWMANY
 #define HOWMANY 133
@@ -555,7 +555,8 @@ int timeout;
 	if (n < 2)
 		n = 3;
 	if (Verbose > 3)
-		fprintf(stderr, "Calling read: n=%d ", n);
+		fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
+		  n, Readnum);
 	if (setjmp(tohere)) {
 #ifdef TIOCFLUSH
 /*		ioctl(iofd, TIOCFLUSH, 0); */
@@ -896,7 +897,9 @@ again:
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
 			tryzhdrtype = ZRINIT;
-			if (zrdata(secbuf, KSIZE) == GOTCRCW)
+			c = zrdata(secbuf, KSIZE);
+			mode(3);
+			if (c == GOTCRCW)
 				return ZFILE;
 			zshhdr(ZNAK, Txhdr);
 			goto again;

@@ -1,5 +1,51 @@
 # Changelog
 
+## [RZ 1.18 / SZ 1.26] - 1987-03-10
+
+This release was located in a tar file:
+
+```
+drwxr-xr-x 6/12              0 1989-07-14 11:45 zmodem/
+-r--r--r-- 6/12           9990 1987-09-19 08:16 zmodem/sz.1
+-r--r--r-- 6/12          12391 1987-09-19 08:16 zmodem/zm.c
+-r--r--r-- 6/12          13868 1987-09-19 08:16 zmodem/rbsb.c
+-r--r--r-- 6/12          69544 1987-09-19 08:16 zmodem/zmodem.doc
+-r--r--r-- 6/12          24016 1987-09-19 08:16 zmodem/rz.c
+-r--r--r-- 6/12          27916 1987-09-19 08:16 zmodem/sz.c
+-r--r--r-- 6/12           1307 1987-09-19 08:16 zmodem/README
+-r--r--r-- 6/12           1271 1987-09-19 08:16 zmodem/minirb.1
+-r--r--r-- 6/12           4039 1987-09-19 08:16 zmodem/minirb.c
+-r--r--r-- 6/12             14 1987-09-19 08:16 zmodem/gz
+-r--r--r-- 6/12            116 1987-09-19 08:16 zmodem/ptest.sh
+-r--r--r-- 6/12           6227 1987-09-19 08:16 zmodem/rz.1
+-r--r--r-- 6/12           4595 1987-09-19 08:16 zmodem/zmodem.h
+```
+  - Improved XON / XOFF control character handling
+  - Add program: minirb - boostrap to receive ZMODEM program via YMODEM
+
+This release introduced a `README` file:
+```
+Compile instructions are located in the comments at the beginning of the rz.c
+ans sz.c files.  The main compiler flags are -DV7 for V7 and BSD systems and
+-DSVR2 for sVr2.  Other #ifdefs in the files may be activated to deal with
+various types of kernel brain damage if you have a mutant system.
+
+Naturally, rz ans sz work best with comm programs that seamlessly support ZMODEM
+command and file AutoDownload (PowerCOm, Pro-YAM and ZCOMM).  Ths DOS "DSZ"
+sub-program allows ZMODEM file transfers with older programs, but it must be
+called manually.  DSZ and the ZMODEM protocol description are on TeleGodzilla
+and other bulletin boards.  They may be obtained via UUCP from site "omen", for
+which a direct UUCP login and telephone number are provided below.  You may uucp
+~uucp/FILES first to determine the pathnames for the "goodies".
+
+Chuck Forsberg WA7KGX Author of Pro-YAM communications Tools for PCDOS and Unix
+...!tektronix!reed!omen!caf  Omen Technology Inc "The High Reliability Software"
+  17505-V Northwest Sauvie Island Road Portland OR 97231  Voice: 503-621-3406
+TeleGodzilla BBS: 621-3746 2400/1200  CIS:70007,2304  Genie:CAF  Source:TCE022
+  omen Any ACU 1200 1-503-621-3746 se:--se: link ord: Giznoid in:--in: uucp
+  omen!/usr/spool/uucppublic/FILES lists all uucp-able files, updated hourly
+```
+
 ## [RZ 1.16 / SZ 1.25] - 1987-01-25
 
 We're back on the high confidence train here as the mysteriously removed
