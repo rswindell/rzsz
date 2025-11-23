@@ -1,4 +1,4 @@
-#define VERSION "sz 1.17 10-23-86"
+#define VERSION "sz 1.19 11-14-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -O -K -DCRCTABLE -DREADCHECK sz.c -lx -o sz; size sz
@@ -6,7 +6,11 @@
  * sz.c By Chuck Forsberg
  *
  *	cc -O sz.c -o sz		USG (SYS III/V) Unix
+ *	cc -O -DSVR2 sz.c -o sz		Sys V Release 2 with non-blocking input
+ *					Define to allow reverse channel checking
  * 	cc -O -DV7  sz.c -o sz		Unix Version 7, 2.8 - 4.3 BSD
+ *
+ *	ln sz sb			**** All versions ****
  *
  *		define CRCTABLE to use table driven CRC
  *
@@ -154,6 +158,8 @@ flushmo()
 
 #define ZKER
 int Zctlesc;	/* Encode control characters */
+int Nozmodem = 0;	/* If invoked as "sb" */
+char *Progname = "sz";
 #include "zm.c"
 
 
@@ -168,6 +174,7 @@ char *argv[];
 
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
+	chkinvok(argv[0]);
 
 	Rxtimeout = 600;
 	npats=0;
@@ -304,20 +311,24 @@ char *argv[];
 		signal(SIGQUIT, SIG_IGN);
 
 	if ( !Modem) {
-		printf("rz\r");  fflush(stdout);
+		if (!Nozmodem) {
+			printf("rz\r");  fflush(stdout);
+		}
 		if (!Command && !Quiet && Verbose != 1) {
-			fprintf(stderr, "sz: %d file%s requested:\r\n",
-			 npats, npats>1?"s":"");
+			fprintf(stderr, "%s: %d file%s requested:\r\n",
+			 Progname, npats, npats>1?"s":"");
 			for ( agcnt=npats, agcv=patts; --agcnt>=0; ) {
 				fprintf(stderr, "%s ", *agcv++);
 			}
 			fprintf(stderr, "\r\n");
 			printf("\r\n\bSending in Batch Mode\r\n");
 		}
-		stohdr(0L);
-		if (Command)
-			Txhdr[ZF0] = ZCOMMAND;
-		zshhdr(ZRQINIT, Txhdr);
+		if (!Nozmodem) {
+			stohdr(0L);
+			if (Command)
+				Txhdr[ZF0] = ZCOMMAND;
+			zshhdr(ZRQINIT, Txhdr);
+		}
 	}
 	fflush(stdout);
 
@@ -355,9 +366,11 @@ char *argp[];
 		if (1) {
 			Command = TRUE;
 			Cmdstr = "echo \"sz: Can't open any requested files\"";
-			if (getzrxinit()) {
+			if (getnak()) {
 				Exitcode=0200; canit();
 			}
+			if (!Zmodem)
+				canit();
 			else if (zsendcmd(Cmdstr, 1+strlen(Cmdstr))) {
 				Exitcode=0200; canit();
 			}
@@ -960,6 +973,8 @@ sendzsinit()
 	register c;
 	register errors;
 
+	if (Myattn[0] == '\0')
+		return OK;
 	errors = 0;
 	for (;;) {
 		stohdr(0L);
@@ -1069,7 +1084,11 @@ waitack:
 				tcount += strlen(qbf);
 #ifdef READCHECK
 				while (rdchk(iofd)) {
+#ifdef SVR2
+					switch (checked) {
+#else
 					switch (readline(1)) {
+#endif
 					case CAN:
 					case ZPAD:
 #ifdef TCFLSH
@@ -1119,7 +1138,11 @@ waitack:
 		 */
 		fflush(stdout);
 		while (rdchk(iofd)) {
+#ifdef SVR2
+			switch (checked) {
+#else
 			switch (readline(1)) {
+#endif
 			case CAN:
 			case ZPAD:
 #ifdef TCFLSH
@@ -1264,6 +1287,29 @@ listen:
 			vfile("******** SZ *******");
 			goto listen;
 		}
+	}
+}
+
+/*
+ * If called as sb use YMODEM protocol
+ */
+chkinvok(s)
+char *s;
+{
+	register char *p;
+
+	p = s;
+	while (*p == '-')
+		s = ++p;
+	while (*p)
+		if (*p++ == '/')
+			s = p;
+	if (*s == 'v') {
+		Verbose=1; ++s;
+	}
+	Progname = s;
+	if (s[0]=='s' && s[1]=='b') {
+		Nozmodem = TRUE; blklen=KSIZE;
 	}
 }
 

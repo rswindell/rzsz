@@ -1,5 +1,32 @@
 # Changelog
 
+## [RZ 1.10 / SZ 1.19] - 1986-11-14
+
+  - Support nonblocking I/O in System V, Release 2
+  - Support invoking YMODEM (batch) transfers by symlinking sb -> sz
+
+### Files
+This release was found only as a SHAR file (`RSSZ1ET2.SH`).  In this example,
+zipped and uploaded to Night Owls BBS.
+```
+Archive:  ../archive/rzsz_1.10_19.zip
+
+        This File was Complements Of Night Owls BBS - Buffalo,New York
+           (716)-881-5380 - 1200/2400 -- 24 Hrs - 365 Days
+           (716)-881-5688 - 1200/2400/19200 Courier HST Dual
+           PCBoard 14.5/E6 -1045 Megs - Qmail Door - Echo Conferences
+           Western New York "HUB" For NetMail Echoing 165 Conferences
+ Length   Method    Size  Cmpr    Date    Time   CRC-32   Name
+--------  ------  ------- ---- ---------- ----- --------  ----
+   94273  Implode   33715  64% 1986-12-02 10:00 db6fc379  RZSZ1ET2.SH
+--------          -------  ---                            -------
+   94273            33715  64%                            1 file
+```
+
+### Attribution
+A couple of the RZSZ releases from 1986 were only found on the War Ensemble BBS
+(warensemble.com).  Thank you to the sysop, DaiTengu!
+
 ## [RZ 1.09 / SZ 1.17] - 1986-10-23
 
   - Fixed typo in masking of ZP0 byte value in received ZRINIT

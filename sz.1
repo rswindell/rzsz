@@ -1,5 +1,5 @@
 '\" Revision Level 
-'\" Last Delta     9-15-86
+'\" Last Delta     10-17-86
 .TH SZ 1 OMEN
 .SH NAME
 sz \- XMODEM, YMODEM, ZMODEM Batch file Send
@@ -143,6 +143,12 @@ to be used with the
 .I cu
 ~$
 command.
+If the calling program has spawned a separate process to
+read characters from the modem,
+that process 
+must be disabled for
+.I rz
+to operate properly.
 .TP
 .B a
 Convert NL characters in the transmitted file to CR/LF.
@@ -164,11 +170,11 @@ a "." is inserted to allow a total of eleven.
 .TP
 .B E
 Escape only Ctrl-X control characters;
-normally XON, XOFF, CR- at -CR, and Ctrl-X are escaped.
+normally XON, XOFF, CR-@-CR, and Ctrl-X are escaped.
 .TP
 .B e
 Escape all control characters;
-normally XON, XOFF, CR- at -CR, and Ctrl-X are escaped.
+normally XON, XOFF, CR-@-CR, and Ctrl-X are escaped.
 .TP
 .B f
 Send Full pathname.
@@ -202,7 +208,7 @@ This may be used to avoid network overrun when XOFF flow control is lacking.
 (ZMODEM) Send each file if
 destination file does not exist.
 Overwrite destination file if
-source file is longer or newer than the destination file.
+source file is newer or longer than the destination file.
 .TP
 .B N
 (ZMODEM) Send each file if
@@ -373,6 +379,9 @@ transfer to prune the file to the correct length; this may cause problems with
 source files that grow during the course of the transfer.
 This problem does not pertain to ZMODEM transfers, which preserve the exact
 file length unconditionally.
+
+Most ZMODEM options are merely passed to the receiving program;
+some do not implement all these options.
 
 Circular buffering and a ZMODEM sliding window should be used
 when input is from pipes instead of acknowledging frames each 1024 bytes.

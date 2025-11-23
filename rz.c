@@ -1,4 +1,4 @@
-#define VERSION "1.09 09-24-86"
+#define VERSION "1.10 11-06-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -DNFGVMIN -DCRCTABLE -K -O % -o rz; size rz
@@ -147,7 +147,7 @@ bibi(n)
 	if (Zmodem)
 		zmputs(Attn);
 	canit(); mode(0);
-	fprintf(stderr, "sb: caught signal %d; exiting", n);
+	fprintf(stderr, "rz: caught signal %d; exiting", n);
 	exit(128+n);
 }
 
@@ -873,7 +873,7 @@ tryz()
 again:
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZRQINIT:
-			continue;
+			goto again;
 		case ZEOF:
 			continue;
 		case TIMEOUT:
@@ -988,6 +988,7 @@ nxthdr:
 				return ERROR;
 			}
 		case ZFILE:
+			zrdata(secbuf, KSIZE);
 			continue;
 		case ZEOF:
 			if (rclhdr(Rxhdr) != rxbytes) {

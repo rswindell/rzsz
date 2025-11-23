@@ -198,6 +198,7 @@ char *hdr;
 again:
 	Rxframeind = Rxtype = 0;
 	switch (c = noxread7()) {
+	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	case CAN:
@@ -226,6 +227,7 @@ splat:
 	switch (c = noxread7()) {
 	case ZPAD:
 		goto splat;
+	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	default:
@@ -235,6 +237,7 @@ splat:
 	}
 
 	switch (c = noxread7()) {
+	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	case ZBIN:

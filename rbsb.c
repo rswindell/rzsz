@@ -219,6 +219,25 @@ rdchk(f)
 	return ((int) lf);
 }
 #endif
+#ifdef SVR2
+#define READCHECK
+#include <fcntl.h>
+
+char checked = '\0' ;
+/*
+ * Nonblocking I/O is a bit different in System V, Release 2
+ */
+rdchk(f)
+{
+	int lf, savestat = fcntl(f, F_GETFL) ;
+
+	fcntl(f, F_SETFL, savestat | O_NDELAY) ;
+	lf = read(f, &checked, 1) ;
+	fcntl(f, F_SETFL, savestat) ;
+	return(lf) ;
+}
+#endif
+
 
 #ifdef CRCTABLE
 /* crctab calculated by Mark G. Mendel, Network Systems Corporation */

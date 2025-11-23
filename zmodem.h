@@ -1,7 +1,7 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
- *    5-16-86  Chuck Forsberg Omen Technology Inc
+ *    9-06-86  Chuck Forsberg Omen Technology Inc
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
@@ -26,9 +26,10 @@
 #define ZCRC 13		/* Request for file CRC and response */
 #define ZCHALLENGE 14	/* Receiver's Challenge */
 #define ZCOMPL 15	/* Request is complete */
-#define ZCAN 16		/* Other end canned session with CAN-CAN */
+#define ZCAN 16		/* Other end canned session with CAN*5 */
 #define ZFREECNT 17	/* Request for free bytes on filesystem */
 #define ZCOMMAND 18	/* Command from sending program */
+#define ZSTDERR 19	/* Output to standard error, data follows */
 
 /* ZDLE sequences */
 #define ZCRCE 'h'	/* CRC next, frame ends, header packet follows */
@@ -45,7 +46,7 @@
 #define GOTCRCG (ZCRCG|GOTOR)	/* ZDLE-ZCRCG received */
 #define GOTCRCQ (ZCRCQ|GOTOR)	/* ZDLE-ZCRCQ received */
 #define GOTCRCW (ZCRCW|GOTOR)	/* ZDLE-ZCRCW received */
-#define GOTCAN	(GOTOR|030)	/* CAN-CAN seen */
+#define GOTCAN	(GOTOR|030)	/* CAN*5 seen */
 
 /* Byte positions within header array */
 #define ZF0	3	/* First flags byte */
@@ -73,11 +74,13 @@
 #define ZCNL	2	/* Convert NL to local end of line convention */
 #define ZCRESUM	3	/* Resume interrupted file transfer */
 /* Management options, one of these in ZF1 */
-#define ZMNEW	1	/* Transfer if source newer or different length */
+#define ZMNEW	1	/* Transfer if source newer or longer */
 #define ZMCRC	2	/* Transfer if different file CRC or length */
 #define ZMAPND	3	/* Append contents to existing file (if any) */
 #define ZMCLOB	4	/* Replace existing file */
 #define ZMSPARS	5	/* Encoding for sparse file */
+#define ZMDIFF	6	/* Transfer if dates or lengths different */
+#define ZMPROT	7	/* Protect destination file */
 /* Transport options, one of these in ZF2 */
 #define ZTLZW	1	/* Lempel-Ziv compression */
 #define ZTCRYPT	2	/* Encryption */
@@ -98,3 +101,4 @@ char Txhdr[4];		/* Transmitted header */
 long Rxpos;		/* Received file position */
 long Txpos;		/* Transmitted file position */
 char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
+
