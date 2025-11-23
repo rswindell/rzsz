@@ -1,5 +1,22 @@
 # Changelog
 
+## [RZ 1.04 / SZ 1.07] - 1986-6-12
+
+This appears to be the second public release of ZMODEM by Chuck Forsberg.
+No associated USENET announcement/description article has been located.
+
+  - Support for serial connections that utilize 2 stop bits
+  - Add options to control packet (block) and frame length limits
+  - Handle more received CANs (5 instead of 2 for quick abort)
+  - New frame type: ZSTDERR (19)
+  - Some hacks for V7/BSD compatibility
+
+### Attribution
+
+Nelgin (EOTLBBS) found this archive and uploaded it to my BBS, Vertrauen
+(vert.synchro.net) in response to my request for historic RZSZ archives.
+Thanks Nelgin!
+
 ## [RZ 1.03 / SZ 1.03] - 1986-05-20
 
 This is the first public release of ZMODEM, originally posted by Chuck Forsberg (caf)

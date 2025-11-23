@@ -1,11 +1,11 @@
 '\" Revision Level 
-'\" Last Delta     5-19-86
+'\" Last Delta     6-01-86
 .TH SZ 1 OMEN
 .SH NAME
 sz \- XMODEM, YMODEM, ZMODEM Batch file Send
 .SH SYNOPSIS
 sz
-.RB [\- +1adfknqTuvy ]
+.RB [\- +1adfkLlnqTuvy ]
 .I file ...
 .br
 sz -X
@@ -173,6 +173,18 @@ rather than the default 128 byte blocks.
 1024 byte packets speed file transfers at high bit rates.
 (ZMODEM streams the data for the best possible throughput.)
 .TP
+.B "L N"
+Use ZMODEM sub-packets of length N.
+A larger N (N <= 64 <= 1024) gives slightly higher throughput,
+a smaller N speeds error recovery.
+The default is 128 below 300 baud, 256 above 300 baud, or 1024 above 2400 baud.
+.TP
+.B "l N"
+Wait for the receiver to acknowledge correct data every
+.B N
+characters.
+This may be used to avoid network overrun when XOFF flow control is lacking.
+.TP
 .B n
 Instruct ZMODEM receiver to skip files if the length and modification times
 of the source file and the file on the destination system are equal.
@@ -330,7 +342,9 @@ XMODEM transfers add up to 127 spurious bytes per file.
 
 Circular buffering and a ZMODEM sliding window should be used
 when input is from pipes instead of acknowledging frames each 1024 bytes.
-.B Sz
-should check for the presence of at least one accessible file before
+If no files can be opened,
+.B sz
+sends a ZMODEM command to echo a suitable complaint;
+it should check for the presence of at least one accessible file before
 getting hot and bothered.
 The test mode leaves a zero length file on the receiving system.

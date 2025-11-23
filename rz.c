@@ -1,4 +1,4 @@
-#define VERSION "1.03 05-18-86"
+#define VERSION "1.04 06-05-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -DNFGVMIN -K -O % -o rz; size rz
@@ -928,7 +928,11 @@ tryz()
 	for (n=5; --n>=0; ) {
 		/* Set buffer length (0) and capability flags */
 		stohdr(0L);
+#ifdef CANBREAK
 		Txhdr[ZF0] = CANFDX|CANOVIO|CANBRK;
+#else
+		Txhdr[ZF0] = CANFDX|CANOVIO;
+#endif
 		zshhdr(Badclose?ZFERR:ZRINIT, Txhdr);
 again:
 		switch (zgethdr(Rxhdr, 0)) {
@@ -943,11 +947,11 @@ again:
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
 			Badclose = FALSE;
-			if (zrbdata(secbuf, KSIZE) == GOTCRCW)
+			if (zrdata(secbuf, KSIZE) == GOTCRCW)
 				return ZFILE;
 			zshhdr(ZNAK, Txhdr);
 		case ZSINIT:
-			if (zrbdata(Attn, ZATTNLEN) == GOTCRCW) {
+			if (zrdata(Attn, ZATTNLEN) == GOTCRCW) {
 				zshhdr(ZACK, Txhdr);
 				goto again;
 			}
@@ -959,7 +963,7 @@ again:
 			goto again;
 		case ZCOMMAND:
 			cmdzack1flg = Rxhdr[ZF0];
-			if (zrbdata(secbuf, KSIZE) == GOTCRCW) {
+			if (zrdata(secbuf, KSIZE) == GOTCRCW) {
 				if (cmdzack1flg & ZCACK1)
 					stohdr(0L);
 				else
@@ -1074,7 +1078,7 @@ nxthdr:
 				continue;
 			}
 moredata:
-			switch (c = zrbdata(secbuf, KSIZE)) {
+			switch (c = zrdata(secbuf, KSIZE)) {
 			case ZCAN:
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;

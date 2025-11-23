@@ -1,14 +1,16 @@
-/* -rev 05-12-86
+/*% shar zmodem.h zm.c sz.c>/tmp/rzsz1.sh;shar rz.c rbsb.c rz.1 sz.1 gz>/tmp/rzsz2.sh
+ * -rev 05-28-86
  * mode function and most of the rest of the system dependent
  * stuff for rb.c and sb.c   This file is #included so the includer
- * can set parameters such as HOWMANY.
+ * can set parameters such as HOWMANY.  See the main file (rz.c/sz.c)
+ * for compile instructions.
  */
 
 #ifdef V7
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sgtty.h>
-#define OS "V7"
+#define OS "V7/BSD"
 #endif
 
 #ifndef OS
@@ -42,6 +44,8 @@ struct {
 	0,
 };
 
+int Twostop;		/* Use two stop bits */
+
 static unsigned
 getspeed(code)
 {
@@ -74,6 +78,7 @@ mode(n)
 {
 	static did0 = FALSE;
 
+	vfile("mode:%d", n);
 	switch(n) {
 #ifdef USG
 	case 2:	/* Cbreak mode used by sb when -g detected */
@@ -87,6 +92,8 @@ mode(n)
 
 		tty.c_cflag &= ~PARENB;	/* Disable parity */
 		tty.c_cflag |= CS8;	/* Set character size = 8 */
+		if (Twostop)
+			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
 
 #ifdef XCLUDE
 		tty.c_lflag = XCLUDE | ISIG;
@@ -117,6 +124,8 @@ mode(n)
 
 		tty.c_cflag &= ~PARENB;	/* Leave baud rate alone, disable parity */
 		tty.c_cflag |= CS8;	/* Set character size = 8 */
+		if (Twostop)
+			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
 		tty.c_cc[VMIN] = HOWMANY; /* Satisfy reads when this many chars in */
 		tty.c_cc[VTIME] = 1;	/* ... or in this many tenths of seconds */
 		(void) ioctl(iofd, TCSETAW, &tty);
@@ -125,7 +134,8 @@ mode(n)
 		return OK;
 #endif
 #ifdef V7
-	case 2:
+	case 2:	/*  This doesn't work ... */
+		printf("No mode(2) in V7/BSD!"); bibi(99);
 		if(!did0) {
 			ioctl(iofd, TIOCEXCL, 0);
 			ioctl(iofd, TIOCGETP, &oldtty);
@@ -134,8 +144,8 @@ mode(n)
 		tty = oldtty;
 		tch = oldtch;
 		tch.t_intrc = Zmodem ? 03:030;	/* Interrupt char */
-		tty.sg_flags |= CBREAK;
-		tty.sg_flags &= ~ECHO;
+		tty.sg_flags |= (ODDP|EVENP|CBREAK);
+		tty.sg_flags &= ~(ALLDELAY|CRMOD|ECHO|LCASE);
 		ioctl(iofd, TIOCSETP, &tty);
 		ioctl(iofd, TIOCSETC, &tch);
 		did0 = TRUE;
@@ -176,5 +186,32 @@ mode(n)
 
 sendbrk()
 {
+#ifdef V7
+#ifdef TIOCSBRK
+#define CANBREAK
+	sleep(1);
+	ioctl(iofd, TIOCSBRK, 0);
+	sleep(1);
+	ioctl(iofd, TIOCCBRK, 0);
+#endif
+#endif
+#ifdef USG
+#define CANBREAK
 	ioctl(iofd, TCSBRK, 0);
+#endif
 }
+
+#ifdef FIONREAD
+#define READCHECK
+/*
+ *  Return non 0 iff something to read from io descriptor f
+ */
+rdchk(f)
+{
+	static long lf;
+
+	ioctl(f, FIONREAD, &lf);
+	return ((int) lf);
+}
+#endif
+

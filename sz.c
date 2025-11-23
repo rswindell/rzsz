@@ -1,4 +1,4 @@
-#define VERSION "sz 1.03 05-18-86"
+#define VERSION "sz 1.07 06-05-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -O -K sz.c -o sz; size sz
@@ -14,19 +14,13 @@
  *  ******* character reads for these systems.		   *******
  *
  * A program for Unix to send files and commands to computers running
- *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
+ *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting Y/XMODEM.
  *
  *  Sz uses buffered I/O to greatly reduce CPU time compared to UMODEM.
  *
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  */
 
-/*
- * Attention string to be executed by receiver to interrupt streaming data
- *  when an error is detected.  A pause (0336) may be needed before the
- *  ^C (03) or after it.
- */
-char Myattn[] = { 03, 0336, 0 };
 
 unsigned updcrc();
 char *substr(), *getenv();
@@ -49,6 +43,17 @@ char *substr(), *getenv();
 int Zmodem=0;		/* ZMODEM protocol requested */
 unsigned Baudrate;
 #include "rbsb.c"	/* most of the system dependent stuff here */
+
+/*
+ * Attention string to be executed by receiver to interrupt streaming data
+ *  when an error is detected.  A pause (0336) may be needed before the
+ *  ^C (03) or after it.
+ */
+#ifdef USG
+char Myattn[] = { 03, 0336, 0 };
+#else
+char Myattn[] = { 0 };
+#endif
 
 FILE *in;
 
@@ -91,6 +96,8 @@ char txbuf[KSIZE];
 int Filcnt=0;		/* count of number of files opened */
 int Lfseen=0;
 unsigned Rxbuflen = 16384;	/* Receiver's max buffer length */
+int Tframlen = 0;	/* Override for tx frame length */
+int blkopt=0;		/* Override value for zmodem blklen */
 int Rxflags = 0;
 char Lzconv;	/* Local ZMODEM file conversion request */
 char Lzmanag;	/* Local ZMODEM file management request */
@@ -105,6 +112,9 @@ int Cmdack1;		/* Rx ACKs command, then do it */
 int Exitcode;
 int Testattn;		/* Force receiver to send Attn, etc with qbf. */
 char *qbf="The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
+long Lastread;		/* Beginning offset of last buffer read */
+int Lastc;		/* Count of last buffer read or -1 */
+int Dontread;		/* Don't read the buffer, it's still there */
 
 jmp_buf tohere;		/* For the interrupt on RX timeout */
 jmp_buf intrjmp;	/* For the interrupt on RX CAN */
@@ -137,6 +147,7 @@ flushmo()
 
 #include "zm.c"
 
+
 main(argc, argv)
 char *argv[];
 {
@@ -163,6 +174,10 @@ char *argv[];
 					Lzmanag = ZMAPND; break;
 				case '1':
 					iofd = 1; break;
+#ifdef CSTOPB
+				case '2':
+					Twostop = TRUE; break;
+#endif
 				case '7':
 					Wcsmask=0177; break;
 				case 'a':
@@ -193,6 +208,22 @@ char *argv[];
 					Fullname=TRUE; break;
 				case 'k':
 					blklen=KSIZE; break;
+				case 'L':
+					if (--argc < 1) {
+						usage();
+					}
+					blkopt = atoi(*++argv);
+					if (blkopt<32 || blkopt>1024)
+						usage();
+					break;
+				case 'l':
+					if (--argc < 1) {
+						usage();
+					}
+					Tframlen = atoi(*++argv);
+					if (Tframlen<32 || Tframlen>1024)
+						usage();
+					break;
 				case 'N':
 					Lzmanag = ZMCRC;  break;
 				case 'n':
@@ -250,9 +281,7 @@ char *argv[];
 	}
 
 	if ( !Modem) {
-		if (!Command) {
-			printf("rz\r");  fflush(stdout);
-		}
+		printf("rz\r");  fflush(stdout);
 		if (!Command && !Quiet && Verbose != 1) {
 			fprintf(stderr, "sz: %d file%s requested:\r\n",
 			 npats, npats>1?"s":"");
@@ -300,6 +329,18 @@ char *argp[];
 	}
 	Totsecs = 0;
 	if (Filcnt==0) {	/* bitch if we couldn't open ANY files */
+		if (1) {
+			Command = TRUE;
+			Cmdstr = "echo \"sz: Can't open any requested files\"";
+			if (getzrxinit()) {
+				Exitcode=0200; canit();
+			}
+			else if (zsendcmd(Cmdstr, 1+strlen(Cmdstr))) {
+				Exitcode=0200; canit();
+			}
+			Exitcode = 1; return OK;
+		}
+		canit();
 		fprintf(stderr,"\r\nCan't open any requested files.\r\n");
 		return ERROR;
 	}
@@ -341,7 +382,7 @@ char *oname;
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
 	}
-	++Noeofseen;
+	++Noeofseen;  Lastread = 0;  Lastc = -1; Dontread = FALSE;
 	/* Check for directory or block special files */
 	fstat(fileno(in), &f);
 	c = f.st_mode & S_IFMT;
@@ -448,7 +489,9 @@ getnak()
 			logent("Timeout on pathname\n");
 			return TRUE;
 		case WANTG:
+#ifdef USG
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */
+#endif
 			Optiong = TRUE;
 			blklen=KSIZE;
 		case WANTCRC:
@@ -456,7 +499,7 @@ getnak()
 		case NAK:
 			return FALSE;
 		case CAN:
-			if (Lastrx == CAN)
+			if ((firstch = readock(20,1)) == CAN && Lastrx == CAN)
 				return TRUE;
 		default:
 			break;
@@ -796,12 +839,15 @@ register char *s,*t;
 usage()
 {
 	fprintf(stderr,"\nSend file(s) with ZMODEM/YMODEM/XMODEM Protocol\n");
-	fprintf(stderr,"%s for %s by Chuck Forsberg\n", VERSION, OS);
-	fprintf(stderr,"Usage:	sz [-1+adfknquvXy] [-] file ...\n");
 	fprintf(stderr,"	(Y) = Option applies to YMODEM only\n");
 	fprintf(stderr,"	(Z) = Option applies to ZMODEM only\n");
+	fprintf(stderr,"%s for %s by Chuck Forsberg\n", VERSION, OS);
+	fprintf(stderr,"Usage:	sz [-12+adfknquvXy] [-] file ...\n");
 	fprintf(stderr,"	sz [-1qv] -c COMMAND\n");
 	fprintf(stderr,"	1 Use stdout for modem input\n");
+#ifdef CSTOPB
+	fprintf(stderr,"	2 Use 2 stop bits\n");
+#endif
 	fprintf(stderr,"	+ Append to existing destination file (Z)\n");
 	fprintf(stderr,"	a (ASCII) change NL to CR/LF\n");
 	fprintf(stderr,"	c send COMMAND (Z)\n");
@@ -811,13 +857,15 @@ usage()
 	fprintf(stderr,"	f send Full pathname (Y/Z)\n");
 	fprintf(stderr,"	i send COMMAND, ack Immediately (Z)\n");
 	fprintf(stderr,"	k Send 1024 byte packets (Y)\n");
+	fprintf(stderr,"	L N Limit packet length to N bytes (Z)\n");
+	fprintf(stderr,"	l N Limit frame length to N bytes (l>=L) (Z)\n");
 	fprintf(stderr,"	n send file if Newer|different length (Z)\n");
 	fprintf(stderr,"	N send file if different length|CRC (Z)\n");
-	fprintf(stderr,"	r Resume interrupted file transfer (Z)\n");
+	fprintf(stderr,"	r Resume/Recover interrupted file transfer (Z)\n");
 	fprintf(stderr,"	q Quiet (no progress reports)\n");
 	fprintf(stderr,"	u Unlink file after transmission\n");
 	fprintf(stderr,"	v Verbose - debugging information\n");
-	fprintf(stderr,"	X XMODEM protocol - no pathnames\n");
+	fprintf(stderr,"	X XMODEM protocol - send no pathnames\n");
 	fprintf(stderr,"	y Yes, overwrite existing file (Z)\n");
 	fprintf(stderr,"- as pathname sends standard input as sPID.sz or environment ONAME\n");
 	exit(1);
@@ -843,10 +891,27 @@ getzrxinit()
 			zshhdr(ZRQINIT, Txhdr);
 			continue;
 		case ZRINIT:
-			Rxflags = Rxhdr[ZF0];
-			Rxbuflen = Rxhdr[ZP0] + (Rxhdr[ZP1]<<8);
+			Rxflags = 0377 & Rxhdr[ZF0];
+			Rxbuflen = (0337 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
+			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
 			signal(SIGINT, SIG_IGN);
+#ifdef USG
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */
+#else
+#ifndef READCHECK
+			/* Use 1024 byte frames if no sample/interrupt */
+			if (Rxbuflen < 64 || Rxbuflen > 1024) {
+				Rxbuflen = 1024;
+				vfile("Rxbuflen=%d", Rxbuflen);
+			}
+#endif
+#endif
+			/* Override to force shorter frame length */
+			if (Rxbuflen && (Rxbuflen>Tframlen) && (Tframlen>=64))
+				Rxbuflen = Tframlen;
+			if ( !Rxbuflen && (Tframlen>=64) && (Tframlen<=1024))
+				Rxbuflen = Tframlen;
+			vfile("Rxbuflen=%d", Rxbuflen);
 
 			/* If using a pipe for testing set lower buf len */
 			fstat(iofd, &f);
@@ -861,6 +926,7 @@ getzrxinit()
 			if (((f.st_mode & S_IFMT) != S_IFREG)
 			  && (Rxbuflen == 0 || Rxbuflen > 1024))
 				Rxbuflen = 1024;
+			vfile("Rxbuflen=%d", Rxbuflen);
 
 			return (sendzsinit());
 		case ZCAN:
@@ -887,7 +953,7 @@ sendzsinit()
 	for (;;) {
 		stohdr(0L);
 		zsbhdr(ZSINIT, Txhdr);
-		zsbdata(Myattn, 1+strlen(Myattn), ZCRCW);
+		zsdata(Myattn, 1+strlen(Myattn), ZCRCW);
 		c = zgethdr(Rxhdr, 1);
 		switch (c) {
 		case ZCAN:
@@ -914,7 +980,7 @@ char *buf;
 		Txhdr[ZF2] = Lztrans;	/* file transport request */
 		Txhdr[ZF3] = 0;
 		zsbhdr(ZFILE, Txhdr);
-		zsbdata(buf, blen, ZCRCW);
+		zsdata(buf, blen, ZCRCW);
 again:
 		c = zgethdr(Rxhdr, 1);
 		switch (c) {
@@ -929,7 +995,7 @@ again:
 			fclose(in); return c;
 		case ZRPOS:
 			fseek(in, Rxpos, 0);
-			Txpos = Rxpos;
+			Txpos = Rxpos; Lastc = -1; Dontread = FALSE;
 			return zsendfdata();
 		case ERROR:
 		default:
@@ -952,6 +1018,9 @@ zsendfdata()
 		blklen = KSIZE;
 	if (Rxbuflen && blklen>Rxbuflen)
 		blklen = Rxbuflen;
+	if (blkopt && blklen > blkopt)
+		blklen = blkopt;
+	vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
 somemore:
 	if (setjmp(intrjmp)) {
 waitack:
@@ -996,30 +1065,36 @@ waitack:
 	}
 
 	do {
-		c = zfilbuf(txbuf, blklen);
+		if (Dontread) {
+			c = Lastc;
+		} else {
+			c = zfilbuf(txbuf, blklen);
+			Lastread = Txpos;  Lastc = c;
+		}
+		vfile("Dontread=%d c=%d", Dontread, c);
+		Dontread = FALSE;
 		if (c < blklen)
 			e = ZCRCE;
 		else if (Rxbuflen && (newcnt -= c) <= 0)
 			e = ZCRCW;
 		else
 			e = ZCRCG;
-		zsbdata(txbuf, c, e);
+		zsdata(txbuf, c, e);
 		Txpos += c;
 		if (e == ZCRCW)
 			goto waitack;
-#ifdef NOTDEF_DOS
-		if ( !carrier()) {
-			return ERROR;
-		}
+#ifdef READCHECK
 		/*
 		 * If the reverse channel can be tested for data,
 		 *  this logic may be used to detect error packets
 		 *  sent by the receiver, in place of setjmp/longjmp
-		 *	miready() returns non 0 if a character is available
+		 *  rdchk(fdes) returns non 0 if a character is available
 		 */
-		while (miready()) {
-			if (readline(1) == ZPAD) {
-				zsbdata(U.ubuf, 0, ZCRCW);
+		while (rdchk(iofd)) {
+			switch (readline(1)) {
+			case CAN:
+			case ZPAD:
+				zsdata(txbuf, 0, ZCRCW);
 				goto somemore;
 			}
 		}
@@ -1066,8 +1141,12 @@ getinsync()
 		case TIMEOUT:
 			return ERROR;
 		case ZRPOS:
-			clearerr(in);	/* In case file EOF seen */
-			fseek(in, Rxpos, 0);
+			if (Lastc >= 0 && Lastread == Rxpos) {
+				Dontread = TRUE;
+			} else {
+				clearerr(in);	/* In case file EOF seen */
+				fseek(in, Rxpos, 0);
+			}
 			Txpos = Rxpos;
 			return c;
 		case ZACK:
@@ -1119,7 +1198,7 @@ char *buf;
 		stohdr(cmdnum);
 		Txhdr[ZF0] = Cmdack1;
 		zsbhdr(ZCOMMAND, Txhdr);
-		zsbdata(buf, blen, ZCRCW);
+		zsdata(buf, blen, ZCRCW);
 listen:
 		Rxtimeout = 100;		/* Ten second wait for resp. */
 		c = zgethdr(Rxhdr, 1);

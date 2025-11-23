@@ -1,14 +1,14 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    5-18-86  Chuck Forsberg Omen Technology Inc
+ *    6-09-86  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
  *	zshhdr(type, hdr) send hex header
  *	zgethdr(hdr, eflag) receive header - binary or hex
- *	zsbdata(buf, len, frameend) send binary data
- *	zrbdata(buf, len) receive binary data
+ *	zsdata(buf, len, frameend) send data
+ *	zrdata(buf, len) receive data
  *	stohdr(pos) store position data in Txhdr
  *	long rclhdr(hdr) recover position offset from header
  */
@@ -40,8 +40,9 @@ static char *frametypes[] = {
 	"ZCAN",
 	"ZFREECNT",
 	"ZCOMMAND",
-	"ZCACK"
-#define FRTYPES 21	/* Total number of frame types in this array */
+	"ZSTDERR",
+	"xxxxx"
+#define FRTYPES 22	/* Total number of frame types in this array */
 };
 
 /* Send ZMODEM binary header hdr of type type */
@@ -98,12 +99,12 @@ register char *hdr;
 /*
  * Send binary array buf of length length, with ending ZDLE sequence frameend
  */
-zsbdata(buf, length, frameend)
+zsdata(buf, length, frameend)
 register char *buf;
 {
 	register unsigned short oldcrc;
 
-	vfile("zsbdata: length=%d end=%x", length, frameend);
+	vfile("zsdata: length=%d end=%x", length, frameend);
 	oldcrc = 0;
 	for (;--length >= 0;) {
 		zsendline(*buf);
@@ -120,10 +121,10 @@ register char *buf;
 }
 
 /*
- * Receive binary array buf of max length with ending ZDLE sequence
+ * Receive array buf of max length with ending ZDLE sequence
  *  and CRC.  Returns the ending character or error code.
  */
-zrbdata(buf, length)
+zrdata(buf, length)
 register char *buf;
 {
 	register c;
@@ -150,7 +151,7 @@ badcrc:
 					zperr("Bad data packet CRC");
 					return ERROR;
 				}
-				vfile("zrbdata: Rxcount = %d ret = %x",
+				vfile("zrdata: Rxcount = %d ret = %x",
 				  Rxcount, d);
 				return d;
 			case GOTCAN:
@@ -165,7 +166,7 @@ badcrc:
 			}
 		}
 		if (--length < 0) {
-			zperr("ZMODEM binary data packet too long");
+			zperr("ZMODEM data packet too long");
 			return ERROR;
 		}
 		++Rxcount;
@@ -187,20 +188,22 @@ badcrc:
 zgethdr(hdr, eflag)
 char *hdr;
 {
-	register c, n;
+	register c, n, cancount;
 
 	n = Baudrate;	/* Max characters before start of frame */
+	cancount = 5;
 again:
 	Rxframeind = Rxtype = 0;
 	switch (c = noxread7()) {
 	case TIMEOUT:
 		goto fifi;
-	case ZDLE:
-		if (noxread7() == ZDLE) {
+	case CAN:
+		if (--cancount <= 0) {
 			c = ZCAN; goto fifi;
 		}
 	/* **** FALL THRU TO **** */
 	default:
+agn2:
 		if ( --n == 0) {
 			zperr("ZMODEM Garbage count exceeded");
 			return(ERROR);
@@ -209,10 +212,13 @@ again:
 			bttyout(c);
 		else if (eflag > 1)
 			bttyout(c);
+		if (c != CAN)
+			cancount = 5;
 		goto again;
-	case ZPAD:
+	case ZPAD:		/* This is what we want. */
 		break;
 	}
+	cancount = 5;
 splat:
 	switch (c = noxread7()) {
 	case ZPAD:
@@ -220,8 +226,8 @@ splat:
 	case TIMEOUT:
 		goto fifi;
 	default:
-		goto again;
-	case ZDLE:
+		goto agn2;
+	case ZDLE:		/* This is what we want. */
 		break;
 	}
 
@@ -236,13 +242,13 @@ splat:
 		Rxframeind = ZHEX;
 		c =  zrhhdr(hdr);
 		break;
-	case ZDLE:
-		if (noxread7() == ZDLE) {
+	case CAN:
+		if (--cancount <= 0) {
 			c = ZCAN; goto fifi;
 		}
-	/* **** FALL THRU TO **** */
+		goto agn2;
 	default:
-		goto again;
+		goto agn2;
 	}
 	Rxpos = hdr[ZP3] & 0377;
 	Rxpos = (Rxpos<<8) + (hdr[ZP2] & 0377);
@@ -395,7 +401,7 @@ zgeth1()
 
 /*
  * Read a byte, checking for ZMODEM escape encoding
- *  including CAN-CAN which represents a quick abort
+ *  including CAN*5 which represents a quick abort
  */
 zdlread()
 {
@@ -405,8 +411,14 @@ zdlread()
 		return c;
 	if ((c = readline(Rxtimeout)) < 0)
 		return c;
+	if (c == CAN && (c = readline(Rxtimeout)) < 0)
+		return c;
+	if (c == CAN && (c = readline(Rxtimeout)) < 0)
+		return c;
+	if (c == CAN && (c = readline(Rxtimeout)) < 0)
+		return c;
 	switch (c) {
-	case ZDLE:
+	case CAN:
 		return GOTCAN;
 	case ZCRCE:
 	case ZCRCG:

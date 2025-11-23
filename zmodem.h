@@ -1,7 +1,7 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
- *    5-16-86  Chuck Forsberg Omen Technology Inc
+ *    6-12-86  Chuck Forsberg Omen Technology Inc
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
@@ -26,9 +26,10 @@
 #define ZCRC 13		/* Request for file CRC and response */
 #define ZCHALLENGE 14	/* Receiver's Challenge */
 #define ZCOMPL 15	/* Request is complete */
-#define ZCAN 16		/* Other end canned session with CAN-CAN */
+#define ZCAN 16		/* Other end canned session with CAN*5 */
 #define ZFREECNT 17	/* Request for free bytes on filesystem */
 #define ZCOMMAND 18	/* Command from sending program */
+#define ZSTDERR 19	/* Output to standard error, data follows */
 
 /* ZDLE sequences */
 #define ZCRCE 'h'	/* CRC next, frame ends, header packet follows */
@@ -45,7 +46,7 @@
 #define GOTCRCG (ZCRCG|GOTOR)	/* ZDLE-ZCRCG received */
 #define GOTCRCQ (ZCRCQ|GOTOR)	/* ZDLE-ZCRCQ received */
 #define GOTCRCW (ZCRCW|GOTOR)	/* ZDLE-ZCRCW received */
-#define GOTCAN	(GOTOR|030)	/* CAN-CAN seen */
+#define GOTCAN	(GOTOR|030)	/* CAN*5 seen */
 
 /* Byte positions within header array */
 #define ZF0	3	/* First flags byte */
