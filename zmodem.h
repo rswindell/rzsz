@@ -1,13 +1,14 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
- *    9-06-86  Chuck Forsberg Omen Technology Inc
+ *    01-15-87  Chuck Forsberg Omen Technology Inc
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
 #define ZDLEE (ZDLE^0100)	/* Escaped ZDLE as transmitted */
 #define ZBIN 'A'	/* Binary frame indicator */
 #define ZHEX 'B'	/* HEX frame indicator */
+#define ZBIN32 'C'	/* Binary frame with 32 bit FCS */
 
 /* Frame types (see array "frametypes" in zm.c) */
 #define ZRQINIT	0	/* Request receive init */
@@ -64,6 +65,7 @@
 #define CANBRK	04	/* Rx can send a break signal */
 #define CANCRY	010	/* Receiver can decrypt */
 #define CANLZW	020	/* Receiver can uncompress */
+#define CANFC32	040	/* Receiver can use 32 bit Frame Check */
 
 /* Parameters for ZSINIT frame */
 #define ZATTNLEN 32	/* Max length of attention string */
@@ -92,7 +94,7 @@
 long rclhdr();
 
 /* Globals used by ZMODEM functions */
-int Rxframeind;		/* ZBIN or ZHEX indicates type of frame received */
+int Rxframeind;		/* ZBIN ZBIN32, or ZHEX type of frame received */
 int Rxtype;		/* Type of header received */
 int Rxcount;		/* Count of data bytes received */
 extern Rxtimeout;	/* Tenths of seconds to wait for something */
@@ -100,5 +102,7 @@ char Rxhdr[4];		/* Received header */
 char Txhdr[4];		/* Transmitted header */
 long Rxpos;		/* Received file position */
 long Txpos;		/* Transmitted file position */
+int Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
+int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
 char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [RZ 1.16 / SZ 1.25] - 1987-01-25
+
+We're back on the high confidence train here as the mysteriously removed
+features (e.g. SVR2 support) are now restored and bugs that reappeared
+(e.g. the ZRINIT/ZP0 byte masking) are again fixed.
+
+So it is probably best to consider this commit to be the first official release
+with 32-bit CRC error detection - that I was able to sucessfully recover.
+
 ## [RZ 1.14 / SZ 1.14] - 1987-01-16 (suspect)
 
 The original [USENET announcement](https://mirrors.nycbug.org/pub/The_Unix_Archive/Unix_Usenet/comp.sources.unix/1987-January/005074.html) of this release by Chuck:
@@ -31,7 +40,11 @@ TeleGodzilla BBS: 621-3746 2400/1200  CIS:70007,2304  Genie:CAF  Source:TCE022
 So this release includes a pretty huge improvement: supporting 32-bit CRC for
 better error detection (in addition to 16-bit CRC for backward compatibility).
 Thankfully, the 32-bit CRC algorithm implemented, courtesy of Gary S. Brown,
-was the same ISO/IEEE standard CRC-32 used by Ethernet (IEEE 802.3).
+was the same ISO/IEEE standard CRC-32 used by Ethernet (IEEE 802.3).  To this
+day, when most people say "CRC-32", they're referring to this algorithm and
+usually not the plethora of other 32-bit CRC algorithms that exist.  Chuck
+used Ethernet/networking terminology when referring to the CRC checksum as an
+FCS (Frame Check Sequence) in the souce code.
 
 Unfortunately, this article (part 1 of 2) is truncated in all the USENET
 archives where it was located, making the complete SHAR contents (including key
@@ -154,6 +167,11 @@ Voice: 503-621-3406 TeleGodzilla: 621-3746 300/1200 L.sys entry for omen:
 omen Any ACU 1200 1-503-621-3746 se:--se: link ord: Giznoid in:--in: uucp
 omen!/usr/spool/uucppublic/FILES lists all uucp-able files, updated hourly
 ```
+
+The actual SHAR file postings for this release,
+[part1](https://mirrors.nycbug.org/pub/The_Unix_Archive/Unix_Usenet/comp.sources.unix/1986-July/001063.html)
+and [part2](https://mirrors.nycbug.org/pub/The_Unix_Archive/Unix_Usenet/comp.sources.unix/1986-July/003237.html),
+did not include any introductory text.
 
 Note: TeleGodzilla was Chuck Forsberg's dial-up Bulletin Board System (BBS) and
 WA7KGX was his [Amateur Radio call sign](https://www.qcwa.org/wa7kgx-26075-sk.htm).

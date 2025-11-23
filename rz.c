@@ -1,4 +1,4 @@
-#define VERSION "1.14 01-15-87"
+#define VERSION "1.16 01-25-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc  -DNFGVMIN -DCRCTABLE -K -O -i % -o rz; size rz
@@ -322,8 +322,7 @@ char **argp;
 	} else {
 		Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
 
-		strcpy(Pathname, *argp);
-		checkpath(Pathname);
+		procheader(""); strcpy(Pathname, *argp); checkpath(Pathname);
 		fprintf(stderr, "\nrz: ready to receive %s\r\n", Pathname);
 		if ((fout=fopen(Pathname, "w")) == NULL)
 			return ERROR;
@@ -607,7 +606,7 @@ char *name;
 
 	/* set default parameters and overrides */
 	openmode = "w";
-	Thisbinary = Rxbinary || !Rxascii;
+	Thisbinary = (!Rxascii) || Rxbinary;
 	if (Lzmanag)
 		zmanag = Lzmanag;
 
@@ -617,7 +616,7 @@ char *name;
 	if (!Rxbinary && zconv == ZCNL)	/* Remote ASCII override */
 		Thisbinary = 0;
 	if (zconv == ZCBIN)	/* Remote Binary override */
-		++Thisbinary;
+		Thisbinary = TRUE;
 	else if (zmanag == ZMAPND)
 		openmode = "a";
 	/* ZMPROT check for existing file */

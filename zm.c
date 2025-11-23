@@ -1,7 +1,7 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    8-16-86  Chuck Forsberg Omen Technology Inc
+ *    01-19-87  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -19,7 +19,7 @@ int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 #endif
 
 static char *frametypes[] = {
-	"CARRIER LOST",		/* -3 */
+	"Carrier Lost",		/* -3 */
 	"TIMEOUT",		/* -2 */
 	"ERROR",		/* -1 */
 #define FTOFFSET 3
@@ -53,22 +53,51 @@ zsbhdr(type, hdr)
 register char *hdr;
 {
 	register n;
-	register unsigned short oldcrc;
+	register unsigned short crc;
 
 	vfile("zsbhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
-	xsendline(ZPAD); xsendline(ZDLE); xsendline(ZBIN);
+	if (type == ZDATA)
+		for (n = Znulls; --n >=0; )
+			zsendline(0);
 
-	zsendline(type); oldcrc = updcrc(type, 0);
+	xsendline(ZPAD); xsendline(ZDLE);
+
+	if (Txfcs32)
+		zsbh32(hdr, type);
+	else {
+		xsendline(ZBIN); zsendline(type); crc = updcrc(type, 0);
+
+		for (n=4; --n >= 0;) {
+			zsendline(*hdr);
+			crc = updcrc((0377& *hdr++), crc);
+		}
+		crc = updcrc(0,updcrc(0,crc));
+		zsendline(crc>>8);
+		zsendline(crc);
+	}
+	if (type != ZDATA)
+		flushmo();
+}
+
+
+/* Send ZMODEM binary header hdr of type type */
+zsbh32(hdr, type)
+register char *hdr;
+{
+	register n;
+	register unsigned long crc;
+
+	xsendline(ZBIN32);  zsendline(type);
+	crc = 0xFFFFFFFF; crc = UPDC32(type, crc);
 
 	for (n=4; --n >= 0;) {
 		zsendline(*hdr);
-		oldcrc = updcrc((0377& *hdr++), oldcrc);
+		crc = UPDC32((0377& *hdr++), crc);
 	}
-	oldcrc = updcrc(0,updcrc(0,oldcrc));
-	zsendline(oldcrc>>8);
-	zsendline(oldcrc);
-	if (type != ZDATA)
-		flushmo();
+	crc = ~crc;
+	for (n=4; --n >= 0;) {
+		zsendline(crc);  crc >>= 8;
+	}
 }
 
 /* Send ZMODEM HEX header hdr of type type */
@@ -76,18 +105,18 @@ zshhdr(type, hdr)
 register char *hdr;
 {
 	register n;
-	register unsigned short oldcrc;
+	register unsigned short crc;
 
 	vfile("zshhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
 	sendline(ZPAD); sendline(ZPAD); sendline(ZDLE); sendline(ZHEX);
 	zputhex(type);
 
-	oldcrc = updcrc(type, 0);
+	crc = updcrc(type, 0);
 	for (n=4; --n >= 0;) {
-		zputhex(*hdr); oldcrc = updcrc((0377& *hdr++), oldcrc);
+		zputhex(*hdr); crc = updcrc((0377& *hdr++), crc);
 	}
-	oldcrc = updcrc(0,updcrc(0,oldcrc));
-	zputhex(oldcrc>>8); zputhex(oldcrc);
+	crc = updcrc(0,updcrc(0,crc));
+	zputhex(crc>>8); zputhex(crc);
 
 	/* Make it printable on remote machine */
 	sendline(015); sendline(012);
@@ -105,22 +134,42 @@ register char *hdr;
 zsdata(buf, length, frameend)
 register char *buf;
 {
-	register unsigned short oldcrc;
+	register unsigned short crc;
 
 	vfile("zsdata: length=%d end=%x", length, frameend);
-	oldcrc = 0;
-	for (;--length >= 0;) {
-		zsendline(*buf);
-		oldcrc = updcrc((0377& *buf++), oldcrc);
-	}
-	xsendline(ZDLE); xsendline(frameend);
-	oldcrc = updcrc(frameend, oldcrc);
+	if (Txfcs32)
+		zsda32(buf, length, frameend);
+	else {
+		crc = 0;
+		for (;--length >= 0;) {
+			zsendline(*buf); crc = updcrc((0377& *buf++), crc);
+		}
+		xsendline(ZDLE); xsendline(frameend);
+		crc = updcrc(frameend, crc);
 
-	oldcrc = updcrc(0,updcrc(0,oldcrc));
-	zsendline(oldcrc>>8);
-	zsendline(oldcrc);
+		crc = updcrc(0,updcrc(0,crc));
+		zsendline(crc>>8); zsendline(crc);
+	}
 	if (frameend == ZCRCW) {
 		xsendline(XON);  flushmo();
+	}
+}
+
+zsda32(buf, length, frameend)
+register char *buf;
+{
+	register unsigned long crc;
+
+	crc = 0xFFFFFFFF;
+	for (;--length >= 0;) {
+		zsendline(*buf); crc = UPDC32((0377& *buf++), crc);
+	}
+	xsendline(ZDLE); xsendline(frameend);
+	crc = UPDC32(frameend, crc);
+
+	crc = ~crc;
+	for (length=4; --length >= 0;) {
+		zsendline(crc);  crc >>= 8;
 	}
 }
 
@@ -132,10 +181,13 @@ zrdata(buf, length)
 register char *buf;
 {
 	register c;
-	register unsigned short oldcrc;
+	register unsigned short crc;
 	register d;
 
-	oldcrc = Rxcount = 0;
+	if (Rxframeind == ZBIN32)
+		return zrdat32(buf, length);
+
+	crc = Rxcount = 0;
 	for (;;) {
 		if ((c = zdlread()) & ~0377) {
 crcfoo:
@@ -144,15 +196,15 @@ crcfoo:
 			case GOTCRCG:
 			case GOTCRCQ:
 			case GOTCRCW:
-				oldcrc = updcrc((d=c)&0377, oldcrc);
+				crc = updcrc((d=c)&0377, crc);
 				if ((c = zdlread()) & ~0377)
 					goto crcfoo;
-				oldcrc = updcrc(c, oldcrc);
+				crc = updcrc(c, crc);
 				if ((c = zdlread()) & ~0377)
 					goto crcfoo;
-				oldcrc = updcrc(c, oldcrc);
-				if (oldcrc & 0xFFFF) {
-					zperr("Bad data CRC %x", oldcrc);
+				crc = updcrc(c, crc);
+				if (crc & 0xFFFF) {
+					zperr("Bad data CRC %x", crc);
 					return ERROR;
 				}
 				vfile("zrdata: cnt = %d ret = %x", Rxcount, d);
@@ -174,10 +226,67 @@ crcfoo:
 		}
 		++Rxcount;
 		*buf++ = c;
-		oldcrc = updcrc(c, oldcrc);
+		crc = updcrc(c, crc);
 		continue;
 	}
 }
+zrdat32(buf, length)
+register char *buf;
+{
+	register c;
+	register unsigned long crc;
+	register d;
+
+	crc = 0xFFFFFFFF;  Rxcount = 0;
+	for (;;) {
+		if ((c = zdlread()) & ~0377) {
+crcfoo:
+			switch (c) {
+			case GOTCRCE:
+			case GOTCRCG:
+			case GOTCRCQ:
+			case GOTCRCW:
+				crc = UPDC32((d=c)&0377, crc);
+				if ((c = zdlread()) & ~0377)
+					goto crcfoo;
+				crc = UPDC32(c, crc);
+				if ((c = zdlread()) & ~0377)
+					goto crcfoo;
+				crc = UPDC32(c, crc);
+				if ((c = zdlread()) & ~0377)
+					goto crcfoo;
+				crc = UPDC32(c, crc);
+				if ((c = zdlread()) & ~0377)
+					goto crcfoo;
+				crc = UPDC32(c, crc);
+				if (crc != 0xDEBB20E3) {
+					zperr("Bad data CRC %lX", crc);
+					return ERROR;
+				}
+				vfile("zrdat32: cnt = %d ret = %x", Rxcount, d);
+				return d;
+			case GOTCAN:
+				zperr("ZMODEM: Sender Canceled");
+				return ZCAN;
+			case TIMEOUT:
+				zperr("ZMODEM data TIMEOUT");
+				return c;
+			default:
+				zperr("ZMODEM bad data subpacket ret=%x", c);
+				return c;
+			}
+		}
+		if (--length < 0) {
+			zperr("ZMODEM data subpacket too long");
+			return ERROR;
+		}
+		++Rxcount;
+		*buf++ = c;
+		crc = UPDC32(c, crc);
+		continue;
+	}
+}
+
 
 /*
  * Read a ZMODEM header to hdr, either binary or hex.
@@ -197,7 +306,8 @@ char *hdr;
 	cancount = 5;
 again:
 	Rxframeind = Rxtype = 0;
-	switch (c = noxread7()) {
+	switch (c = noxrd7()) {
+	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	case CAN:
@@ -223,9 +333,10 @@ agn2:
 	}
 	cancount = 5;
 splat:
-	switch (c = noxread7()) {
+	switch (c = noxrd7()) {
 	case ZPAD:
 		goto splat;
+	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	default:
@@ -234,12 +345,17 @@ splat:
 		break;
 	}
 
-	switch (c = noxread7()) {
+	switch (c = noxrd7()) {
+	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	case ZBIN:
 		Rxframeind = ZBIN;
 		c =  zrbhdr(hdr);
+		break;
+	case ZBIN32:
+		Rxframeind = ZBIN32;
+		c =  zrbhdr32(hdr);
 		break;
 	case ZHEX:
 		Rxframeind = ZHEX;
@@ -284,58 +400,89 @@ zrbhdr(hdr)
 register char *hdr;
 {
 	register c, n;
-	register unsigned short oldcrc;
+	register unsigned short crc;
 
 	if ((c = zdlread()) & ~0377)
 		return c;
 	Rxtype = c;
-	oldcrc = updcrc(c, 0);
+	crc = updcrc(c, 0);
 
 	for (n=4; --n >= 0;) {
 		if ((c = zdlread()) & ~0377)
 			return c;
-		oldcrc = updcrc(c, oldcrc);
+		crc = updcrc(c, crc);
 		*hdr++ = c;
 	}
 	if ((c = zdlread()) & ~0377)
 		return c;
-	oldcrc = updcrc(c, oldcrc);
+	crc = updcrc(c, crc);
 	if ((c = zdlread()) & ~0377)
 		return c;
-	oldcrc = updcrc(c, oldcrc);
-	if (oldcrc & 0xFFFF) {
+	crc = updcrc(c, crc);
+	if (crc & 0xFFFF) {
 		zperr("Bad Header CRC"); return ERROR;
 	}
 	Zmodem = 1;
 	return Rxtype;
 }
 
+/* Receive a binary style header (type and position) with 32 bit FCS */
+zrbhdr32(hdr)
+register char *hdr;
+{
+	register c, n;
+	register unsigned long crc;
+
+	if ((c = zdlread()) & ~0377)
+		return c;
+	Rxtype = c;
+	crc = 0xFFFFFFFF; crc = UPDC32(c, crc);
+
+	for (n=4; --n >= 0;) {
+		if ((c = zdlread()) & ~0377)
+			return c;
+		crc = UPDC32(c, crc);
+		*hdr++ = c;
+	}
+	for (n=4; --n >= 0;) {
+		if ((c = zdlread()) & ~0377)
+			return c;
+		crc = UPDC32(c, crc);
+	}
+	if (crc != 0xDEBB20E3) {
+		zperr("Bad Header CRC %lX", crc); return ERROR;
+	}
+	Zmodem = 1;
+	return Rxtype;
+}
+
+
 /* Receive a hex style header (type and position) */
 zrhhdr(hdr)
 char *hdr;
 {
 	register c;
-	register unsigned short oldcrc;
+	register unsigned short crc;
 	register n;
 
 	if ((c = zgethex()) < 0)
 		return c;
 	Rxtype = c;
-	oldcrc = updcrc(c, 0);
+	crc = updcrc(c, 0);
 
 	for (n=4; --n >= 0;) {
 		if ((c = zgethex()) < 0)
 			return c;
-		oldcrc = updcrc(c, oldcrc);
+		crc = updcrc(c, crc);
 		*hdr++ = c;
 	}
 	if ((c = zgethex()) < 0)
 		return c;
-	oldcrc = updcrc(c, oldcrc);
+	crc = updcrc(c, crc);
 	if ((c = zgethex()) < 0)
 		return c;
-	oldcrc = updcrc(c, oldcrc);
-	if (oldcrc & 0xFFFF) {
+	crc = updcrc(c, crc);
+	if (crc & 0xFFFF) {
 		zperr("Bad Header CRC"); return ERROR;
 	}
 	if (readline(1) == '\r')	/* Throw away possible cr/lf */
@@ -414,14 +561,14 @@ zgeth1()
 {
 	register c, n;
 
-	if ((c = noxread7()) < 0)
+	if ((c = noxrd7()) < 0)
 		return c;
 	n = c - '0';
 	if (n > 9)
 		n -= ('a' - ':');
 	if (n & ~0xF)
 		return ERROR;
-	if ((c = noxread7()) < 0)
+	if ((c = noxrd7()) < 0)
 		return c;
 	c -= '0';
 	if (c > 9)
@@ -475,7 +622,7 @@ zdlread()
  * Read a character from the modem line with timeout.
  *  Eat parity, XON and XOFF characters.
  */
-noxread7()
+noxrd7()
 {
 	register c;
 
