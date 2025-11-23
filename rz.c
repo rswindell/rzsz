@@ -1,15 +1,15 @@
-#define VERSION "1.18 02-18-87"
+#define VERSION "1.21 05-16-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc  -K -O -i % -o rz; size rz
- *  (above for Xenix SYS V 2.2 delta+)
+/*% cc -LARGE -Ox -K -i % -o rz; size rz;
+<-xtx-*> cc386 -Ox rz.c -o $B/rz;  size386 $B/rz
  *
  * rz.c By Chuck Forsberg
  *
  *	cc -O rz.c -o rz		USG (3.0) Unix
  * 	cc -O -DV7  rz.c -o rz		Unix V7, BSD 2.8 - 4.3
  *
- *	ln rz rb			For either system
+ *	ln rz rb;  ln rz rx			For either system
  *
  *	ln rz /usr/bin/rzrmail		For remote mail.  Make this the
  *					login shell. rzrmail then calls
@@ -139,6 +139,8 @@ char Lzmanag;		/* Local file management request */
 char zconv;		/* ZMODEM file conversion request */
 char zmanag;		/* ZMODEM file management request */
 char ztrans;		/* ZMODEM file transport request */
+int Zctlesc;		/* Encode control characters */
+int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 
 jmp_buf tohere;		/* For the interrupt on RX timeout */
 
@@ -196,6 +198,8 @@ char *argv[];
 					Crcflg=TRUE; break;
 				case 'D':
 					Nflag = TRUE; break;
+				case 'e':
+					Zctlesc = 1; break;
 				case 'p':
 					Lzmanag = ZMPROT;  break;
 				case 'q':
@@ -207,6 +211,12 @@ char *argv[];
 					Rxtimeout = atoi(*++argv);
 					if (Rxtimeout<10 || Rxtimeout>1000)
 						usage();
+					break;
+				case 'w':
+					if (--argc < 1) {
+						usage();
+					}
+					Zrwindow = atoi(*++argv);
 					break;
 				case 'u':
 					MakeLCPathname=FALSE; break;
@@ -245,6 +255,7 @@ char *argv[];
 	else {
 		signal(SIGINT, bibi); signal(SIGKILL, bibi);
 	}
+	signal(SIGTERM, bibi);
 	if (wcreceive(npats, patts)==ERROR) {
 		exitcode=0200;
 		canit();
@@ -260,14 +271,15 @@ usage()
 {
 	fprintf(stderr,"%s %s for %s by Chuck Forsberg\n",
 	  Progname, VERSION, OS);
-	fprintf(stderr,"Usage:	rz [-1abuv]		(ZMODEM Batch)\n");
+	fprintf(stderr,"Usage:	rz [-1abeuv]		(ZMODEM Batch)\n");
 	fprintf(stderr,"or	rb [-1abuv]		(YMODEM Batch)\n");
-	fprintf(stderr,"or	rz [-1abcv] file	(XMODEM or XMODEM-1k)\n");
+	fprintf(stderr,"or	rx [-1abcv] file	(XMODEM or XMODEM-1k)\n");
 	fprintf(stderr,"	  -1 For cu(1): Use fd 1 for input\n");
 	fprintf(stderr,"	  -a ASCII transfer (strip CR)\n");
 	fprintf(stderr,"	  -b Binary transfer for all files\n");
-	fprintf(stderr,"	  -v Verbose more v's give more info\n");
 	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
+	fprintf(stderr,"	  -e Ignore control characters	(ZMODEM)\n");
+	fprintf(stderr,"	  -v Verbose more v's give more info\n");
 	exit(1);
 }
 /*
@@ -883,6 +895,8 @@ tryz()
 #else
 		Txhdr[ZF0] = CANFC32|CANFDX|CANOVIO;
 #endif
+		if (Zctlesc)
+			Txhdr[ZF0] |= TESCCTL;
 		zshhdr(tryzhdrtype, Txhdr);
 again:
 		switch (zgethdr(Rxhdr, 0)) {
@@ -904,6 +918,7 @@ again:
 			zshhdr(ZNAK, Txhdr);
 			goto again;
 		case ZSINIT:
+			Zctlesc = TESCCTL & Rxhdr[ZF0];
 			if (zrdata(Attn, ZATTNLEN) == GOTCRCW) {
 				zshhdr(ZACK, Txhdr);
 				goto again;
@@ -1134,22 +1149,24 @@ ackbibi()
 	vfile("ackbibi:");
 	Readnum = 1;
 	stohdr(0L);
-	for (n=4; --n>=0; ) {
+	for (n=3; --n>=0; ) {
+		purgeline();
 		zshhdr(ZFIN, Txhdr);
-		for (;;) {
-			switch (readline(100)) {
-			case 'O':
-				readline(1);	/* Discard 2nd 'O' */
-				/* ***** FALL THRU TO ***** */
-			case TIMEOUT:
-				vfile("ackbibi complete");
-				return;
-			default:
-				break;
-			}
+		switch (readline(100)) {
+		case 'O':
+			readline(1);	/* Discard 2nd 'O' */
+			vfile("ackbibi complete");
+			return;
+		case RCDO:
+			return;
+		case TIMEOUT:
+		default:
+			break;
 		}
 	}
 }
+
+
 
 /*
  * Local console output simulation
@@ -1181,4 +1198,4 @@ register char *s;
 	mode(0);
 	execl("/bin/sh", "sh", "-c", s);
 }
-
+/* End of rz.c */

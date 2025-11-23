@@ -1,7 +1,7 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    01-19-87  Chuck Forsberg Omen Technology Inc
+ *    04-16-87  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -62,14 +62,14 @@ register char *hdr;
 
 	xsendline(ZPAD); xsendline(ZDLE);
 
-	if (Txfcs32)
+	if (Crc32t=Txfcs32)
 		zsbh32(hdr, type);
 	else {
 		xsendline(ZBIN); zsendline(type); crc = updcrc(type, 0);
 
-		for (n=4; --n >= 0;) {
+		for (n=4; --n >= 0; ++hdr) {
 			zsendline(*hdr);
-			crc = updcrc((0377& *hdr++), crc);
+			crc = updcrc((0377& *hdr), crc);
 		}
 		crc = updcrc(0,updcrc(0,crc));
 		zsendline(crc>>8);
@@ -85,18 +85,19 @@ zsbh32(hdr, type)
 register char *hdr;
 {
 	register n;
-	register unsigned long crc;
+	register long crc;
 
 	xsendline(ZBIN32);  zsendline(type);
-	crc = 0xFFFFFFFF; crc = UPDC32(type, crc);
+	crc = 0xFFFFFFFFL; crc = UPDC32(type, crc);
 
-	for (n=4; --n >= 0;) {
+	for (n=4; --n >= 0; ++hdr) {
+		crc = UPDC32((0377 & *hdr), crc);
 		zsendline(*hdr);
-		crc = UPDC32((0377& *hdr++), crc);
 	}
 	crc = ~crc;
 	for (n=4; --n >= 0;) {
-		zsendline(crc);  crc >>= 8;
+		zsendline((int)crc);
+		crc >>= 8;
 	}
 }
 
@@ -110,10 +111,11 @@ register char *hdr;
 	vfile("zshhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
 	sendline(ZPAD); sendline(ZPAD); sendline(ZDLE); sendline(ZHEX);
 	zputhex(type);
+	Crc32t = 0;
 
 	crc = updcrc(type, 0);
-	for (n=4; --n >= 0;) {
-		zputhex(*hdr); crc = updcrc((0377& *hdr++), crc);
+	for (n=4; --n >= 0; ++hdr) {
+		zputhex(*hdr); crc = updcrc((0377 & *hdr), crc);
 	}
 	crc = updcrc(0,updcrc(0,crc));
 	zputhex(crc>>8); zputhex(crc);
@@ -123,7 +125,7 @@ register char *hdr;
 	/*
 	 * Uncork the remote in case a fake XOFF has stopped data flow
 	 */
-	if (type != ZFIN)
+	if (type != ZFIN && type != ZACK)
 		sendline(021);
 	flushmo();
 }
@@ -137,12 +139,12 @@ register char *buf;
 	register unsigned short crc;
 
 	vfile("zsdata: length=%d end=%x", length, frameend);
-	if (Txfcs32)
+	if (Crc32t)
 		zsda32(buf, length, frameend);
 	else {
 		crc = 0;
-		for (;--length >= 0;) {
-			zsendline(*buf); crc = updcrc((0377& *buf++), crc);
+		for (;--length >= 0; ++buf) {
+			zsendline(*buf); crc = updcrc((0377 & *buf), crc);
 		}
 		xsendline(ZDLE); xsendline(frameend);
 		crc = updcrc(frameend, crc);
@@ -158,18 +160,19 @@ register char *buf;
 zsda32(buf, length, frameend)
 register char *buf;
 {
-	register unsigned long crc;
+	register long crc;
 
-	crc = 0xFFFFFFFF;
-	for (;--length >= 0;) {
-		zsendline(*buf); crc = UPDC32((0377& *buf++), crc);
+	crc = 0xFFFFFFFFL;
+	for (;--length >= 0;++buf) {
+		crc = UPDC32((0377 & *buf), crc);
+		zsendline(*buf);
 	}
 	xsendline(ZDLE); xsendline(frameend);
 	crc = UPDC32(frameend, crc);
 
 	crc = ~crc;
 	for (length=4; --length >= 0;) {
-		zsendline(crc);  crc >>= 8;
+		zsendline((int)crc);  crc >>= 8;
 	}
 }
 
@@ -188,7 +191,7 @@ register char *buf;
 		return zrdat32(buf, length);
 
 	crc = Rxcount = 0;
-	for (;;) {
+	for (;; ++buf) {
 		if ((c = zdlread()) & ~0377) {
 crcfoo:
 			switch (c) {
@@ -225,20 +228,20 @@ crcfoo:
 			return ERROR;
 		}
 		++Rxcount;
-		*buf++ = c;
+		*buf = c;
 		crc = updcrc(c, crc);
-		continue;
 	}
 }
+
 zrdat32(buf, length)
 register char *buf;
 {
 	register c;
-	register unsigned long crc;
+	register long crc;
 	register d;
 
-	crc = 0xFFFFFFFF;  Rxcount = 0;
-	for (;;) {
+	crc = 0xFFFFFFFFL;  Rxcount = 0;
+	for (;; ++buf) {
 		if ((c = zdlread()) & ~0377) {
 crcfoo:
 			switch (c) {
@@ -246,7 +249,8 @@ crcfoo:
 			case GOTCRCG:
 			case GOTCRCQ:
 			case GOTCRCW:
-				crc = UPDC32((d=c)&0377, crc);
+				d = c;  c &= 0377;
+				crc = UPDC32(c, crc);
 				if ((c = zdlread()) & ~0377)
 					goto crcfoo;
 				crc = UPDC32(c, crc);
@@ -281,9 +285,8 @@ crcfoo:
 			return ERROR;
 		}
 		++Rxcount;
-		*buf++ = c;
+		*buf = c;
 		crc = UPDC32(c, crc);
-		continue;
 	}
 }
 
@@ -294,7 +297,7 @@ crcfoo:
  *	0:  no display
  *	1:  display printing characters only
  *	2:  display all non ZMODEM characters
- *  On success, set Zmodem to 1 and return type of header.
+ *  On success, set Zmodem to 1, set Rxpos and return type of header.
  *   Otherwise return negative on error
  */
 zgethdr(hdr, eflag)
@@ -302,8 +305,9 @@ char *hdr;
 {
 	register c, n, cancount;
 
-	n = Baudrate;	/* Max characters before start of frame */
+	n = Zrwindow + Baudrate;	/* Max bytes before start of frame */
 	cancount = 5;
+
 again:
 	Rxframeind = Rxtype = 0;
 	switch (c = noxrd7()) {
@@ -350,15 +354,15 @@ splat:
 	case TIMEOUT:
 		goto fifi;
 	case ZBIN:
-		Rxframeind = ZBIN;
+		Rxframeind = ZBIN;  Crc32 = FALSE;
 		c =  zrbhdr(hdr);
 		break;
 	case ZBIN32:
-		Rxframeind = ZBIN32;
+		Crc32 = Rxframeind = ZBIN32;
 		c =  zrbhdr32(hdr);
 		break;
 	case ZHEX:
-		Rxframeind = ZHEX;
+		Rxframeind = ZHEX;  Crc32 = FALSE;
 		c =  zrhhdr(hdr);
 		break;
 	case CAN:
@@ -374,6 +378,7 @@ splat:
 	Rxpos = (Rxpos<<8) + (hdr[ZP1] & 0377);
 	Rxpos = (Rxpos<<8) + (hdr[ZP0] & 0377);
 fifi:
+cancount=c;
 	switch (c) {
 	case GOTCAN:
 		c = ZCAN;
@@ -392,6 +397,8 @@ fifi:
 		else
 			vfile("zgethdr: %d %lx", c, Rxpos);
 	}
+if (cancount != c)
+	zperr("zgethdr c=%d cancount=%d", c, cancount);
 	return c;
 }
 
@@ -407,11 +414,11 @@ register char *hdr;
 	Rxtype = c;
 	crc = updcrc(c, 0);
 
-	for (n=4; --n >= 0;) {
+	for (n=4; --n >= 0; ++hdr) {
 		if ((c = zdlread()) & ~0377)
 			return c;
 		crc = updcrc(c, crc);
-		*hdr++ = c;
+		*hdr = c;
 	}
 	if ((c = zdlread()) & ~0377)
 		return c;
@@ -431,23 +438,32 @@ zrbhdr32(hdr)
 register char *hdr;
 {
 	register c, n;
-	register unsigned long crc;
+	register long crc;
 
 	if ((c = zdlread()) & ~0377)
 		return c;
 	Rxtype = c;
-	crc = 0xFFFFFFFF; crc = UPDC32(c, crc);
+	crc = 0xFFFFFFFFL; crc = UPDC32(c, crc);
+#ifdef DEBUGZ
+	vfile("zrbhdr32 c=%X  crc=%lX", c, crc);
+#endif
 
-	for (n=4; --n >= 0;) {
+	for (n=4; --n >= 0; ++hdr) {
 		if ((c = zdlread()) & ~0377)
 			return c;
 		crc = UPDC32(c, crc);
-		*hdr++ = c;
+		*hdr = c;
+#ifdef DEBUGZ
+		vfile("zrbhdr32 c=%X  crc=%lX", c, crc);
+#endif
 	}
 	for (n=4; --n >= 0;) {
 		if ((c = zdlread()) & ~0377)
 			return c;
 		crc = UPDC32(c, crc);
+#ifdef DEBUGZ
+		vfile("zrbhdr32 c=%X  crc=%lX", c, crc);
+#endif
 	}
 	if (crc != 0xDEBB20E3) {
 		zperr("Bad Header CRC %lX", crc); return ERROR;
@@ -470,11 +486,11 @@ char *hdr;
 	Rxtype = c;
 	crc = updcrc(c, 0);
 
-	for (n=4; --n >= 0;) {
+	for (n=4; --n >= 0; ++hdr) {
 		if ((c = zgethex()) < 0)
 			return c;
 		crc = updcrc(c, crc);
-		*hdr++ = c;
+		*hdr = c;
 	}
 	if ((c = zgethex()) < 0)
 		return c;
@@ -497,7 +513,7 @@ register c;
 	static char	digits[]	= "0123456789abcdef";
 
 	if (Verbose>4)
-		vfile("zputhex: %x", c);
+		vfile("zputhex: %02X", c);
 	sendline(digits[(c&0xF0)>>4]);
 	sendline(digits[(c)&0xF]);
 }
@@ -511,14 +527,14 @@ register c;
 {
 	static lastsent;
 
-	switch (c & 0377) {
+	switch (c &= 0377) {
 	case ZDLE:
 		xsendline(ZDLE);
 		xsendline (lastsent = (c ^= 0100));
 		break;
 	case 015:
 	case 0215:
-		if ((lastsent & 0177) != '@')
+		if (!Zctlesc && (lastsent & 0177) != '@')
 			goto sendit;
 	/* **** FALL THRU TO **** */
 	case 020:
@@ -527,22 +543,16 @@ register c;
 	case 0220:
 	case 0221:
 	case 0223:
-#ifdef ZKER
-		if (Zctlesc<0)
-			goto sendit;
-#endif
 		xsendline(ZDLE);
 		c ^= 0100;
 sendit:
 		xsendline(lastsent = c);
 		break;
 	default:
-#ifdef ZKER
-		if (Zctlesc>0 && ! (c & 0140)) {
+		if (Zctlesc && ! (c & 0140)) {
 			xsendline(ZDLE);
 			c ^= 0100;
 		}
-#endif
 		xsendline(lastsent = c);
 	}
 }
@@ -554,7 +564,7 @@ zgethex()
 
 	c = zgeth1();
 	if (Verbose>4)
-		vfile("zgethex: %x", c);
+		vfile("zgethex: %02X", c);
 	return c;
 }
 zgeth1()
@@ -587,8 +597,24 @@ zdlread()
 {
 	register c;
 
-	if ((c = readline(Rxtimeout)) != ZDLE)
+again:
+	switch (c = readline(Rxtimeout)) {
+	case ZDLE:
+		break;
+	case 020:
+	case 021:
+	case 023:
+	case 0220:
+	case 0221:
+	case 0223:
+		goto again;
+	default:
+		if (Zctlesc && !(c & 0140)) {
+			goto again;
+		}
 		return c;
+	}
+again2:
 	if ((c = readline(Rxtimeout)) < 0)
 		return c;
 	if (c == CAN && (c = readline(Rxtimeout)) < 0)
@@ -609,7 +635,17 @@ zdlread()
 		return 0177;
 	case ZRUB1:
 		return 0377;
+	case 020:
+	case 021:
+	case 023:
+	case 0220:
+	case 0221:
+	case 0223:
+		goto again2;
 	default:
+		if (Zctlesc && ! (c & 0140)) {
+			goto again2;
+		}
 		if ((c & 0140) ==  0100)
 			return (c ^ 0100);
 		break;
@@ -634,6 +670,11 @@ noxrd7()
 		case XOFF:
 			continue;
 		default:
+			if (Zctlesc && !(c & 0140))
+				continue;
+		case '\r':
+		case '\n':
+		case ZDLE:
 			return c;
 		}
 	}
@@ -663,3 +704,4 @@ register char *hdr;
 	return l;
 }
 
+/* End of zm.c */

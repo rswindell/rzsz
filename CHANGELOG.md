@@ -1,5 +1,11 @@
 # Changelog
 
+## [RX 1.21 / SZ 1.31] - 1987-05-29
+
+  - Add XMODEM receive (rx) support
+  - Add option to control ZMODEM window size
+  - Add option to ignore control characters
+
 ## [RZ 1.18 / SZ 1.26] - 1987-03-10
 
 This release was located in a tar file:

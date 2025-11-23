@@ -1,7 +1,7 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
- *    01-15-87  Chuck Forsberg Omen Technology Inc
+ *    05-23-87  Chuck Forsberg Omen Technology Inc
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
@@ -66,27 +66,38 @@
 #define CANCRY	010	/* Receiver can decrypt */
 #define CANLZW	020	/* Receiver can uncompress */
 #define CANFC32	040	/* Receiver can use 32 bit Frame Check */
+#define ESCCTL 0100	/* Receiver expects ctl chars to be escaped */
+#define ESC8   0200	/* Receiver expects 8th bit to be escaped */
 
 /* Parameters for ZSINIT frame */
 #define ZATTNLEN 32	/* Max length of attention string */
+/* Bit Masks for ZSINIT flags byte ZF0 */
+#define TESCCTL 0100	/* Transmitter expects ctl chars to be escaped */
+#define TESC8   0200	/* Transmitter expects 8th bit to be escaped */
 
 /* Parameters for ZFILE frame */
 /* Conversion options one of these in ZF0 */
 #define ZCBIN	1	/* Binary transfer - inhibit conversion */
 #define ZCNL	2	/* Convert NL to local end of line convention */
 #define ZCRESUM	3	/* Resume interrupted file transfer */
-/* Management options, one of these in ZF1 */
-#define ZMNEW	1	/* Transfer if source newer or longer */
+/* Management include options, one of these ored in ZF1 */
+#define ZMSKNOLOC	0200	/* Skip file if not present at rx */
+/* Management options, one of these ored in ZF1 */
+#define ZMMASK	037	/* Mask for the choices below */
+#define ZMNEWL	1	/* Transfer if source newer or longer */
 #define ZMCRC	2	/* Transfer if different file CRC or length */
 #define ZMAPND	3	/* Append contents to existing file (if any) */
 #define ZMCLOB	4	/* Replace existing file */
-#define ZMSPARS	5	/* Encoding for sparse file */
+#define ZMNEW	5	/* Transfer if source newer */
+	/* Number 5 is alive ... */
 #define ZMDIFF	6	/* Transfer if dates or lengths different */
 #define ZMPROT	7	/* Protect destination file */
 /* Transport options, one of these in ZF2 */
 #define ZTLZW	1	/* Lempel-Ziv compression */
 #define ZTCRYPT	2	/* Encryption */
 #define ZTRLE	3	/* Run Length encoding */
+/* Extended options for ZF3, bit encoded */
+#define ZXSPARS	64	/* Encoding for sparse file operations */
 
 /* Parameters for ZCOMMAND frame ZF0 (otherwise 0) */
 #define ZCACK1	1	/* Acknowledge, then do command */
@@ -97,12 +108,15 @@ long rclhdr();
 int Rxframeind;		/* ZBIN ZBIN32, or ZHEX type of frame received */
 int Rxtype;		/* Type of header received */
 int Rxcount;		/* Count of data bytes received */
+extern Zrwindow;	/* RX window size (controls garbage count) */
 extern Rxtimeout;	/* Tenths of seconds to wait for something */
 char Rxhdr[4];		/* Received header */
 char Txhdr[4];		/* Transmitted header */
 long Rxpos;		/* Received file position */
 long Txpos;		/* Transmitted file position */
 int Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
+int Crc32t;		/* Display flag indicating 32 bit CRC being sent */
+int Crc32;		/* Display flag indicating 32 bit CRC being received */
 int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
 char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 
