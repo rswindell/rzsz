@@ -1,6 +1,6 @@
 # Changelog
 
-## [RZ 1.07 / SZ 1.08] - 1986-07-18
+## [RZ 1.06 / SZ 1.08] - 1986-07-18
 
 This appears to be the third public release of ZMODEM by Chuck Forsberg.
 Chuck's corresponding USENET announcement follows:
