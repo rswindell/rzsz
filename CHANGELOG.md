@@ -67,9 +67,8 @@ The contents of the associated tar file follow:
 ```
 You may notice the shell script file `gz` which I elected to exclude from
 the repo.  It appear it was used to send a command to a remote rz application
-to initiate a send (`sz` invocation) of a specified filename.  I speculate it
-was short for "get ZMODEM".
-```
+to initiate a send (`sz` invocation) of a specified filename.  I speculate the
+name was short for "get ZMODEM".
 
 ### Attribution
 
