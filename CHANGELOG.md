@@ -1,5 +1,13 @@
 # Changelog
 
+## [RZ 1.06 / SZ 1.13] - 1986-08-16
+
+SZ changes only:
+
+  - Add command-line option to control receive timeout duration
+  - Add command-line option to enable encoding of all tx'd control characters
+  - Handle (ignore) receipt of ZACK
+
 ## [RZ 1.06 / SZ 1.08] - 1986-07-18
 
 This appears to be the third public release of ZMODEM by Chuck Forsberg.
