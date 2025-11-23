@@ -1,5 +1,5 @@
 '\" Revision Level 
-'\" Last Delta     10-22-86
+'\" Last Delta     01-15-87
 .TH RZ 1 OMEN
 .SH NAME
 rb, rz \- XMODEM, YMODEM, ZMODEM (Batch) file receive
@@ -233,12 +233,16 @@ The Pro-YAM
 .B "zmodem l"
 numeric parameter may be set to a value between 64 and 1024 to limit the
 burst length ("zmodem pl100").
+
+32 bit CRC code courtesy Gary S. Brown.
 .SH BUGS
 Pathnames are restricted to 127 characters.
 In XMODEM single file mode, the pathname given on the command line
 is still processed as described above.
 The ASCII option\'s CR/LF to NL translation merely deletes CR\'s;
 undos(omen) performs a more intelligent translation.
+
+Some versions of Unix cu(1) do not operate properly with this program.
 .SH "VMS VERSION"
 Some of the #includes with file names enclosed with angle brackets <>
 may need to have the angle brackets changed to "", or vice versa.

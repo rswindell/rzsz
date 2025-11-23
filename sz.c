@@ -1,4 +1,4 @@
-#define VERSION "sz 1.19 11-14-86"
+#define VERSION "sz 1.14 09-06-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -O -K -DCRCTABLE -DREADCHECK sz.c -lx -o sz; size sz
@@ -6,11 +6,7 @@
  * sz.c By Chuck Forsberg
  *
  *	cc -O sz.c -o sz		USG (SYS III/V) Unix
- *	cc -O -DSVR2 sz.c -o sz		Sys V Release 2 with non-blocking input
- *					Define to allow reverse channel checking
  * 	cc -O -DV7  sz.c -o sz		Unix Version 7, 2.8 - 4.3 BSD
- *
- *	ln sz sb			**** All versions ****
  *
  *		define CRCTABLE to use table driven CRC
  *
@@ -158,8 +154,6 @@ flushmo()
 
 #define ZKER
 int Zctlesc;	/* Encode control characters */
-int Nozmodem = 0;	/* If invoked as "sb" */
-char *Progname = "sz";
 #include "zm.c"
 
 
@@ -172,9 +166,8 @@ char *argv[];
 	char **patts;
 	static char xXbuf[BUFSIZ];
 
-	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
+	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rsh")))
 		Restricted=TRUE;
-	chkinvok(argv[0]);
 
 	Rxtimeout = 600;
 	npats=0;
@@ -311,24 +304,20 @@ char *argv[];
 		signal(SIGQUIT, SIG_IGN);
 
 	if ( !Modem) {
-		if (!Nozmodem) {
-			printf("rz\r");  fflush(stdout);
-		}
+		printf("rz\r");  fflush(stdout);
 		if (!Command && !Quiet && Verbose != 1) {
-			fprintf(stderr, "%s: %d file%s requested:\r\n",
-			 Progname, npats, npats>1?"s":"");
+			fprintf(stderr, "sz: %d file%s requested:\r\n",
+			 npats, npats>1?"s":"");
 			for ( agcnt=npats, agcv=patts; --agcnt>=0; ) {
 				fprintf(stderr, "%s ", *agcv++);
 			}
 			fprintf(stderr, "\r\n");
 			printf("\r\n\bSending in Batch Mode\r\n");
 		}
-		if (!Nozmodem) {
-			stohdr(0L);
-			if (Command)
-				Txhdr[ZF0] = ZCOMMAND;
-			zshhdr(ZRQINIT, Txhdr);
-		}
+		stohdr(0L);
+		if (Command)
+			Txhdr[ZF0] = ZCOMMAND;
+		zshhdr(ZRQINIT, Txhdr);
 	}
 	fflush(stdout);
 
@@ -366,11 +355,9 @@ char *argp[];
 		if (1) {
 			Command = TRUE;
 			Cmdstr = "echo \"sz: Can't open any requested files\"";
-			if (getnak()) {
+			if (getzrxinit()) {
 				Exitcode=0200; canit();
 			}
-			if (!Zmodem)
-				canit();
 			else if (zsendcmd(Cmdstr, 1+strlen(Cmdstr))) {
 				Exitcode=0200; canit();
 			}
@@ -851,46 +838,38 @@ register char *s,*t;
 	return NULL;
 }
 
-char *babble[] = {
-	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
-	"	(Y) = Option applies to YMODEM only",
-	"	(Z) = Option applies to ZMODEM only",
-	"Usage:	sz [-12+adefkLlNnquvXy] [-] file ...",
-	"	sz [-1eqv] -c COMMAND",
-	"	1 Use stdout for modem input",
-#ifdef CSTOPB
-	"	2 Use 2 stop bits",
-#endif
-	"	+ Append to existing destination file (Z)",
-	"	a (ASCII) change NL to CR/LF",
-	"	c send COMMAND (Z)",
-	"	d Change '.' to '/' in pathnames (Y/Z)",
-	"	e Escape all control characters (Z)",
-	"	f send Full pathname (Y/Z)",
-	"	i send COMMAND, ack Immediately (Z)",
-	"	k Send 1024 byte packets (Y)",
-	"	L N Limit packet length to N bytes (Z)",
-	"	l N Limit frame length to N bytes (l>=L) (Z)",
-	"	n send file if source Newer or longer (Z)",
-	"	N send file if source different length or date (Z)",
-	"	p Protect existing destination file (Z)",
-	"	r Resume/Recover interrupted file transfer (Z)",
-	"	q Quiet (no progress reports)",
-	"	u Unlink file after transmission",
-	"	v Verbose - debugging information",
-	"	X XMODEM protocol - send no pathnames",
-	"	y Yes, overwrite existing file (Z)",
-	"- as pathname sends standard input as sPID.sz or environment ONAME",
-	""
-};
-
 usage()
 {
-	char **pp;
-
-	for (pp=babble; **pp; ++pp)
-		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr, "%s for %s by Chuck Forsberg  ", VERSION, OS);
+	fprintf(stderr,"\nSend file(s) with ZMODEM/YMODEM/XMODEM Protocol\n");
+	fprintf(stderr,"	(Y) = Option applies to YMODEM only\n");
+	fprintf(stderr,"	(Z) = Option applies to ZMODEM only\n");
+	fprintf(stderr,"%s for %s by Chuck Forsberg\n", VERSION, OS);
+	fprintf(stderr,"Usage:	sz [-12+adefknquvXy] [-] file ...\n");
+	fprintf(stderr,"	sz [-1eqv] -c COMMAND\n");
+	fprintf(stderr,"	1 Use stdout for modem input\n");
+#ifdef CSTOPB
+	fprintf(stderr,"	2 Use 2 stop bits\n");
+#endif
+	fprintf(stderr,"	+ Append to existing destination file (Z)\n");
+	fprintf(stderr,"	a (ASCII) change NL to CR/LF\n");
+	fprintf(stderr,"	c send COMMAND (Z)\n");
+	fprintf(stderr,"	d Change '.' to '/' in pathnames (Y/Z)\n");
+	fprintf(stderr,"	e Escape control characters (Z)\n");
+	fprintf(stderr,"	f send Full pathname (Y/Z)\n");
+	fprintf(stderr,"	i send COMMAND, ack Immediately (Z)\n");
+	fprintf(stderr,"	k Send 1024 byte packets (Y)\n");
+	fprintf(stderr,"	L N Limit packet length to N bytes (Z)\n");
+	fprintf(stderr,"	l N Limit frame length to N bytes (l>=L) (Z)\n");
+	fprintf(stderr,"	n send file if Newer|longer (Z)\n");
+	fprintf(stderr,"	N send file if different length|date (Z)\n");
+	fprintf(stderr,"	p Protect existing destination file (Z)\n");
+	fprintf(stderr,"	r Resume/Recover interrupted file transfer (Z)\n");
+	fprintf(stderr,"	q Quiet (no progress reports)\n");
+	fprintf(stderr,"	u Unlink file after transmission\n");
+	fprintf(stderr,"	v Verbose - debugging information\n");
+	fprintf(stderr,"	X XMODEM protocol - send no pathnames\n");
+	fprintf(stderr,"	y Yes, overwrite existing file (Z)\n");
+	fprintf(stderr,"- as pathname sends standard input as sPID.sz or environment ONAME\n");
 	exit(1);
 }
 
@@ -915,7 +894,7 @@ getzrxinit()
 			continue;
 		case ZRINIT:
 			Rxflags = 0377 & Rxhdr[ZF0];
-			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
+			Rxbuflen = (0337 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
 			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
 			if ( !Fromcu)
 				signal(SIGINT, SIG_IGN);
@@ -973,8 +952,6 @@ sendzsinit()
 	register c;
 	register errors;
 
-	if (Myattn[0] == '\0')
-		return OK;
 	errors = 0;
 	for (;;) {
 		stohdr(0L);
@@ -1084,11 +1061,7 @@ waitack:
 				tcount += strlen(qbf);
 #ifdef READCHECK
 				while (rdchk(iofd)) {
-#ifdef SVR2
-					switch (checked) {
-#else
 					switch (readline(1)) {
-#endif
 					case CAN:
 					case ZPAD:
 #ifdef TCFLSH
@@ -1138,11 +1111,7 @@ waitack:
 		 */
 		fflush(stdout);
 		while (rdchk(iofd)) {
-#ifdef SVR2
-			switch (checked) {
-#else
 			switch (readline(1)) {
-#endif
 			case CAN:
 			case ZPAD:
 #ifdef TCFLSH
@@ -1287,29 +1256,6 @@ listen:
 			vfile("******** SZ *******");
 			goto listen;
 		}
-	}
-}
-
-/*
- * If called as sb use YMODEM protocol
- */
-chkinvok(s)
-char *s;
-{
-	register char *p;
-
-	p = s;
-	while (*p == '-')
-		s = ++p;
-	while (*p)
-		if (*p++ == '/')
-			s = p;
-	if (*s == 'v') {
-		Verbose=1; ++s;
-	}
-	Progname = s;
-	if (s[0]=='s' && s[1]=='b') {
-		Nozmodem = TRUE; blklen=KSIZE;
 	}
 }
 

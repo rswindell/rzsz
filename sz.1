@@ -1,11 +1,11 @@
 '\" Revision Level 
-'\" Last Delta     10-17-86
+'\" Last Delta     01-15-87
 .TH SZ 1 OMEN
 .SH NAME
 sz \- XMODEM, YMODEM, ZMODEM Batch file Send
 .SH SYNOPSIS
 sz
-.RB [\- +1abdefkLlNnpqTtuvy ]
+.RB [\- +1abdefkLlNnopqTtuvy ]
 .I file ...
 .br
 sz -X
@@ -13,11 +13,11 @@ sz -X
 .I file
 .br
 sz
-.RB [\- 1qtv ]
+.RB [\- 1oqtv ]
 .B "-c COMMAND"
 .br
 sz
-.RB [\- 1qtv ]
+.RB [\- 1oqtv ]
 .B "-i COMMAND"
 .SH DESCRIPTION
 .B Sz
@@ -112,6 +112,7 @@ The third form sends a single COMMAND to the receiver for execution.
 exits with the COMMAND return value.
 If COMMAND includes spaces or characters special to the shell,
 it must be quoted.
+
 
 The fourth form sends a single COMMAND to the receiver for execution.
 .B Sz
@@ -215,6 +216,9 @@ source file is newer or longer than the destination file.
 destination file does not exist.
 Overwrite destination file if
 source file has different length or date.
+.TP
+.B o
+(ZMODEM) Disable automatic selection of 32 bit CRC.
 .TP
 .B p
 (ZMODEM) Protect existing destination files by skipping transfer if the
@@ -391,3 +395,11 @@ sends a ZMODEM command to echo a suitable complaint;
 perhaps it should check for the presence of at least one accessible file before
 getting hot and bothered.
 The test mode leaves a zero length file on the receiving system.
+
+Some high speed modems have a firmware bug that drops characters when the
+direction of high speed transmissson is reversed.
+The environment variable ZNULLS may be used to specify the number of nulls to
+send before a ZDATA frame.
+Values of 101 for a 4.77 mHz PC and 124 for an AT are typical.
+
+Some versions of Unix cu(1) do not operate properly with this program.

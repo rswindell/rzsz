@@ -1,5 +1,67 @@
 # Changelog
 
+## [RZ 1.14 / SZ 1.14] - 1987-01-16 (suspect)
+
+The original [USENET announcement](https://mirrors.nycbug.org/pub/The_Unix_Archive/Unix_Usenet/comp.sources.unix/1987-January/005074.html) of this release by Chuck:
+
+```
+Unix X/Y/ZMODEM programs w/32 bit CRC 1 of 2
+caf at omen.UUCP
+Fri Jan 16 13:08:10 AEST 1987
+
+The reliability of ZMODEM file transfers has been enhanced with the
+addition of a table driven 32 bit CRC.  ZMODEM downloads from Unix to
+PC's are much more efficient than XMODEM or Kermit.  For example, 9600
+baud downloads from a 9 mHz PC-AT Xenix machine to Crosstalk XVI gave
+343 characters per second throughput, Kermit gave 327 characters per
+second, and ZMODEM gives 915 characters per second.  At 19200 baud,
+ZMODEM downloads to a 4.77 mHz PC hard disk attain 1870 characters per
+second throughput.  Note that the 343 cps throughput with Crosstalk was
+with an 8 bit checksum while ZMODEM uses 32 bit CRC for orders of
+magnitude better data reliability.
+
+Chuck Forsberg WA7KGX Author of Pro-YAM communications Tools for PCDOS and Unix
+...!tektronix!reed!omen!caf  Omen Technology Inc "The High Reliability Software"
+  Voice: 503-621-3406  17505-V Northwest Sauvie Island Road Portland OR 97231
+TeleGodzilla BBS: 621-3746 2400/1200  CIS:70007,2304  Genie:CAF  Source:TCE022
+  omen Any ACU 1200 1-503-621-3746 se:--se: link ord: Giznoid in:--in: uucp
+  omen!/usr/spool/uucppublic/FILES lists all uucp-able files, updated hourly
+```
+
+So this release includes a pretty huge improvement: supporting 32-bit CRC for
+better error detection (in addition to 16-bit CRC for backward compatibility).
+Thankfully, the 32-bit CRC algorithm implemented, courtesy of Gary S. Brown,
+was the same ISO/IEEE standard CRC-32 used by Ethernet (IEEE 802.3).
+
+Unfortunately, this article (part 1 of 2) is truncated in all the USENET
+archives where it was located, making the complete SHAR contents (including key
+source files) unrecoverable.
+
+I did locate a gzipped-tar file that contained versions of the source claiming
+to be version 1.14 of both rz and sz:
+```
+-rw-rw-r-- discmaster/discmaster 9800 2025-10-24 15:29 ./zm.c
+-rw-rw-r-- discmaster/discmaster  663 2025-10-24 15:29 ./:AUTHOR
+-rw-rw-r-- discmaster/discmaster 4345 2025-10-24 15:29 ./zmodem.h
+-rw-rw-r-- discmaster/discmaster 48879 2025-10-24 15:29 ./ymodem.doc
+drwxrwxr-x discmaster/discmaster     0 2025-10-24 15:29 ./:BUGS/
+-rw-rw-r-- discmaster/discmaster  1474 2025-10-24 15:29 ./:BUGS/1
+-rw-rw-r-- discmaster/discmaster  1949 2025-10-24 15:29 ./:BUGS/2
+-rw-rw-r-- discmaster/discmaster 26469 2025-10-24 15:29 ./sz.c
+drwxrwxr-x discmaster/discmaster     0 2025-10-24 15:29 ./:UPDATES/
+-rw-rw-r-- discmaster/discmaster 14112 2025-10-24 15:29 ./:UPDATES/rbsb.c
+-rw-rw-r-- discmaster/discmaster    14 2025-10-24 15:29 ./:UPDATES/gz
+-rw-rw-r-- discmaster/discmaster 23972 2025-10-24 15:29 ./:UPDATES/rz.c
+-rw-rw-r-- discmaster/discmaster   389 2025-10-24 15:29 ./:UPDATES/:AUTHOR
+-rw-rw-r-- discmaster/discmaster 10163 2025-10-24 15:29 ./:UPDATES/sz.1
+-rw-rw-r-- discmaster/discmaster  6427 2025-10-24 15:29 ./:UPDATES/rz.1
+```
+
+However, the ZRINIT/ZP0 byte-masking bug mysteriously returns in `sz.c`, the
+SVR2 support vanishes, and other minor changes that were previously made are
+missing but then reappear in subsequent releases, thus making this revision
+suspect.  Caveat emptor.
+
 ## [RZ 1.10 / SZ 1.19] - 1986-11-14
 
   - Support nonblocking I/O in System V, Release 2
@@ -9,8 +71,6 @@
 This release was found only as a SHAR file (`RSSZ1ET2.SH`).  In this example,
 zipped and uploaded to Night Owls BBS.
 ```
-Archive:  ../archive/rzsz_1.10_19.zip
-
         This File was Complements Of Night Owls BBS - Buffalo,New York
            (716)-881-5380 - 1200/2400 -- 24 Hrs - 365 Days
            (716)-881-5688 - 1200/2400/19200 Courier HST Dual

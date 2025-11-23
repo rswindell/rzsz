@@ -1,7 +1,7 @@
-#define VERSION "1.10 11-06-86"
+#define VERSION "1.14 01-15-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -DNFGVMIN -DCRCTABLE -K -O % -o rz; size rz
+/*% cc  -DNFGVMIN -DCRCTABLE -K -O -i % -o rz; size rz
  *
  * rz.c By Chuck Forsberg
  *
@@ -34,6 +34,8 @@
  *  NFGVMIN Added 1-13-85 CAF for PC-AT Xenix systems where c_cc[VMIN]
  *  doesn't seem to work (even though it compiles without error!).
  *
+ *  HOWMANY should be tuned for best performance
+ *
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 #define LOGFILE "/tmp/rzlog"
@@ -50,7 +52,15 @@ FILE *popen();
 #define TRUE 1
 #define ERROR (-1)
 
+/*
+ * Max value for HOWMANY is 255.
+ *   A larger value reduces system overhead but may evoke kernel bugs.
+ *   133 corresponds to a XMODEM/CRC sector
+ */
+#ifndef HOWMANY
 #define HOWMANY 133
+#endif
+
 int Zmodem=0;		/* ZMODEM protocol requested */
 int Nozmodem = 0;	/* If invoked as "rb" */
 unsigned Baudrate;
@@ -100,7 +110,7 @@ int Restricted=0;	/* restricted; no /.. or ../ in filenames */
 /* Sorry, Regulus and some others don't work right in raw mode! */
 int Readnum = 1;	/* Number of bytes to ask for in read() from modem */
 #else
-int Readnum = KSIZE;	/* Number of bytes to ask for in read() from modem */
+int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
 #endif
 
 #define DEFBYTL 2000000000L	/* default rx file size */
@@ -122,7 +132,7 @@ int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
 int Blklen;		/* record length of received packets */
 char secbuf[KSIZE];
-char linbuf[KSIZE];
+char linbuf[HOWMANY];
 int Lleft=0;		/* number of characters in linbuf */
 time_t timep[2];
 char Lzmanag;		/* Local file management request */
@@ -276,6 +286,10 @@ register char *f;
 /*
  * Let's receive something already.
  */
+
+char *rbmsg =
+"%s ready. To begin transfer, type \"%s file ...\" to your modem program\r\n";
+
 wcreceive(argc, argp)
 char **argp;
 {
@@ -284,7 +298,7 @@ char **argp;
 	if (Batch || argc==0) {
 		Crcflg=(Wcsmask==0377);
 		if ( !Quiet)
-			fprintf(stderr, "rz: ready ");
+			fprintf(stderr, rbmsg, Progname, Nozmodem?"sb":"sz");
 		if (c=tryz()) {
 			if (c == ZCOMPL)
 				return OK;
@@ -310,7 +324,7 @@ char **argp;
 
 		strcpy(Pathname, *argp);
 		checkpath(Pathname);
-		fprintf(stderr, "\nrz: ready to receive %s ", Pathname);
+		fprintf(stderr, "\nrz: ready to receive %s\r\n", Pathname);
 		if ((fout=fopen(Pathname, "w")) == NULL)
 			return ERROR;
 		if (wcrx()==ERROR)
@@ -768,7 +782,7 @@ char *s, *p, *u;
 canit()
 {
 	static char canistr[] = {
-	 ZPAD,ZPAD,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
+	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
 	};
 
 	printf(canistr);
@@ -865,15 +879,15 @@ tryz()
 		/* Set buffer length (0) and capability flags */
 		stohdr(0L);
 #ifdef CANBREAK
-		Txhdr[ZF0] = CANFDX|CANOVIO|CANBRK;
+		Txhdr[ZF0] = CANFC32|CANFDX|CANOVIO|CANBRK;
 #else
-		Txhdr[ZF0] = CANFDX|CANOVIO;
+		Txhdr[ZF0] = CANFC32|CANFDX|CANOVIO;
 #endif
 		zshhdr(tryzhdrtype, Txhdr);
 again:
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZRQINIT:
-			goto again;
+			continue;
 		case ZEOF:
 			continue;
 		case TIMEOUT:
@@ -1009,10 +1023,11 @@ nxthdr:
 			zmputs(Attn);
 			continue;
 		case ZDATA:
-			n = 10;
 			if (rclhdr(Rxhdr) != rxbytes) {
-				zmputs(Attn);
-				continue;
+				if ( --n < 0) {
+					return ERROR;
+				}
+				zmputs(Attn);  continue;
 			}
 moredata:
 			switch (c = zrdata(secbuf, KSIZE)) {
@@ -1033,22 +1048,26 @@ moredata:
 				}
 				continue;
 			case GOTCRCW:
+				n = 10;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
 				goto nxthdr;
 			case GOTCRCQ:
+				n = 10;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
 				goto moredata;
 			case GOTCRCG:
+				n = 10;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				goto moredata;
 			case GOTCRCE:
+				n = 10;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				goto nxthdr;

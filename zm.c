@@ -19,7 +19,7 @@ int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 #endif
 
 static char *frametypes[] = {
-	"Carrier Lost",		/* -3 */
+	"CARRIER LOST",		/* -3 */
 	"TIMEOUT",		/* -2 */
 	"ERROR",		/* -1 */
 #define FTOFFSET 3
@@ -198,7 +198,6 @@ char *hdr;
 again:
 	Rxframeind = Rxtype = 0;
 	switch (c = noxread7()) {
-	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	case CAN:
@@ -227,7 +226,6 @@ splat:
 	switch (c = noxread7()) {
 	case ZPAD:
 		goto splat;
-	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	default:
@@ -237,7 +235,6 @@ splat:
 	}
 
 	switch (c = noxread7()) {
-	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	case ZBIN:
