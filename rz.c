@@ -1,7 +1,7 @@
-#define VERSION "1.06 07-16-86"
+#define VERSION "1.08 09-15-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -DNFGVMIN -K -O % -o rz; size rz
+/*% cc -DNFGVMIN -DCRCTABLE -K -O % -o rz; size rz
  *
  * rz.c By Chuck Forsberg
  *
@@ -10,9 +10,11 @@
  *
  *	ln rz rb			For either system
  *
- *	ln rz /usr/bin/rbrmail		For remote mail.  Make this the
- *					login shell. rbrmail then calls
+ *	ln rz /usr/bin/rzrmail		For remote mail.  Make this the
+ *					login shell. rzrmail then calls
  *					rmail(1) to deliver mail.
+ *
+ *		define CRCTABLE to use table driven CRC
  *
  *  Unix is a trademark of Western Electric Company
  *
@@ -66,40 +68,6 @@ long getfree()
 	return(~0L);	/* many free bytes ... */
 }
 
-char *Extensions[] = {
-".A",
-".ARC",
-".CCC",
-".CL",
-".CMD",
-".COM",
-".CRL",
-".DAT",
-".DIR",
-".EXE",
-".O",
-".OBJ",
-".OVL",
-".PAG",
-".REL",
-".SAV",
-".SUB",
-".SWP",
-".SYS",
-".TAR",
-".UTL",
-".a",
-".arc",
-".com",
-".dat",
-".o",
-".obj",
-".ovl",
-".sys",
-".tar",
-""
-};
-
 /* Ward Christensen / CP/M parameters - Don't change these! */
 #define ENQ 005
 #define CAN ('X'&037)
@@ -113,6 +81,7 @@ char *Extensions[] = {
 #define CPMEOF 032
 #define WANTCRC 0103	/* send C not NAK to get crc not checksum */
 #define TIMEOUT (-2)
+#define RCDO (-3)
 #define ERRORMAX 5
 #define RETRYMAX 5
 #define WCEOT (-10)
@@ -150,12 +119,14 @@ int Verbose=0;
 int Quiet=0;		/* overrides logic that would otherwise set verbose */
 int Nflag = 0;		/* Don't really transfer files */
 int Rxbinary=FALSE;	/* receive all files in bin mode */
+int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
 int Blklen;		/* record length of received packets */
 char secbuf[KSIZE];
 char linbuf[KSIZE];
 int Lleft=0;		/* number of characters in linbuf */
 time_t timep[2];
+char Lzmanag;		/* Local file management request */
 char zconv;		/* ZMODEM file conversion request */
 char zmanag;		/* ZMODEM file management request */
 char ztrans;		/* ZMODEM file transport request */
@@ -189,6 +160,7 @@ char *argv[];
 	char *getenv();
 	int exitcode;
 
+	Rxtimeout = 100;
 	setbuf(stderr, NULL);
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rsh")))
 		Restricted=TRUE;
@@ -200,19 +172,32 @@ char *argv[];
 		if (*cp == '-') {
 			while( *++cp) {
 				switch(*cp) {
+				case '+':
+					Lzmanag = ZMAPND; break;
 				case '1':
 					iofd = 1; break;
 				case '7':
 					Wcsmask = 0177;
+				case 'a':
+					Rxascii=TRUE;  break;
 				case 'b':
 					Rxbinary=TRUE; break;
-				case 'k':
 				case 'c':
 					Crcflg=TRUE; break;
 				case 'D':
 					Nflag = TRUE; break;
+				case 'p':
+					Lzmanag = ZMPROT;  break;
 				case 'q':
 					Quiet=TRUE; Verbose=0; break;
+				case 't':
+					if (--argc < 1) {
+						usage();
+					}
+					Rxtimeout = atoi(*++argv);
+					if (Rxtimeout<10 || Rxtimeout>1000)
+						usage();
+					break;
 				case 'u':
 					MakeLCPathname=FALSE; break;
 				case 'v':
@@ -265,12 +250,12 @@ usage()
 {
 	fprintf(stderr,"%s %s for %s by Chuck Forsberg\n",
 	  Progname, VERSION, OS);
-	fprintf(stderr,"Usage:	rz [-1buv]		(ZMODEM Batch)\n");
-	fprintf(stderr,"or	rb [-1buv]		(YMODEM Batch)\n");
-	fprintf(stderr,"or	rz [-1bcv] file		(XMODEM)\n");
+	fprintf(stderr,"Usage:	rz [-1abuv]		(ZMODEM Batch)\n");
+	fprintf(stderr,"or	rb [-1abuv]		(YMODEM Batch)\n");
+	fprintf(stderr,"or	rz [-1abcv] file	(XMODEM or XMODEM-1k)\n");
 	fprintf(stderr,"	  -1 For cu(1): Use fd 1 for input\n");
+	fprintf(stderr,"	  -a ASCII transfer (strip CR)\n");
 	fprintf(stderr,"	  -b Binary transfer for all files\n");
-	fprintf(stderr,"	  -u Allow all UPPER CASE names\n");
 	fprintf(stderr,"	  -v Verbose more v's give more info\n");
 	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
 	exit(1);
@@ -402,20 +387,6 @@ wcrx()
 		sectcurr=wcgetsec(secbuf, (sectnum&0177)?50:130);
 		report(sectcurr);
 		if (sectcurr==(sectnum+1 &Wcsmask)) {
-
-			if (sectnum==0 && !Thisbinary) {
-				p=secbuf;  sectcurr=Blklen;
-				if (*p == 032)	/* A hack for .arc files */
-					goto binbin;
-				for (; *p != 032 && --sectcurr>=0; ++p)
-					if (*p < 07 || (*p & 0200)) {
-binbin:
-						Thisbinary++;
-						if (Verbose)
-							fprintf(stderr, "Changed to BIN\n");
-						break;
-					}
-			}
 			sectnum++;
 			cblklen = Bytesleft>Blklen ? Blklen:Bytesleft;
 			if (putsec(secbuf, cblklen)==ERROR)
@@ -620,18 +591,25 @@ char *name;
 {
 	register char *openmode, *p, **pp;
 
-	/* set default parameters */
-	openmode = "w"; Thisbinary=Rxbinary;
+	/* set default parameters and overrides */
+	openmode = "w";
+	Thisbinary = Rxbinary || !Rxascii;
+	if (Lzmanag)
+		zmanag = Lzmanag;
 
 	/*
 	 *  Process ZMODEM remote file management requests
 	 */
-	if (zconv == ZCNL)	/* Remote ASCII override */
+	if (!Rxbinary && zconv == ZCNL)	/* Remote ASCII override */
 		Thisbinary = 0;
 	if (zconv == ZCBIN)	/* Remote Binary override */
 		++Thisbinary;
 	else if (zmanag == ZMAPND)
 		openmode = "a";
+	/* ZMPROT check for existing file */
+	if (zmanag == ZMPROT && (fout=fopen(name, "r"))) {
+		fclose(fout);  return ERROR;
+	}
 
 	Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
 
@@ -654,20 +632,7 @@ char *name;
 			*p = 0;
 	}
 
-	/* scan for extensions that signify a binary file */
-	if (p=substr(name, "."))
-		for (pp=Extensions; **pp; ++pp)
-			if (strcmp(p, *pp)==0) {
-				Thisbinary=TRUE; break;
-			}
-
-	/* scan for files which should be appended */
-	if ( !Thisbinary
-	  && (substr(name, ".TXT")
-	  || substr(name, ".txt")
-	  || substr(name, ".MSG")))
-		openmode = "a";
-	if (MakeLCPathname && !IsAnyLower(name))
+	if (!Zmodem && MakeLCPathname && !IsAnyLower(name))
 		uncaps(name);
 	if (Topipe) {
 		sprintf(Pathname, "%s %s", Progname+2, name);
@@ -691,27 +656,6 @@ char *name;
 	return OK;
 }
 
-/* Make string s lower case */
-uncaps(s)
-register char *s;
-{
-	for ( ; *s; ++s)
-		if (isupper(*s))
-			*s = tolower(*s);
-}
-
-
-/*
- * IsAnyLower returns TRUE if string s has lower case letters.
- */
-IsAnyLower(s)
-register char *s;
-{
-	for ( ; *s; ++s)
-		if (islower(*s))
-			return TRUE;
-	return FALSE;
-}
 /*
  * Putsec writes the n characters of buf to receive file fout.
  *  If not in binary mode, carriage returns, and all characters
@@ -764,6 +708,26 @@ flushmo() {}
 
 
 
+
+/* make string s lower case */
+uncaps(s)
+register char *s;
+{
+	for ( ; *s; ++s)
+		if (isupper(*s))
+			*s = tolower(*s);
+}
+/*
+ * IsAnyLower returns TRUE if string s has lower case letters.
+ */
+IsAnyLower(s)
+register char *s;
+{
+	for ( ; *s; ++s)
+		if (islower(*s))
+			return TRUE;
+	return FALSE;
+}
 
 /*
  * substr(string, token) searches for token in string s
@@ -895,7 +859,6 @@ tryz()
 
 	if (Nozmodem)		/* Check for "rb" program name */
 		return 0;
-	Rxtimeout = 100;
 
 
 	for (n=Zmodem?10:5; --n>=0; ) {
@@ -1172,7 +1135,7 @@ ackbibi()
  */
 bttyout(c)
 {
-	if (Verbose || fromcu)
+	if (Verbose || fromcu())
 		putc(c, stderr);
 }
 

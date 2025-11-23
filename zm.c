@@ -1,7 +1,7 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    6-09-86  Chuck Forsberg Omen Technology Inc
+ *    8-16-86  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -19,8 +19,10 @@ int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 #endif
 
 static char *frametypes[] = {
-	"TIMEOUT",
-	"ERROR",
+	"CARRIER LOST",		/* -3 */
+	"TIMEOUT",		/* -2 */
+	"ERROR",		/* -1 */
+#define FTOFFSET 3
 	"ZRQINIT",
 	"ZRINIT",
 	"ZSINIT",
@@ -43,6 +45,7 @@ static char *frametypes[] = {
 	"ZSTDERR",
 	"xxxxx"
 #define FRTYPES 22	/* Total number of frame types in this array */
+			/*  not including psuedo negative entries */
 };
 
 /* Send ZMODEM binary header hdr of type type */
@@ -52,7 +55,7 @@ register char *hdr;
 	register n;
 	register unsigned short oldcrc;
 
-	vfile("zsbhdr: %s %lx", frametypes[type+2], rclhdr(hdr));
+	vfile("zsbhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
 	xsendline(ZPAD); xsendline(ZDLE); xsendline(ZBIN);
 
 	zsendline(type); oldcrc = updcrc(type, 0);
@@ -75,7 +78,7 @@ register char *hdr;
 	register n;
 	register unsigned short oldcrc;
 
-	vfile("zshhdr: %s %lx", frametypes[type+2], rclhdr(hdr));
+	vfile("zshhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
 	sendline(ZPAD); sendline(ZPAD); sendline(ZDLE); sendline(ZHEX);
 	zputhex(type);
 
@@ -135,6 +138,7 @@ register char *buf;
 	oldcrc = Rxcount = 0;
 	for (;;) {
 		if ((c = zdlread()) & ~0377) {
+crcfoo:
 			switch (c) {
 			case GOTCRCE:
 			case GOTCRCG:
@@ -142,32 +146,30 @@ register char *buf;
 			case GOTCRCW:
 				oldcrc = updcrc((d=c)&0377, oldcrc);
 				if ((c = zdlread()) & ~0377)
-					goto badcrc;
+					goto crcfoo;
 				oldcrc = updcrc(c, oldcrc);
 				if ((c = zdlread()) & ~0377)
-					goto badcrc;
+					goto crcfoo;
 				oldcrc = updcrc(c, oldcrc);
 				if (oldcrc & 0xFFFF) {
-badcrc:
-					zperr("Bad data packet CRC");
+					zperr("Bad data CRC %x", oldcrc);
 					return ERROR;
 				}
-				vfile("zrdata: Rxcount = %d ret = %x",
-				  Rxcount, d);
+				vfile("zrdata: cnt = %d ret = %x", Rxcount, d);
 				return d;
 			case GOTCAN:
 				zperr("ZMODEM: Sender Canceled");
 				return ZCAN;
 			case TIMEOUT:
-				zperr("ZMODEM data packet TIMEOUT");
+				zperr("ZMODEM data TIMEOUT");
 				return c;
 			default:
-				zperr("ZMODEM bad data packet ret=%x", c);
+				zperr("ZMODEM bad data subpacket ret=%x", c);
 				return c;
 			}
 		}
 		if (--length < 0) {
-			zperr("ZMODEM data packet too long");
+			zperr("ZMODEM data subpacket too long");
 			return ERROR;
 		}
 		++Rxcount;
@@ -264,12 +266,13 @@ fifi:
 	case ZCAN:
 	case ERROR:
 	case TIMEOUT:
-		zperr("ZMODEM: Got %s %s", frametypes[c+2],
+	case RCDO:
+		zperr("ZMODEM: Got %s %s", frametypes[c+FTOFFSET],
 		  (c >= 0) ? "header" : "error");
 	/* **** FALL THRU TO **** */
 	default:
-		if (c >= -2 && c <= FRTYPES)
-			vfile("zgethdr: %s %lx", frametypes[c+2], Rxpos);
+		if (c >= -3 && c <= FRTYPES)
+			vfile("zgethdr: %s %lx", frametypes[c+FTOFFSET], Rxpos);
 		else
 			vfile("zgethdr: %d %lx", c, Rxpos);
 	}
@@ -362,21 +365,37 @@ register c;
 	static lastsent;
 
 	switch (c & 0377) {
+	case ZDLE:
+		xsendline(ZDLE);
+		xsendline (lastsent = (c ^= 0100));
+		break;
 	case 015:
 	case 0215:
 		if ((lastsent & 0177) != '@')
 			goto sendit;
 	/* **** FALL THRU TO **** */
-	case ZDLE:
+	case 020:
 	case 021:
 	case 023:
+	case 0220:
 	case 0221:
 	case 0223:
+#ifdef ZKER
+		if (Zctlesc<0)
+			goto sendit;
+#endif
 		xsendline(ZDLE);
 		c ^= 0100;
-	/* **** FALL THRU TO **** */
 sendit:
+		xsendline(lastsent = c);
+		break;
 	default:
+#ifdef ZKER
+		if (Zctlesc>0 && ! (c & 0140)) {
+			xsendline(ZDLE);
+			c ^= 0100;
+		}
+#endif
 		xsendline(lastsent = c);
 	}
 }

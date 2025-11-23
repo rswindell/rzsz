@@ -1,5 +1,5 @@
 /*% shar zmodem.h zm.c sz.c>/tmp/rzsz1.sh;shar rz.c rbsb.c rz.1 sz.1 gz>/tmp/rzsz2.sh
- * -rev 07-17-86
+ * -rev 08-17-86
  * mode function and most of the rest of the system dependent
  * stuff for rb.c and sb.c   This file is #included so the includer
  * can set parameters such as HOWMANY.  See the main file (rz.c/sz.c)
@@ -101,9 +101,6 @@ mode(n)
 		tty.c_lflag = ISIG;
 #endif
 
-#ifndef DEBUG
-		tty.c_cc[VQUIT] = -1;	/* Quit char */
-#endif
 		tty.c_cc[VINTR] = Zmodem ? 03:030;	/* Interrupt char */
 		tty.c_cc[VMIN] = 1;
 
@@ -218,6 +215,7 @@ rdchk(f)
 }
 #endif
 
+#ifdef CRCTABLE
 /* crctab calculated by Mark G. Mendel, Network Systems Corporation */
 static unsigned short crctab[256] = {
     0x0000,  0x1021,  0x2042,  0x3063,  0x4084,  0x50a5,  0x60c6,  0x70e7,
@@ -267,4 +265,33 @@ static unsigned short crctab[256] = {
  */
 
 #define updcrc(cp, crc) ( crctab[((crc >> 8) & 255)] ^ (crc << 8) ^ cp)
+
+#else
+
+unsigned short updcrc();
+
+/* update CRC */
+unsigned short
+updcrc(c, crc)
+register c;
+register unsigned crc;
+{
+	register count;
+
+	for (count=8; --count>=0;) {
+		if (crc & 0x8000) {
+			crc <<= 1;
+			crc += (((c<<=1) & 0400)  !=  0);
+			crc ^= 0x1021;
+		}
+		else {
+			crc <<= 1;
+			crc += (((c<<=1) & 0400)  !=  0);
+		}
+	}
+	return crc;	
+}
+#endif
+
+/* End of rbsb.c */
 

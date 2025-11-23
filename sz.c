@@ -1,4 +1,4 @@
-#define VERSION "sz 1.13 08-16-86"
+#define VERSION "sz 1.14 09-06-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -O -K -DCRCTABLE -DREADCHECK sz.c -lx -o sz; size sz
@@ -77,6 +77,7 @@ FILE *in;
 #define WANTCRC 0103	/* send C not NAK to get crc not checksum */
 #define WANTG 0107	/* Send G not NAK to get nonstop batch xmsn */
 #define TIMEOUT (-2)
+#define RCDO (-3)
 #define RETRYMAX 10
 #define SECSIZ 128	/* cp/m's Magic Number record size */
 #define KSIZE 1024
@@ -240,6 +241,8 @@ char *argv[];
 					Lzmanag = ZMDIFF;  break;
 				case 'n':
 					Lzmanag = ZMNEW;  break;
+				case 'p':
+					Lzmanag = ZMPROT;  break;
 				case 'r':
 					Lzconv = ZCRESUM;
 				case 'q':
@@ -859,6 +862,7 @@ usage()
 	fprintf(stderr,"	l N Limit frame length to N bytes (l>=L) (Z)\n");
 	fprintf(stderr,"	n send file if Newer|longer (Z)\n");
 	fprintf(stderr,"	N send file if different length|date (Z)\n");
+	fprintf(stderr,"	p Protect existing destination file (Z)\n");
 	fprintf(stderr,"	r Resume/Recover interrupted file transfer (Z)\n");
 	fprintf(stderr,"	q Quiet (no progress reports)\n");
 	fprintf(stderr,"	u Unlink file after transmission\n");

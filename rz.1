@@ -1,18 +1,21 @@
 '\" Revision Level 
-'\" Last Delta     05-19-86
+'\" Last Delta     09-15-86
 .TH RZ 1 OMEN
 .SH NAME
 rb, rz \- XMODEM, YMODEM, ZMODEM (Batch) file receive
 .SH SYNOPSIS
 .B rz
-.RB [\- "\ 1bquv" ]
+.RB [\- "\ +1abpqtuv" ]
 .br
 .B rb
-.RB [\- "\ 1bquv" ]
+.RB [\- "\ +1abqtuv" ]
 .br
 .B rz
-.RB [\- "\ 1bcquv" ]
+.RB [\- "\ 1abcqtuv" ]
 .I file
+.br
+.B gz
+.I "file ..."
 .br
 .RB [ \- ][ v ] rzCOMMAND
 .SH DESCRIPTION
@@ -24,8 +27,8 @@ and other operating systems.
 
 The first form of
 .B rz
-(Receive Batch)
-receives files with ZMODEM batch protocol.
+(Receive ZMODEM)
+receives files with the ZMODEM batch protocol.
 If the sending program does not support ZMODEM,
 .B rz
 steps down to YMODEM protocol
@@ -33,54 +36,16 @@ after 50 seconds.
 This delay can be eliminated by calling the program as
 .I rb .
 
-.B Rb
+When receiving with XMODEM or YMODEM,
+.B Rz
 accepts either standard 128 byte sectors or
 1024 byte sectors
 (YAM
 .B -k
 option).
-The user should determine experimentally
-the conditions under which use of 1k blocks
-actually improves throughput without causing
-problems.
-
-Normally, the file contents are converted to
-.SM Unix
-conventions by stripping carriage returns and all characters
-beginning with Control Z (CP/M end of file).
-If the raw pathname ends in
-".A",
-".ARC",
-".CCC",
-".CL",
-".CMD",
-".COM",
-".CRL",
-".DAT",
-".DIR",
-".EXE",
-".O",
-".OBJ",
-".OVL",
-".PAG",
-".REL",
-".SAV",
-".SUB",
-".SWP",
-".SYS",
-".TAR",
-".UTL",
-".a",
-".o",
-".tar",
-or if the first packet contains
-data that suggest a binary file
-(parity bits or characters in the range 000 to 006 before the first ^Z),
-or if the file mode is transmitted and the 0100000
-bit is set, that file will be received in binary mode anyway.
-Otherwise,
-if the raw pathname ends in .MSG, or .TXT, an existing file will
-be appended to rather than replaced.
+The user should determine when
+the longer block length
+actually improves throughput without causing problems.
 
 If extended file information (file length, etc.)
 is received,
@@ -94,7 +59,7 @@ If no extended file information is received,
 slashes in the pathname are changed to underscore,
 and any trailing period in the pathname is eliminated.
 This conversion is useful for files received from CP/M systems.
-Normally, each file name is converted to lower case
+With YMODEM, each file name is converted to lower case
 unless it contains one or more lower case letters.
 
 
@@ -104,6 +69,17 @@ receives a single
 .I file
 with XMODEM protocol.
 The user must supply the file name to both sending and receiving programs.
+
+.B Gz
+is a shell script which calls
+.I sz
+to command a Pro-YAM or compatible program to transmit the specified files.
+Pathnames used with
+.B gz
+must be escaped if they have special significance to the Unix shell.
+.br
+EXAMPLE:
+gz "*.c D:*.h"
 
 
 The third form of
@@ -137,7 +113,7 @@ COMMAND as login sets SHELL=rsh which disallows absolute
 pathnames.
 If invoked with a leading ``v'',
 .B rz
-will report progress to LOGFILE.
+will report progress to /tmp/rzlog.
 The following entry works for
 .SM Unix
 3.0:
@@ -177,22 +153,35 @@ to be used with the
 ~$
 command.
 .TP
+.B a
+Convert files to
+.SM Unix
+conventions by stripping carriage returns and all characters
+beginning with the first Control Z (CP/M end of file).
+.TP
 .B b
-Transfer all files in binary
+Binary
 (tell it like it is)
-mode.
-This option disables file append.
+file transfer override.
 .TP
 .B c
-Request 16 bit CRC
-(XMODEM file transfers default to 8 bit checksum).
-Batch transfers use 16 bit CRC.
+Request 16 bit CRC.
+XMODEM file transfers default to 8 bit checksum.
+YMODEM and ZMODEM normally use 16 bit CRC.
 .TP
 .B D
 Output file data to /dev/null; for testing.
 .TP
+.B p
+(ZMODEM) Protect: skip file if destination file exists.
+.TP
 .B q
 Quiet suppresses verbosity.
+.TP
+.B "t tim"
+Change timeout to
+.I tim
+tenths of seconds.
 .TP
 .B v
 Verbose
@@ -200,18 +189,15 @@ causes a list of file
 names to be appended to
 /tmp/rzlog .
 More v's generate more output.
-.TP
-.B u
-Retain upper case letters in file names.
 .PD
-.SH EXAMPLES
 .ne 6
+.SH EXAMPLES
 .RE
 (Pro-YAM command)
 .RS
 .I <ALT-2>
 .br
-YAM Command:
+Pro-YAM Command:
 .I "sz *.h *.c"
 .br
 (This automatically invokes
@@ -231,11 +217,21 @@ undos(omen)
 Compile time options required
 for various operating systems are described in the
 source file.
+.SH NOTES
+The Unix "ulimit" parameter must be set high enough
+to permit large file transfers.
+
+The TTY input buffering on some systems may not allow long blocks
+or streaming input, especially at high baud rates.
+The Pro-YAM
+.B "zmodem l"
+numeric parameter may be set to a value between 64 and 1024 to limit the
+burst length ("zmodem pl100").
 .SH BUGS
 Pathnames are restricted to 127 characters.
 In XMODEM single file mode, the pathname given on the command line
 is still processed as described above.
-The CR/LF to NL translation merely deletes CR\'s;
+The ASCII option\'s CR/LF to NL translation merely deletes CR\'s;
 undos(omen) performs a more intelligent translation.
 .SH "VMS VERSION"
 Some of the #includes with file names enclosed with angle brackets <>
@@ -261,7 +257,9 @@ The VMS version does not support invocation as
 ZMODEM has not yet been implemented on the VMS version.
 .SH "ZMODEM CAPABILITIES"
 .B Rz
-supports incoming ZMODEM binary (-b), ASCII (-a), and append (-+)
+supports incoming ZMODEM binary (-b), ASCII (-a),
+protect (-p),
+and append (-+)
 requests, and ZMODEM command execution.
 .SH FILES
 rz.c, rbsb.c, zm.c, zmodem.h source files.

@@ -1,7 +1,7 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
- *    6-12-86  Chuck Forsberg Omen Technology Inc
+ *    9-06-86  Chuck Forsberg Omen Technology Inc
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
@@ -80,6 +80,7 @@
 #define ZMCLOB	4	/* Replace existing file */
 #define ZMSPARS	5	/* Encoding for sparse file */
 #define ZMDIFF	6	/* Transfer if dates or lengths different */
+#define ZMPROT	7	/* Protect destination file */
 /* Transport options, one of these in ZF2 */
 #define ZTLZW	1	/* Lempel-Ziv compression */
 #define ZTCRYPT	2	/* Encryption */

@@ -1,5 +1,26 @@
 # Changelog
 
+## [RZ 1.08 / SZ 1.14] - 1986-09-15
+
+Chuck's corresponding USENET announcement follows:
+```
+Updated Unix X/Y/ZMODEM File Xfer 1/2
+Chuck Forsberg WA7KGX caf at omen.UUCP
+Mon Sep 15 21:59:32 AEST 1986
+
+This version of rz corrects an annoying automatic file conversion feature.
+Rz ans sz add the ZMODEM ZMPROT file management option which protects exisiting
+files on the destination.   A number of small coding and documentation errors
+have been fixed as well.
+
+   Chuck Forsberg WA7KGX  ...!tektronix!reed!omen!caf  CIS:70007,2304
+   Author of Professional-YAM communications Tools for PCDOS and Unix
+ Omen Technology Inc     17505-V NW Sauvie Island Road Portland OR 97231
+Voice: 503-621-3406 TeleGodzilla: 621-3746 300/1200 L.sys entry for omen:
+omen Any ACU 1200 1-503-621-3746 se:--se: link ord: Giznoid in:--in: uucp
+omen!/usr/spool/uucppublic/FILES lists all uucp-able files, updated hourly
+```
+
 ## [RZ 1.06 / SZ 1.13] - 1986-08-16
 
 SZ changes only:
@@ -77,6 +98,9 @@ You may notice the shell script file `gz` which I elected to exclude from
 the repo.  It appear it was used to send a command to a remote rz application
 to initiate a send (`sz` invocation) of a specified filename.  I speculate the
 name was short for "get ZMODEM".
+```
+sz -c "sz $*"
+```
 
 ### Attribution
 
