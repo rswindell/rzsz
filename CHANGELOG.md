@@ -1,6 +1,6 @@
 # Changelog
 
-## [RZ 1.07 / SZ 1.08] - 1986-7-18
+## [RZ 1.07 / SZ 1.08] - 1986-07-18
 
 This appears to be the third public release of ZMODEM by Chuck Forsberg.
 Chuck's corresponding USENET announcement follows:
@@ -41,7 +41,7 @@ Main change:
 
   - Move from run-time to table-driven 16-bit CRC calculation algorithm
 
-## [RZ 1.04 / SZ 1.07] - 1986-6-12
+## [RZ 1.04 / SZ 1.07] - 1986-06-12
 
 This appears to be the second public release of ZMODEM by Chuck Forsberg.
 No associated USENET announcement/description article has been located.
