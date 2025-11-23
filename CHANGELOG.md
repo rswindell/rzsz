@@ -1,5 +1,46 @@
 # Changelog
 
+## [RZ 1.07 / SZ 1.08] - 1986-7-18
+
+This appears to be the third public release of ZMODEM by Chuck Forsberg.
+Chuck's corresponding USENET announcement follows:
+```
+From: caf@omen.UUCP
+Newsgroups: net.micro,net.micro.pc,net.dcom
+Subject: Revised ZMODEM sources
+Message-ID: <370@omen.UUCP>
+Date: 18 Jul 86 12:12:41 GMT
+Date-Received: 22 Jul 86 18:57:57 GMT
+Distribution: net
+Organization: Omen Technology, Portland
+Lines: 16
+Xref: santra net.micro:1169 net.micro.pc:2159 net.dcom:676
+
+A new version of the ZMODEM programs sz and rz are being posted to
+net.sources.  These have many bug fixes and enhancements over the
+previous posting, which did not get intact to all sites.  The posting
+is in two parts (to get past notesfiles), rzsz1.sh and rzsz2.sh.
+
+A new version of ZMODEM.ARC with a revised ZMODEM.DOC is now available on
+Telegodzilla.  ZMODEM.ARC includes a PC-DOS communications program with
+ZMODEM protocol (also X/YMODEM, Compuserve B, and Kermit w/sliding window).
+
+
+   Chuck Forsberg WA7KGX  ...!tektronix!reed!omen!caf   CIS:70715,131
+   Author of Professional-YAM communications Tools for PCDOS and Unix
+ Omen Technology Inc     17505-V NW Sauvie Island Road Portland OR 97231
+Voice: 503-621-3406 TeleGodzilla: 621-3746 300/1200 L.sys entry for omen:
+omen Any ACU 1200 1-503-621-3746 se:--se: link ord: Giznoid in:--in: uucp
+omen!/usr/spool/uucppublic/FILES lists all uucp-able files, updated hourly
+```
+
+Note: TeleGodzilla was Chuck Forsberg's dial-up Bulletin Board System (BBS) and
+WA7KGX was his [Amateur Radio call sign](https://www.qcwa.org/wa7kgx-26075-sk.htm).
+
+Main change:
+
+  - Move from run-time to table-driven 16-bit CRC calculation algorithm
+
 ## [RZ 1.04 / SZ 1.07] - 1986-6-12
 
 This appears to be the second public release of ZMODEM by Chuck Forsberg.
@@ -10,6 +51,25 @@ No associated USENET announcement/description article has been located.
   - Handle more received CANs (5 instead of 2 for quick abort)
   - New frame type: ZSTDERR (19)
   - Some hacks for V7/BSD compatibility
+
+### Files
+
+The contents of the associated tar file follow:
+```
+-rwxr-xr-x 0/0              14 1986-07-23 09:17 gz
+-rwxr-xr-x 0/0            4361 1986-07-23 09:18 rbsb.c
+-rwxr-xr-x 0/0            6026 1986-07-23 09:18 rz.1
+-rwxr-xr-x 0/0           24179 1986-07-23 09:18 rz.c
+-rwxr-xr-x 0/0            8581 1986-07-23 09:18 sz.1
+-rwxr-xr-x 0/0           25781 1986-07-23 09:13 sz.c
+-rwxr-xr-x 0/0            9098 1986-07-23 09:13 zm.c
+-rwxr-xr-x 0/0            4244 1986-07-23 09:13 zmodem.h
+```
+You may notice the shell script file `gz` which I elected to exclude from
+the repo.  It appear it was used to send a command to a remote rz application
+to initiate a send (`sz` invocation) of a specified filename.  I speculate it
+was short for "get ZMODEM".
+```
 
 ### Attribution
 

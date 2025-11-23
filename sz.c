@@ -1,4 +1,4 @@
-#define VERSION "sz 1.07 06-05-86"
+#define VERSION "sz 1.08 07-17-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -O -K sz.c -o sz; size sz
@@ -22,7 +22,6 @@
  */
 
 
-unsigned updcrc();
 char *substr(), *getenv();
 
 #define LOGFILE "/tmp/szlog"
@@ -225,7 +224,7 @@ char *argv[];
 						usage();
 					break;
 				case 'N':
-					Lzmanag = ZMCRC;  break;
+					Lzmanag = ZMDIFF;  break;
 				case 'n':
 					Lzmanag = ZMNEW;  break;
 				case 'r':
@@ -576,7 +575,7 @@ int cseclen;	/* data length of this sector to send */
 		oldcrc=checksum=0;
 		for (wcj=cseclen,cp=buf; --wcj>=0; ) {
 			sendline(*cp);
-			oldcrc=updcrc(*cp, oldcrc);
+			oldcrc=updcrc((0377& *cp), oldcrc);
 			checksum += *cp++;
 		}
 		if (Crcflg) {
@@ -761,27 +760,6 @@ purgeline()
 #endif
 }
 
-/* update CRC */
-unsigned
-updcrc(c, crc)
-register c;
-register unsigned crc;
-{
-	register count;
-
-	for (count=8; --count>=0;) {
-		if (crc & 0x8000) {
-			crc <<= 1;
-			crc += (((c<<=1) & 0400)  !=  0);
-			crc ^= 0x1021;
-		}
-		else {
-			crc <<= 1;
-			crc += (((c<<=1) & 0400)  !=  0);
-		}
-	}
-	return crc;	
-}
 
 /* send cancel string to get the other end to shut up */
 canit()
@@ -851,16 +829,14 @@ usage()
 	fprintf(stderr,"	+ Append to existing destination file (Z)\n");
 	fprintf(stderr,"	a (ASCII) change NL to CR/LF\n");
 	fprintf(stderr,"	c send COMMAND (Z)\n");
-	fprintf(stderr,"\tC N (set command retries to N default=%d) (Z)\n",
-	  Cmdtries);
 	fprintf(stderr,"	d Change '.' to '/' in pathnames (Y/Z)\n");
 	fprintf(stderr,"	f send Full pathname (Y/Z)\n");
 	fprintf(stderr,"	i send COMMAND, ack Immediately (Z)\n");
 	fprintf(stderr,"	k Send 1024 byte packets (Y)\n");
 	fprintf(stderr,"	L N Limit packet length to N bytes (Z)\n");
 	fprintf(stderr,"	l N Limit frame length to N bytes (l>=L) (Z)\n");
-	fprintf(stderr,"	n send file if Newer|different length (Z)\n");
-	fprintf(stderr,"	N send file if different length|CRC (Z)\n");
+	fprintf(stderr,"	n send file if Newer|longer (Z)\n");
+	fprintf(stderr,"	N send file if different length|date (Z)\n");
 	fprintf(stderr,"	r Resume/Recover interrupted file transfer (Z)\n");
 	fprintf(stderr,"	q Quiet (no progress reports)\n");
 	fprintf(stderr,"	u Unlink file after transmission\n");

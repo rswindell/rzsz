@@ -1,11 +1,11 @@
 '\" Revision Level 
-'\" Last Delta     6-01-86
+'\" Last Delta     6-16-86
 .TH SZ 1 OMEN
 .SH NAME
 sz \- XMODEM, YMODEM, ZMODEM Batch file Send
 .SH SYNOPSIS
 sz
-.RB [\- +1adfkLlnqTuvy ]
+.RB [\- +1adfkLlNnqTuvy ]
 .I file ...
 .br
 sz -X
@@ -148,10 +148,6 @@ for ZMODEM.
 .B "c COMMAND"
 Send COMMAND to the receiver for execution, return with COMMAND\'s exit status.
 .TP
-.B "C N"
-Make N attempts at ten second intervals
-to read COMMAND\'s exit status before exiting.
-.TP
 .B d
 Change all instances of "." to "/" in the transmitted pathname.
 Thus, C.omenB0000 (which is unacceptable to MSDOS or CP/M)
@@ -186,12 +182,16 @@ characters.
 This may be used to avoid network overrun when XOFF flow control is lacking.
 .TP
 .B n
-Instruct ZMODEM receiver to skip files if the length and modification times
-of the source file and the file on the destination system are equal.
+(ZMODEM) Send each file if
+destination file does not exist.
+Overwrite destination file if
+source file is longer or newer than the destination file.
 .TP
 .B N
-Instruct ZMODEM receiver to skip files if the length and CRC\'s
-of the source file and the file on the destination system are equal.
+(ZMODEM) Send each file if
+destination file does not exist.
+Overwrite destination file if
+source file has different length or date.
 .TP
 .B q
 Quiet suppresses verbosity.

@@ -18,7 +18,7 @@ In 1985, an enterprising technologist by the name of Chuck Forsberg extended War
 
 Soon after the introduction of YMODEM, Chuck was commissioned to design and implement an even more robust and convenient file transfer protocol and he named it, naturally, ZMODEM. Chuck's ZMODEM was more resilient to communication errors, more accommodating to the needs of different communication networks, supported failed file transfer recovery, and included a time-saving feature that hooked users: automatic start of file transfers.
 
-From Chuck's own ZMODEM.DOC file:  
+From Chuck's own ZMODEM.DOC file:
 *In early 1986, Telenet funded a project to develop an improved public domain application to application file transfer protocol.  This protocol would alleviate the throughput problems network customers were experiencing with XMODEM and Kermit file transfers.*
 
 Chuck released the original ZMODEM implementation for UNIX and crucially, the technical specification of the protocol itself (ZMODEM.DOC), fully formed, to the public in May of 1986\. Chuck signed his files as "Chuck Forsberg Omen Technology Inc" and would later sell commercialized implementations of the protocol and add "for pay" features. While other file-over-MODEM transfer protocols were subsequently conceived and successfully deployed, none has matched the ubiquity and lasting success of ZMODEM.

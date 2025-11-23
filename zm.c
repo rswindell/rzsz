@@ -59,7 +59,7 @@ register char *hdr;
 
 	for (n=4; --n >= 0;) {
 		zsendline(*hdr);
-		oldcrc = updcrc(*hdr++, oldcrc);
+		oldcrc = updcrc((0377& *hdr++), oldcrc);
 	}
 	oldcrc = updcrc(0,updcrc(0,oldcrc));
 	zsendline(oldcrc>>8);
@@ -81,7 +81,7 @@ register char *hdr;
 
 	oldcrc = updcrc(type, 0);
 	for (n=4; --n >= 0;) {
-		zputhex(*hdr); oldcrc = updcrc(*hdr++, oldcrc);
+		zputhex(*hdr); oldcrc = updcrc((0377& *hdr++), oldcrc);
 	}
 	oldcrc = updcrc(0,updcrc(0,oldcrc));
 	zputhex(oldcrc>>8); zputhex(oldcrc);
@@ -108,7 +108,7 @@ register char *buf;
 	oldcrc = 0;
 	for (;--length >= 0;) {
 		zsendline(*buf);
-		oldcrc = updcrc(*buf++, oldcrc);
+		oldcrc = updcrc((0377& *buf++), oldcrc);
 	}
 	xsendline(ZDLE); xsendline(frameend);
 	oldcrc = updcrc(frameend, oldcrc);
@@ -116,8 +116,9 @@ register char *buf;
 	oldcrc = updcrc(0,updcrc(0,oldcrc));
 	zsendline(oldcrc>>8);
 	zsendline(oldcrc);
-	if (frameend == ZCRCW)
-		flushmo();
+	if (frameend == ZCRCW) {
+		xsendline(XON);  flushmo();
+	}
 }
 
 /*
@@ -263,7 +264,9 @@ fifi:
 	case ZCAN:
 	case ERROR:
 	case TIMEOUT:
-		zperr("ZMODEM: Got %s header", frametypes[c+2]);
+		zperr("ZMODEM: Got %s %s", frametypes[c+2],
+		  (c >= 0) ? "header" : "error");
+	/* **** FALL THRU TO **** */
 	default:
 		if (c >= -2 && c <= FRTYPES)
 			vfile("zgethdr: %s %lx", frametypes[c+2], Rxpos);
@@ -349,11 +352,21 @@ register c;
 	sendline(digits[(c)&0xF]);
 }
 
-/* Send character c with ZMODEM escape sequence encoding */
+/*
+ * Send character c with ZMODEM escape sequence encoding.
+ *  Escape XON, XOFF. Escape CR following @ (Telenet net escape)
+ */
 zsendline(c)
 register c;
 {
+	static lastsent;
+
 	switch (c & 0377) {
+	case 015:
+	case 0215:
+		if ((lastsent & 0177) != '@')
+			goto sendit;
+	/* **** FALL THRU TO **** */
 	case ZDLE:
 	case 021:
 	case 023:
@@ -362,8 +375,9 @@ register c;
 		xsendline(ZDLE);
 		c ^= 0100;
 	/* **** FALL THRU TO **** */
+sendit:
 	default:
-		xsendline(c);
+		xsendline(lastsent = c);
 	}
 }
 

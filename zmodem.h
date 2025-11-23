@@ -74,11 +74,12 @@
 #define ZCNL	2	/* Convert NL to local end of line convention */
 #define ZCRESUM	3	/* Resume interrupted file transfer */
 /* Management options, one of these in ZF1 */
-#define ZMNEW	1	/* Transfer if source newer or different length */
+#define ZMNEW	1	/* Transfer if source newer or longer */
 #define ZMCRC	2	/* Transfer if different file CRC or length */
 #define ZMAPND	3	/* Append contents to existing file (if any) */
 #define ZMCLOB	4	/* Replace existing file */
 #define ZMSPARS	5	/* Encoding for sparse file */
+#define ZMDIFF	6	/* Transfer if dates or lengths different */
 /* Transport options, one of these in ZF2 */
 #define ZTLZW	1	/* Lempel-Ziv compression */
 #define ZTCRYPT	2	/* Encryption */
@@ -99,3 +100,4 @@ char Txhdr[4];		/* Transmitted header */
 long Rxpos;		/* Received file position */
 long Txpos;		/* Transmitted file position */
 char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
+

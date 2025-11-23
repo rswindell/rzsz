@@ -1,4 +1,4 @@
-#define VERSION "1.04 06-05-86"
+#define VERSION "1.06 07-16-86"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -DNFGVMIN -K -O % -o rz; size rz
@@ -161,8 +161,6 @@ char zmanag;		/* ZMODEM file management request */
 char ztrans;		/* ZMODEM file transport request */
 
 jmp_buf tohere;		/* For the interrupt on RX timeout */
-
-unsigned short updcrc();
 
 #include "zm.c"
 
@@ -613,31 +611,6 @@ purgeline()
 #endif
 }
 
-/*
- * Update CRC CRC-16 used by XMODEM/CRC, YMODEM, and ZMODEM.
- *  Note: Final result must be masked with 0xFFFF before testing
- *  More efficient table driven routines exist.
- */
-unsigned short
-updcrc(c, crc)
-register c;
-register unsigned crc;
-{
-	register count;
-
-	for (count=8; --count>=0;) {
-		if (crc & 0x8000) {
-			crc <<= 1;
-			crc += (((c<<=1) & 0400)  !=  0);
-			crc ^= 0x1021;
-		}
-		else {
-			crc <<= 1;
-			crc += (((c<<=1) & 0400)  !=  0);
-		}
-	}
-	return crc;	
-}
 
 /*
  * Process incoming file information header
@@ -925,7 +898,7 @@ tryz()
 	Rxtimeout = 100;
 
 
-	for (n=5; --n>=0; ) {
+	for (n=Zmodem?10:5; --n>=0; ) {
 		/* Set buffer length (0) and capability flags */
 		stohdr(0L);
 #ifdef CANBREAK
@@ -950,13 +923,14 @@ again:
 			if (zrdata(secbuf, KSIZE) == GOTCRCW)
 				return ZFILE;
 			zshhdr(ZNAK, Txhdr);
+			goto again;
 		case ZSINIT:
 			if (zrdata(Attn, ZATTNLEN) == GOTCRCW) {
 				zshhdr(ZACK, Txhdr);
 				goto again;
 			}
 			zshhdr(ZNAK, Txhdr);
-			continue;
+			goto again;
 		case ZFREECNT:
 			stohdr(getfree());
 			zshhdr(ZACK, Txhdr);
@@ -1223,3 +1197,4 @@ register char *s;
 	mode(0);
 	execl("/bin/sh", "sh", "-c", s);
 }
+
