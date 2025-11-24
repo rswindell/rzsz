@@ -1,17 +1,17 @@
 '\" Revision Level 
-'\" Last Delta     02-10-87
+'\" Last Delta     05-28-87
 .TH RZ 1 OMEN
 .SH NAME
-rb, rz \- XMODEM, YMODEM, ZMODEM (Batch) file receive
+rx, rb, rz \- XMODEM, YMODEM, ZMODEM (Batch) file receive
 .SH SYNOPSIS
 .B rz
-.RB [\- "\ +1abpqtuv" ]
+.RB [\- "\ +1abepqtuv" ]
 .br
 .B rb
 .RB [\- "\ +1abqtuv" ]
 .br
 .B rz
-.RB [\- "\ 1abcqtuv" ]
+.RB [\- "\ 1abceqtuv" ]
 .I file
 .br
 .B gz
@@ -33,7 +33,7 @@ If the sending program does not support ZMODEM,
 .I rz
 steps down to YMODEM protocol
 after 50 seconds.
-This delay can be eliminated by calling the program as
+This delay can be eliminated by invoking the program as
 .I rb .
 
 When receiving with XMODEM or YMODEM,
@@ -73,13 +73,13 @@ The user must supply the file name to both sending and receiving programs.
 .I Gz
 is a shell script which calls
 .I sz
-to command a Pro-YAM or compatible program to transmit the specified files.
+to command Pro-YAM or ZCOMM to transmit the specified files.
 Pathnames used with
 .I gz
 must be escaped if they have special significance to the Unix shell.
 .br
 EXAMPLE:
-gz "-1 C:*.c D:*.h"
+gz "-a C:*.c D:*.h"
 
 
 The third form of
@@ -151,7 +151,8 @@ This option allows
 to be used with the
 .I Professional-YAM
 .B $
-command.
+command
+and some versions of ncu(1).
 .TP
 .B a
 Convert files to
@@ -171,6 +172,10 @@ YMODEM and ZMODEM normally use 16 bit CRC.
 .TP
 .B D
 Output file data to /dev/null; for testing.
+.TP
+.B e
+Force sender to escape all control characters;
+normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
 .B p
 (ZMODEM) Protect: skip file if destination file exists.
@@ -221,11 +226,18 @@ The Unix "ulimit" parameter must be set high enough
 to permit large file transfers.
 
 The TTY input buffering on some systems may not allow long blocks
-or streaming input, especially at high baud rates.
-The Pro-YAM
+or streaming input at high speed.
+You should suspect this problem when you
+can't send data to the Unix system at high speeds using ZMODEM
+when YMODEM with 128 byte blocks works properly.
+If the system's tty line handling is really broken, the serial port
+or the entire system may not survive the onslaught of long bursts
+of high speed data.
+
+The DSZ or Pro-YAM
 .B "zmodem l"
 numeric parameter may be set to a value between 64 and 1024 to limit the
-burst length ("zmodem pl100").
+burst length ("zmodem pl128").
 
 32 bit CRC code courtesy Gary S. Brown.
 .SH BUGS

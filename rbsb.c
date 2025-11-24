@@ -1,4 +1,4 @@
-/*% shar -f /tmp/rzsz README zmodem.h zm.c sz.c rz.c rbsb.c minirb.c *.1 gz ptest.sh zupl.t; shar -f /tmp/rzsz1et2 -m 1000000 zmodem.h zm.c sz.c rz.c rbsb.c minirb.c *.1 gz ptest.sh zupl.t
+/*
  *
  * -rev 04-16-87
  *  This file contains Unix specific stuff for setting terminal modes,

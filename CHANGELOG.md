@@ -1,6 +1,36 @@
 # Changelog
 
-## [RX 1.21 / SZ 1.31] - 1987-05-29
+## [RZ 1.26 / SZ 1.35] - 1987-08-21
+
+```
+ Length   Method    Size  Cmpr    Date    Time   CRC-32   Name
+--------  ------  ------- ---- ---------- ----- --------  ----
+   14087  Implode    4163  70% 1987-08-16 05:45 35295e10  ZM.C
+     703  Implode     450  36% 1987-08-15 11:49 59cf5431  ZUPL.T
+    5487  Implode    2416  56% 1987-06-03 11:44 f886b49c  ZMODEM.H
+    6659  Implode    3290  51% 1987-08-10 15:44 a6ab3dc0  RZ.1
+   30884  Implode   11549  63% 1987-08-21 14:27 b263c08e  SZ.C
+   10570  Implode    4548  57% 1987-08-10 15:55 715ed9ec  SZ.1
+    1873  Implode    1269  32% 1987-08-15 11:57 afab0bbc  README
+   13705  Implode    6509  53% 1987-07-03 11:46 5aad4ec2  RBSB.C
+     119  Shrunk      105  12% 1987-05-25 02:48 3159084c  PTEST.SH
+   25050  Implode    9561  62% 1987-08-21 19:26 9dfa6e8c  RZ.C
+    4057  Implode    1934  52% 1987-05-25 01:32 aeba47b6  MINIRB.C
+    1174  Implode     778  34% 1987-05-25 01:34 4e6445de  MINIRB.1
+    1544  Implode     629  59% 1987-08-21 14:28 81bd9bb8  MAKEFILE
+      14  Stored       14   0% 1986-06-01 02:21 7a402b5c  GZ
+--------          -------  ---                            -------
+  115926            47215  59%                            14 files
+```
+
+  - Makefile created
+  - log() replaced with zperr() to print errors, conflicted with math.h
+  - minirb 2.0
+  - hacks for BIX support
+  - sz 1.34 implements tx backchannel garbage count and ZCRCW after ZRPOS
+    in accordance with the 7-31-87 ZMODEM Protocol Description
+
+## [RZ 1.21 / SZ 1.31] - 1987-05-29
 
   - Add XMODEM receive (rx) support
   - Add option to control ZMODEM window size

@@ -1,5 +1,5 @@
 '\" Revision Level 
-'\" Last Delta     11-15-86
+'\" Last Delta     05-25-87
 .TH MINIRB 1 OMEN
 .SH NAME
 minirb \- Bootstrap YMODEM Batch file receive
@@ -13,15 +13,13 @@ was developed for use as a bootstrap to simplify uploading of the longer
 .I rz
 and
 .I sz
-programs contained in the
+programs, such as are contained in the
 .I rzsz1et2.sh
 shell archive.
 .SH SEE ALSO
 YMODEM.DOC,
 Professional-YAM manual,
-sz(omen),
-usq(omen),
-undos(omen)
+sz(omen)
 .SH NOTES
 The source file
 .I minirb.c
@@ -44,9 +42,8 @@ YMODEM header
 file length information
 to prevent extraneous characters.
 .I Minirb
-does not delete carriage returns from uploaded files.
-It does not delete ^Z or other padding added by some CP/M or PC-DOS
-programs, including the Xenix "doscp" command.
+deletes carriage returns and CPMEOF (^Z) characters
+encountered in uploaded files.
 
 .I Minirb
 calls stty(1) to set and reset raw tty mode.

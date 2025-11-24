@@ -105,18 +105,19 @@
 long rclhdr();
 
 /* Globals used by ZMODEM functions */
-int Rxframeind;		/* ZBIN ZBIN32, or ZHEX type of frame received */
-int Rxtype;		/* Type of header received */
-int Rxcount;		/* Count of data bytes received */
+extern Rxframeind;	/* ZBIN ZBIN32, or ZHEX type of frame received */
+extern Rxtype;		/* Type of header received */
+extern Rxcount;		/* Count of data bytes received */
 extern Zrwindow;	/* RX window size (controls garbage count) */
 extern Rxtimeout;	/* Tenths of seconds to wait for something */
-char Rxhdr[4];		/* Received header */
-char Txhdr[4];		/* Transmitted header */
-long Rxpos;		/* Received file position */
-long Txpos;		/* Transmitted file position */
-int Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
-int Crc32t;		/* Display flag indicating 32 bit CRC being sent */
-int Crc32;		/* Display flag indicating 32 bit CRC being received */
-int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
-char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
+extern char Rxhdr[4];	/* Received header */
+extern char Txhdr[4];	/* Transmitted header */
+extern long Rxpos;	/* Received file position */
+extern long Txpos;	/* Transmitted file position */
+extern Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
+extern Crc32t;		/* Display flag indicating 32 bit CRC being sent */
+extern Crc32;		/* Display flag indicating 32 bit CRC being received */
+extern Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
+extern char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 
+/* End of ZMODEM.H */

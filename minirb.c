@@ -6,9 +6,10 @@
  *  YMODEM Batch (Professional-YAM, PowerCom, ZCOMM, etc.).
  *
  *  Minirb uses system(3) to call stty, avoiding system dependent code.
+ *   program strips CR and CPMEOF (^Z) characters (see putsec()).
  *  Please refer to rz.c for comments, etc.
  */
-char * Version = "minirb 1.00 11-15-86";
+char * Version = "minirb 2.00 05-25-87";
 
 #include <stdio.h>
 #include <signal.h>
@@ -92,14 +93,14 @@ wcrx() {
  sectnum=0; sendchar=NAK;
  for (;;) {
   sendline(sendchar); Lleft=0;
-  sectcurr=wcgetsec(secbuf, (sectnum&0177)?50:130);
-  if (sectcurr==(sectnum+1)) {
+  sectcurr=wcgetsec(secbuf, 50);
+  if (sectcurr==(sectnum+1 & 0377)) {
    sectnum++; cblklen = Bytesleft>Blklen ? Blklen:Bytesleft;
-   if (putsec(secbuf, cblklen)==ERROR) return ERROR;
+   putsec(secbuf, cblklen);
    if ((Bytesleft-=cblklen) < 0) Bytesleft = 0;
    sendchar=ACK;
   }
-  else if (sectcurr==sectnum) sendchar=ACK;
+  else if (sectcurr==(sectnum&0377)) sendchar=ACK;
   else if (sectcurr==WCEOT) {
    if (fclose(fout)==ERROR) return ERROR;
    sendline(ACK); Lleft=0; return OK;
@@ -161,12 +162,8 @@ procheader(name) char *name; {
  return OK;
 }
 
-putsec(buf, n) char *buf; register n;
-{
- register char *p;
- for (p=buf; --n>=0; ) putc( *p++, fout);
- return OK;
-}
+putsec(p, n) char *p; int n;
+{ for (; --n>=0; ++p) if (*p != 015 && *p != 032) putc(*p, fout); }
 
 sendline(c) { char d; d = c; write(1, &d, 1); }
 

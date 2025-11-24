@@ -1,7 +1,7 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    04-16-87  Chuck Forsberg Omen Technology Inc
+ *    07-28-87  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -17,6 +17,26 @@
 #include "zmodem.h"
 int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 #endif
+
+#ifndef UNSL
+#define UNSL
+#endif
+
+
+/* Globals used by ZMODEM functions */
+int Rxframeind;		/* ZBIN ZBIN32, or ZHEX type of frame received */
+int Rxtype;		/* Type of header received */
+int Rxcount;		/* Count of data bytes received */
+char Rxhdr[4];		/* Received header */
+char Txhdr[4];		/* Transmitted header */
+long Rxpos;		/* Received file position */
+long Txpos;		/* Transmitted file position */
+int Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
+int Crc32t;		/* Display flag indicating 32 bit CRC being sent */
+int Crc32;		/* Display flag indicating 32 bit CRC being received */
+int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
+char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
+
 
 static char *frametypes[] = {
 	"Carrier Lost",		/* -3 */
@@ -85,7 +105,7 @@ zsbh32(hdr, type)
 register char *hdr;
 {
 	register n;
-	register long crc;
+	register UNSL long crc;
 
 	xsendline(ZBIN32);  zsendline(type);
 	crc = 0xFFFFFFFFL; crc = UPDC32(type, crc);
@@ -160,7 +180,7 @@ register char *buf;
 zsda32(buf, length, frameend)
 register char *buf;
 {
-	register long crc;
+	register UNSL long crc;
 
 	crc = 0xFFFFFFFFL;
 	for (;--length >= 0;++buf) {
@@ -179,19 +199,21 @@ register char *buf;
 /*
  * Receive array buf of max length with ending ZDLE sequence
  *  and CRC.  Returns the ending character or error code.
+ *  NB: On errors may store length+1 bytes!
  */
 zrdata(buf, length)
 register char *buf;
 {
 	register c;
 	register unsigned short crc;
+	register char *end;
 	register d;
 
 	if (Rxframeind == ZBIN32)
 		return zrdat32(buf, length);
 
-	crc = Rxcount = 0;
-	for (;; ++buf) {
+	crc = Rxcount = 0;  end = buf + length;
+	while (buf <= end) {
 		if ((c = zdlread()) & ~0377) {
 crcfoo:
 			switch (c) {
@@ -207,41 +229,40 @@ crcfoo:
 					goto crcfoo;
 				crc = updcrc(c, crc);
 				if (crc & 0xFFFF) {
-					zperr("Bad data CRC %x", crc);
+					zperr("Bad data CRC");
 					return ERROR;
 				}
+				Rxcount = length - (end - buf);
 				vfile("zrdata: cnt = %d ret = %x", Rxcount, d);
 				return d;
 			case GOTCAN:
-				zperr("ZMODEM: Sender Canceled");
+				zperr("Sender Canceled");
 				return ZCAN;
 			case TIMEOUT:
-				zperr("ZMODEM data TIMEOUT");
+				zperr("TIMEOUT");
 				return c;
 			default:
-				zperr("ZMODEM bad data subpacket ret=%x", c);
+				zperr("Bad data subpacket");
 				return c;
 			}
 		}
-		if (--length < 0) {
-			zperr("ZMODEM data subpacket too long");
-			return ERROR;
-		}
-		++Rxcount;
-		*buf = c;
+		*buf++ = c;
 		crc = updcrc(c, crc);
 	}
+	zperr("Data subpacket too long");
+	return ERROR;
 }
 
 zrdat32(buf, length)
 register char *buf;
 {
 	register c;
-	register long crc;
+	register UNSL long crc;
+	register char *end;
 	register d;
 
-	crc = 0xFFFFFFFFL;  Rxcount = 0;
-	for (;; ++buf) {
+	crc = 0xFFFFFFFFL;  Rxcount = 0;  end = buf + length;
+	while (buf <= end) {
 		if ((c = zdlread()) & ~0377) {
 crcfoo:
 			switch (c) {
@@ -264,30 +285,28 @@ crcfoo:
 					goto crcfoo;
 				crc = UPDC32(c, crc);
 				if (crc != 0xDEBB20E3) {
-					zperr("Bad data CRC %lX", crc);
+					zperr("Bad data CRC");
 					return ERROR;
 				}
+				Rxcount = length - (end - buf);
 				vfile("zrdat32: cnt = %d ret = %x", Rxcount, d);
 				return d;
 			case GOTCAN:
-				zperr("ZMODEM: Sender Canceled");
+				zperr("Sender Canceled");
 				return ZCAN;
 			case TIMEOUT:
-				zperr("ZMODEM data TIMEOUT");
+				zperr("TIMEOUT");
 				return c;
 			default:
-				zperr("ZMODEM bad data subpacket ret=%x", c);
+				zperr("Bad data subpacket");
 				return c;
 			}
 		}
-		if (--length < 0) {
-			zperr("ZMODEM data subpacket too long");
-			return ERROR;
-		}
-		++Rxcount;
-		*buf = c;
+		*buf++ = c;
 		crc = UPDC32(c, crc);
 	}
+	zperr("Data subpacket too long");
+	return ERROR;
 }
 
 
@@ -298,7 +317,8 @@ crcfoo:
  *	1:  display printing characters only
  *	2:  display all non ZMODEM characters
  *  On success, set Zmodem to 1, set Rxpos and return type of header.
- *   Otherwise return negative on error
+ *   Otherwise return negative on error.
+ *   Return ERROR instantly if ZCRCW sequence, for fast error recovery.
  */
 zgethdr(hdr, eflag)
 char *hdr;
@@ -306,32 +326,50 @@ char *hdr;
 	register c, n, cancount;
 
 	n = Zrwindow + Baudrate;	/* Max bytes before start of frame */
-	cancount = 5;
-
-again:
 	Rxframeind = Rxtype = 0;
-	switch (c = noxrd7()) {
+
+startover:
+	cancount = 5;
+again:
+	/* Return immediate ERROR if ZCRCW sequence seen */
+	switch (c = readline(Rxtimeout)) {
 	case RCDO:
 	case TIMEOUT:
 		goto fifi;
 	case CAN:
+gotcan:
 		if (--cancount <= 0) {
 			c = ZCAN; goto fifi;
+		}
+		switch (c = readline(1)) {
+		case TIMEOUT:
+			goto again;
+		case ZCRCW:
+			c = ERROR;
+		/* **** FALL THRU TO **** */
+		case RCDO:
+			goto fifi;
+		default:
+			break;
+		case CAN:
+			if (--cancount <= 0) {
+				c = ZCAN; goto fifi;
+			}
+			goto again;
 		}
 	/* **** FALL THRU TO **** */
 	default:
 agn2:
 		if ( --n == 0) {
-			zperr("ZMODEM Garbage count exceeded");
+			zperr("Garbage count exceeded");
 			return(ERROR);
 		}
 		if (eflag && ((c &= 0177) & 0140))
 			bttyout(c);
 		else if (eflag > 1)
 			bttyout(c);
-		if (c != CAN)
-			cancount = 5;
-		goto again;
+		goto startover;
+	case ZPAD|0200:		/* This is what we want. */
 	case ZPAD:		/* This is what we want. */
 		break;
 	}
@@ -366,10 +404,7 @@ splat:
 		c =  zrhhdr(hdr);
 		break;
 	case CAN:
-		if (--cancount <= 0) {
-			c = ZCAN; goto fifi;
-		}
-		goto agn2;
+		goto gotcan;
 	default:
 		goto agn2;
 	}
@@ -378,7 +413,6 @@ splat:
 	Rxpos = (Rxpos<<8) + (hdr[ZP1] & 0377);
 	Rxpos = (Rxpos<<8) + (hdr[ZP0] & 0377);
 fifi:
-cancount=c;
 	switch (c) {
 	case GOTCAN:
 		c = ZCAN;
@@ -388,8 +422,7 @@ cancount=c;
 	case ERROR:
 	case TIMEOUT:
 	case RCDO:
-		zperr("ZMODEM: Got %s %s", frametypes[c+FTOFFSET],
-		  (c >= 0) ? "header" : "error");
+		zperr("Got %s", frametypes[c+FTOFFSET]);
 	/* **** FALL THRU TO **** */
 	default:
 		if (c >= -3 && c <= FRTYPES)
@@ -397,8 +430,6 @@ cancount=c;
 		else
 			vfile("zgethdr: %d %lx", c, Rxpos);
 	}
-if (cancount != c)
-	zperr("zgethdr c=%d cancount=%d", c, cancount);
 	return c;
 }
 
@@ -438,7 +469,7 @@ zrbhdr32(hdr)
 register char *hdr;
 {
 	register c, n;
-	register long crc;
+	register UNSL long crc;
 
 	if ((c = zdlread()) & ~0377)
 		return c;
@@ -466,7 +497,7 @@ register char *hdr;
 #endif
 	}
 	if (crc != 0xDEBB20E3) {
-		zperr("Bad Header CRC %lX", crc); return ERROR;
+		zperr("Bad Header CRC"); return ERROR;
 	}
 	Zmodem = 1;
 	return Rxtype;
@@ -512,7 +543,7 @@ register c;
 {
 	static char	digits[]	= "0123456789abcdef";
 
-	if (Verbose>4)
+	if (Verbose>8)
 		vfile("zputhex: %02X", c);
 	sendline(digits[(c&0xF0)>>4]);
 	sendline(digits[(c)&0xF]);
@@ -563,7 +594,7 @@ zgethex()
 	register c;
 
 	c = zgeth1();
-	if (Verbose>4)
+	if (Verbose>8)
 		vfile("zgethex: %02X", c);
 	return c;
 }
@@ -601,12 +632,10 @@ again:
 	switch (c = readline(Rxtimeout)) {
 	case ZDLE:
 		break;
-	case 020:
-	case 021:
 	case 023:
-	case 0220:
-	case 0221:
 	case 0223:
+	case 021:
+	case 0221:
 		goto again;
 	default:
 		if (Zctlesc && !(c & 0140)) {
@@ -635,12 +664,10 @@ again2:
 		return 0177;
 	case ZRUB1:
 		return 0377;
-	case 020:
-	case 021:
 	case 023:
-	case 0220:
-	case 0221:
 	case 0223:
+	case 021:
+	case 0221:
 		goto again2;
 	default:
 		if (Zctlesc && ! (c & 0140)) {
@@ -650,7 +677,7 @@ again2:
 			return (c ^ 0100);
 		break;
 	}
-	zperr("Got bad ZMODEM escape sequence %x", c);
+	zperr("Bad escape sequence %x", c);
 	return ERROR;
 }
 

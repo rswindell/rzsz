@@ -1,15 +1,19 @@
 '\" Revision Level 
-'\" Last Delta     03-10-87
+'\" Last Delta     04-25-87
 .TH SZ 1 OMEN
 .SH NAME
-sz \- XMODEM, YMODEM, ZMODEM Batch file Send
+sx, sb, sz \- XMODEM, YMODEM, ZMODEM file transmission
 .SH SYNOPSIS
 sz
-.RB [\- +1abdefkLlNnopqTtuvy ]
+.RB [\- +1abdefkLlNnopqTtuvyY ]
 .I file ...
 .br
-sz -X
-.RB [\- 1kqtuv ]
+sb
+.RB [\- 1adfkqtuv ]
+.I file ...
+.br
+sx
+.RB [\- 1akqtuv ]
 .I file
 .br
 sz
@@ -41,9 +45,7 @@ are set accordingly.
 
 Output from another program may be piped to
 .B sz
-for transmission by specifying the
-.B -1
-option and denoting standard input by "-":
+for transmission by denoting standard input with "-":
 .ce
 ps -ef | sz -
 The program output is transmitted with the filename sPID.sz
@@ -66,12 +68,16 @@ option
 causes the receiver to convert Unix newlines to PC-DOS carriage returns
 and linefeeds.
 
-Unix
-.B sz
+The second form is invoked as
+.B sb
+to send one or more files with YMODEM batch protocol.
+The initial ZMODEM initialization is not sent.
+When requested by the receiver,
+.B sb
 supports
 .B YMODEM-g
 with "cbreak" tty mode, XON/XOFF flow control,
-and the interrupt character set to CAN.
+and interrupt character set to CAN (^X).
 .B YMODEM-g
 (Professional-YAM
 .B g
@@ -81,11 +87,11 @@ increases throughput over error free channels
 by not acknowledging each transmitted sector.
 
 
-The second form of
+The third form of
 .B sz
-uses the
-.B -X
-flag to send a single
+is invoked as
+.B sx
+to send a single
 .I file
 with
 .B XMODEM
@@ -107,14 +113,14 @@ PUBDIR (usually /usr/spool/uucppublic) and/or subdirectories
 thereof.
 
 
-The third form sends a single COMMAND to the receiver for execution.
+The fourth form sends a single COMMAND to the receiver for execution.
 .B Sz
 exits with the COMMAND return value.
 If COMMAND includes spaces or characters special to the shell,
 it must be quoted.
 
 
-The fourth form sends a single COMMAND to the receiver for execution.
+The fifth form sends a single COMMAND to the receiver for execution.
 .B Sz
 exits as soon as the receiver has correctly received the command,
 before it is executed.
@@ -163,13 +169,9 @@ is transmitted as C/omenB0000.
 If the resultant filename has more than 8 characters in the stem,
 a "." is inserted to allow a total of eleven.
 .TP
-.B E
-Escape only Ctrl-X control characters;
-normally XON, XOFF, CR-@-CR, and Ctrl-X are escaped.
-.TP
 .B e
 Escape all control characters;
-normally XON, XOFF, CR-@-CR, and Ctrl-X are escaped.
+normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
 .B f
 Send Full pathname.
@@ -203,13 +205,13 @@ This may be used to avoid network overrun when XOFF flow control is lacking.
 (ZMODEM) Send each file if
 destination file does not exist.
 Overwrite destination file if
-source file is newer or longer than the destination file.
+source file is newer than the destination file.
 .TP
 .B N
 (ZMODEM) Send each file if
 destination file does not exist.
 Overwrite destination file if
-source file has different length or date.
+source file is newer or longer than the destination file.
 .TP
 .B o
 (ZMODEM) Disable automatic selection of 32 bit CRC.
@@ -222,7 +224,7 @@ destination file exists.
 Quiet suppresses verbosity.
 .TP
 .B r
-Resume interrupted file transfer.
+(ZMODEM) Resume interrupted file transfer.
 If the source file is longer than the destination file,
 the transfer commences at the offset in the source file that equals
 the length of the destination file.
@@ -242,16 +244,15 @@ names to be appended to
 /tmp/szlog .
 More v's generate more output.
 .TP
-.B X
-Send a single file with
-.B XMODEM
-or
-.B XMODEM-1k
-protocol.
-.TP
 .B y
 Instruct a ZMODEM receiving program to overwrite any existing file
 with the same name.
+.TP
+.B Y
+Instruct a ZMODEM receiving program to overwrite any existing file
+with the same name,
+and to skip any source files that do have a file with the same
+pathname on the destination system.
 .PD
 .SH EXAMPLES
 .ne 7
@@ -266,6 +267,14 @@ to end of line conventions appropriate to the receiving environment.
 With ZMODEM AutoDownload enabled, Professional-YAM  and ZCOMM
 will automatically recieve
 the files after performing a security check.
+
+.br
+.B "$ sz -Yan *.c *.h"
+.br
+Send only the .c and .h files that exist on both systems,
+and are newer on the sending system than the
+corresponding version on the receiving system, converting Unix to
+DOS text format.
 
 .B "ZMODEM Command Download"
 .br
@@ -298,9 +307,10 @@ form is used to allow
 to exit immediately.
 
 .B "XMODEM File Transfer"
+(To Crosstalk)
 .br
 $
-.B "sz -Xa foo.c"
+.B "sx -a foo.c"
 .br
 .B "ESC"
 .br
@@ -309,8 +319,6 @@ $
 The above three commands transfer a single file
 from Unix to a PC and Crosstalk XVI 3.6,
 translating Unix newlines to DOS CR/LF.
-
-32 bit CRC code courtesy Gary S. Brown.
 .SH SEE ALSO
 rz(omen),
 ZMODEM.DOC,
@@ -340,6 +348,8 @@ modifier is used.
 The VMS C standard i/o package and RMS sometimes interact to modify
 file contents unexpectedly.
 .SH FILES
+32 bit CRC code courtesy Gary S. Brown.
+
 sz.c, rbsb.c, zm.c, zmodem.h source files
 
 /tmp/szlog stores debugging output (sz -vv)
@@ -371,6 +381,9 @@ prints the total number of characters "sent" (Tcount).
 The difference between Tcount and 5120 represents the number of characters
 stored in various buffers when the Attn sequence is generated.
 .SH BUGS
+Many programs claiming to support YMODEM only support XMODEM with 1k blocks,
+and they often don't get that quite right.
+
 XMODEM transfers add up to 127 garbage bytes per file (1023 bytes with
 XMODEM-k).
 Most YMODEM programs use the file length transmitted at the beginning of the

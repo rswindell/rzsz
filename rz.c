@@ -1,8 +1,8 @@
-#define VERSION "1.21 05-16-87"
+#define VERSION "1.26 08-21-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -LARGE -Ox -K -i % -o rz; size rz;
-<-xtx-*> cc386 -Ox rz.c -o $B/rz;  size386 $B/rz
+/*% cc -M0 -Ox -K -i % -o rz; size rz;
+<-xtx-*> cc386 -Ox rz.c -o $B/rz;  size $B/rz
  *
  * rz.c By Chuck Forsberg
  *
@@ -31,15 +31,17 @@
  *
  *  Alarm signal handling changed to work with 4.2 BSD 7-15-84 CAF 
  *
+ *  BIX added 6-30-87 to support BIX(TM) upload protocol used by the
+ *  Byte Information Exchange.
+ *
  *  NFGVMIN Updated 2-18-87 CAF for Xenix systems where c_cc[VMIN]
  *  doesn't work properly (even though it compiles without error!),
  *
- *  HOWMANY should be tuned for best performance
+ *  HOWMANY may be tuned for best performance
  *
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 #define LOGFILE "/tmp/rzlog"
-#define zperr vfile
 
 #include <stdio.h>
 #include <signal.h>
@@ -131,7 +133,7 @@ int Rxbinary=FALSE;	/* receive all files in bin mode */
 int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
 int Blklen;		/* record length of received packets */
-char secbuf[KSIZE];
+char secbuf[KSIZE+1];
 char linbuf[HOWMANY];
 int Lleft=0;		/* number of characters in linbuf */
 time_t timep[2];
@@ -289,7 +291,7 @@ usage()
 vfile(f, a, b, c)
 register char *f;
 {
-	if (Verbose > 1) {
+	if (Verbose > 2) {
 		fprintf(stderr, f, a, b, c);
 		fprintf(stderr, "\n");
 	}
@@ -378,8 +380,8 @@ et_tu:
 	sendline(Crcflg?WANTCRC:NAK);
 	Lleft=0;	/* Do read next time ... */
 	while ((c = wcgetsec(rpn, 100)) != 0) {
-		log( "Pathname fetch returned %d\n", c);
 		if (c == WCEOT) {
+			zperr( "Pathname fetch returned %d", c);
 			sendline(ACK);
 			Lleft=0;	/* Do read next time ... */
 			readline(1);
@@ -421,7 +423,7 @@ wcrx()
 			sendchar=ACK;
 		}
 		else if (sectcurr==(sectnum&Wcsmask)) {
-			log( "Received dup Sector\n");
+			zperr( "Received dup Sector");
 			sendchar=ACK;
 		}
 		else if (sectcurr==WCEOT) {
@@ -434,7 +436,7 @@ wcrx()
 		else if (sectcurr==ERROR)
 			return ERROR;
 		else {
-			log( "Sync Error\n");
+			zperr( "Sync Error");
 			return ERROR;
 		}
 	}
@@ -484,7 +486,7 @@ get2:
 						goto bilge;
 					oldcrc=updcrc(firstch, oldcrc);
 					if (oldcrc & 0xFFFF)
-						log("CRC=0%o\n", oldcrc);
+						zperr( "CRC Error");
 					else {
 						Firstsec=FALSE;
 						return sectcurr;
@@ -495,11 +497,10 @@ get2:
 					return sectcurr;
 				}
 				else
-					log( "Checksum Error\n");
+					zperr( "Checksum Error");
 			}
 			else
-				log("Sector number garbled 0%o 0%o\n",
-				 sectcurr, oldcrc);
+				zperr("Sector number garbled");
 		}
 		/* make sure eot really is eot and not just mixmash */
 #ifdef NFGVMIN
@@ -511,7 +512,7 @@ get2:
 #endif
 		else if (firstch==CAN) {
 			if (Lastrx==CAN) {
-				log( "Sender CANcelled\n");
+				zperr( "Sender CANcelled");
 				return ERROR;
 			} else {
 				Lastrx=CAN;
@@ -522,10 +523,10 @@ get2:
 			if (Firstsec)
 				goto humbug;
 bilge:
-			log( "Timeout\n");
+			zperr( "TIMEOUT");
 		}
 		else
-			log( "Got 0%o sector header\n", firstch);
+			zperr( "Got 0%o sector header", firstch);
 
 humbug:
 		Lastrx=0;
@@ -566,7 +567,7 @@ int timeout;
 	n = timeout/10;
 	if (n < 2)
 		n = 3;
-	if (Verbose > 3)
+	if (Verbose > 5)
 		fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
 		  n, Readnum);
 	if (setjmp(tohere)) {
@@ -581,7 +582,7 @@ int timeout;
 	signal(SIGALRM, alrm); alarm(n);
 	Lleft=read(iofd, cdq=linbuf, Readnum);
 	alarm(0);
-	if (Verbose > 3) {
+	if (Verbose > 5) {
 		fprintf(stderr, "Read returned %d bytes\n", Lleft);
 	}
 	if (Lleft < 1)
@@ -632,10 +633,13 @@ char *name;
 		Thisbinary = TRUE;
 	else if (zmanag == ZMAPND)
 		openmode = "a";
+
+#ifndef BIX
 	/* ZMPROT check for existing file */
 	if (zmanag == ZMPROT && (fout=fopen(name, "r"))) {
 		fclose(fout);  return ERROR;
 	}
+#endif
 
 	Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
 
@@ -649,6 +653,13 @@ char *name;
 			  name, Bytesleft, Modtime, Filemode);
 		}
 	}
+
+#ifdef BIX
+	if ((fout=fopen("scratchpad", openmode)) == NULL)
+		return ERROR;
+	return OK;
+#else
+
 	else {		/* File coming from CP/M system */
 		for (p=name; *p; ++p)		/* change / to _ */
 			if ( *p == '/')
@@ -680,6 +691,7 @@ char *name;
 			return ERROR;
 	}
 	return OK;
+#endif /* BIX */
 }
 
 /*
@@ -720,7 +732,7 @@ sendline(c)
 	char d;
 
 	d = c;
-	if (Verbose>4)
+	if (Verbose>6)
 		fprintf(stderr, "Sendline: %x\n", c);
 	write(1, &d, 1);
 }
@@ -781,13 +793,14 @@ register char *s,*t;
  * Log an error
  */
 /*VARARGS1*/
-log(s,p,u)
+zperr(s,p,u)
 char *s, *p, *u;
 {
-	if (!Verbose)
+	if (Verbose <= 0)
 		return;
-	fprintf(stderr, "error %d: ", errors);
+	fprintf(stderr, "Error %d: ", errors);
 	fprintf(stderr, s, p, u);
+	fprintf(stderr, "\n");
 }
 
 /* send cancel string to get the other end to shut up */
@@ -860,14 +873,14 @@ char *name;
 		if (fopen(name, "r") != NULL) {
 			canit();
 			fprintf(stderr, "\r\nrz: %s exists\n", name);
-			bibi();
+			bibi(-1);
 		}
 		/* restrict pathnames to current tree or uucppublic */
 		if ( substr(name, "../")
 		 || (name[0]== '/' && strncmp(name, PUBDIR, strlen(PUBDIR))) ) {
 			canit();
 			fprintf(stderr,"\r\nrz:\tSecurity Violation\r\n");
-			bibi();
+			bibi(-1);
 		}
 	}
 }
@@ -887,7 +900,7 @@ tryz()
 		return 0;
 
 
-	for (n=Zmodem?10:5; --n>=0; ) {
+	for (n=Zmodem?15:5; --n>=0; ) {
 		/* Set buffer length (0) and capability flags */
 		stohdr(0L);
 #ifdef CANBREAK
@@ -898,6 +911,8 @@ tryz()
 		if (Zctlesc)
 			Txhdr[ZF0] |= TESCCTL;
 		zshhdr(tryzhdrtype, Txhdr);
+		if (tryzhdrtype == ZSKIP)	/* Don't skip too far */
+			tryzhdrtype = ZRINIT;	/* CAF 8-21-87 */
 again:
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZRQINIT:
@@ -940,7 +955,7 @@ again:
 				do {
 					zshhdr(ZCOMPL, Txhdr);
 				}
-				while (++errors<10 && zgethdr(Rxhdr,1) != ZFIN);
+				while (++errors<20 && zgethdr(Rxhdr,1) != ZFIN);
 				ackbibi();
 				if (cmdzack1flg & ZCACK1)
 					exec2(secbuf);
@@ -1002,7 +1017,7 @@ rzfile()
 		return (tryzhdrtype = ZSKIP);
 	}
 
-	n = 10; rxbytes = 0l;
+	n = 20; rxbytes = 0l;
 
 	for (;;) {
 		stohdr(rxbytes);
@@ -1023,7 +1038,12 @@ nxthdr:
 			continue;
 		case ZEOF:
 			if (rclhdr(Rxhdr) != rxbytes) {
-				continue;
+				/*
+				 * Ignore eof if it's at wrong place - force
+				 *  a timeout because the eof might have gone
+				 *  out before we sent our zrpos.
+				 */
+				errors = 0;  goto nxthdr;
 			}
 			if (closeit()) {
 				tryzhdrtype = ZFERR;
@@ -1047,6 +1067,9 @@ nxthdr:
 				zmputs(Attn);  continue;
 			}
 moredata:
+			if (Verbose>1)
+				fprintf(stderr, "\r%7ld ZMODEM%s    ",
+				  rxbytes, Crc32?" CRC-32":"");
 			switch (c = zrdata(secbuf, KSIZE)) {
 			case ZCAN:
 				vfile("rzfile: zgethdr returned %d", c);
@@ -1065,26 +1088,27 @@ moredata:
 				}
 				continue;
 			case GOTCRCW:
-				n = 10;
+				n = 20;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
+				sendline(XON);
 				goto nxthdr;
 			case GOTCRCQ:
-				n = 10;
+				n = 20;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
 				goto moredata;
 			case GOTCRCG:
-				n = 10;
+				n = 20;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				goto moredata;
 			case GOTCRCE:
-				n = 10;
+				n = 20;
 				putsec(secbuf, Rxcount);
 				rxbytes += Rxcount;
 				goto nxthdr;
