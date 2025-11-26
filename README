@@ -1,3 +1,9 @@
+New for April 1989:  ZMODEM compression and other compatible extensions
+have been added to the rz and sz programs.  Please read the comments in
+the rz.c and sz.c source code for licensing information for commercial use.
+
+Previous versions of rz and sz (April 1988) remain Public Domain.
+
 New for April 1988:  VMS C flavors of rz and sz especially for tired
 frog stompers.  The following performance log entries give the story!
 

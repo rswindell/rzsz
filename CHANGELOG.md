@@ -1,5 +1,23 @@
 # Changelog
 
+## [1989-04-22] RZ 3.00 / SZ 3.01
+
+This release included this README update:
+```
+New for April 1989:  ZMODEM compression and other compatible extensions
+have been added to the rz and sz programs.  Please read the comments in
+the rz.c and sz.c source code for licensing information for commercial use.
+
+Previous versions of rz and sz (April 1988) remain Public Domain.
+```
+(Odd that the May 1988 releases were not referenced)
+
+  - New dependent source file: zmr.c
+  - Add optional Run Length Encoding (compression)
+  - Add optional Variable Length Headers (compression)
+  - This release included a new source file (genie.c) to support GEnie OS,
+    intentionaly not included in this repo to cut down the noise.
+
 ## [1988-05-29] RZ 2.03 / SZ 2.12
 
   - Last full Public Domain release

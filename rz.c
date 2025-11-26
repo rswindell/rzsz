@@ -1,8 +1,8 @@
-#define VERSION "2.03 05-17-88"
+#define VERSION "3.00 4-19-89"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -compat -M2 -Ox -K -i -DMD -DOMEN % -o rz; size rz;
-<-xtx-*> cc386 -Ox -DMD -DOMEN -DSEGMENTS=8 rz.c -o $B/rz;  size $B/rz
+/*% cc -compat -M2 -Ox -K -i -DMD % -o rz; size rz;
+<-xtx-*> cc386 -Ox -DMD rz.c -o $B/rz;  size $B/rz
  *
  * rz.c By Chuck Forsberg
  *
@@ -22,6 +22,7 @@
  *	cc vvmodem.c
  *	link rz,vvmodem
  *	rz :== $disk:[username.subdir]rz.exe
+ *      For high speed, try increasing the SYSGEN parameter TTY_TYPAHDSZ to 256.
  *
  *
  *  Unix is a trademark of Western Electric Company
@@ -29,6 +30,30 @@
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
  *  rz uses Unix buffered input to reduce wasted CPU time.
+ *
+ *	This version implements ZMODEM Run Length Encoding 
+ *	and variable length headers.  These features were not funded
+ *	by the original Telenet development contract.  This software,
+ *	including these features, may be freely used for non
+ *	commercial and educational purposes.  This software may also
+ *	be freely used to support file transfer operations to or from
+ *	licensed Omen Technology products.  Contact Omen Technology
+ *	for licensing for other uses.  Any programs which use part or
+ *	all of this software must be provided in source form with this
+ *	notice intact except by written permission from Omen
+ *	Technology Incorporated.
+ *
+ *		Omen Technology Inc		FAX: 503-621-3745
+ *		Post Office Box 4681
+ *		Portland OR 97208
+ *
+ *	Previous versions of this program (not containing the extensions
+ *	listed above) remain in the public domain.
+ *
+ *	This code is made available in the hope it will be useful,
+ *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
+ *	DAMAGES OF ANY KIND.
+ *
  *
  * Iff the program is invoked by rzCOMMAND, output is piped to 
  * "COMMAND filename"  (Unix only)
@@ -71,7 +96,15 @@
 #define BUFREAD
 extern int errno;
 #define SS_NORMAL SS$_NORMAL
+
+#ifndef PROGNAME
+#define PROGNAME "rz"
+#endif
+
+
 #else
+
+
 #define SS_NORMAL 0
 #define LOGFILE "/tmp/rzlog"
 #include <stdio.h>
@@ -111,6 +144,7 @@ FILE *popen();
 #define WANTCRC 0103	/* send C not NAK to get crc not checksum */
 #define TIMEOUT (-2)
 #define RCDO (-3)
+#define GCOUNT (-4)
 #define ERRORMAX 5
 #define RETRYMAX 5
 #define WCEOT (-10)
@@ -120,6 +154,7 @@ FILE *popen();
 int Zmodem=0;		/* ZMODEM protocol requested */
 int Nozmodem = 0;	/* If invoked as "rb" */
 unsigned Baudrate = 2400;
+unsigned Effbaud = 2400;
 #ifdef vax11c
 #include "vrzsz.c"	/* most of the system dependent stuff here */
 #else
@@ -192,7 +227,10 @@ int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 jmp_buf tohere;		/* For the interrupt on RX timeout */
 
 #define xsendline(c) sendline(c)
+
 #include "zm.c"
+
+#include "zmr.c"
 
 int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
 
@@ -228,7 +266,7 @@ char *argv[];
 
 	from_cu();
 #ifdef vax11c
-	Progname = virgin = "rz";
+	chkinvok(virgin = PROGNAME);
 #else
 	chkinvok(virgin=argv[0]);	/* if called as [-]rzCOMMAND set flag */
 #endif
@@ -331,13 +369,9 @@ char *argv[];
 usage()
 {
 	cucheck();
-#ifdef vax11c
-	fprintf(stderr,"Usage:	rz [-abeuvy]\n");
-#else
 	fprintf(stderr,"Usage:	rz [-abeuvy]		(ZMODEM)\n");
 	fprintf(stderr,"or	rb [-abuvy]		(YMODEM)\n");
 	fprintf(stderr,"or	rx [-abcv] file	(XMODEM or XMODEM-1k)\n");
-#endif
 	fprintf(stderr,"	  -a ASCII transfer (strip CR)\n");
 	fprintf(stderr,"	  -b Binary transfer for all files\n");
 #ifndef vax11c
@@ -418,6 +452,7 @@ fubar:
 		pclose(fout);  return ERROR;
 	}
 #endif
+	Modtime = 1;
 	if (fout)
 		fclose(fout);
 #ifndef vax11c
@@ -644,7 +679,7 @@ int timeout;
 		  n, Readnum);
 	if (setjmp(tohere)) {
 #ifdef TIOCFLUSH
-/*		ioctl(iofd, TIOCFLUSH, 0); */
+/*		ioctl(0, TIOCFLUSH, 0); */
 #endif
 		Lleft = 0;
 		if (Verbose>1)
@@ -652,7 +687,7 @@ int timeout;
 		return TIMEOUT;
 	}
 	signal(SIGALRM, alrm); alarm(n);
-	Lleft=read(iofd, cdq=linbuf, Readnum);
+	Lleft=read(0, cdq=linbuf, Readnum);
 	alarm(0);
 	if (Verbose > 5) {
 		fprintf(stderr, "Read returned %d bytes\n", Lleft);
@@ -675,9 +710,9 @@ purgeline()
 {
 	Lleft = 0;
 #ifdef USG
-	ioctl(iofd, TCFLSH, 0);
+	ioctl(0, TCFLSH, 0);
 #else
-	lseek(iofd, 0L, 2);
+	lseek(0, 0L, 2);
 #endif
 }
 #endif
@@ -768,14 +803,12 @@ char *name;
 		if (Nflag)
 			name = "/dev/null";
 #ifndef vax11c
-#ifdef OMEN
 		if (name[0] == '!' || name[0] == '|') {
 			if ( !(fout = popen(name+1, "w"))) {
 				return ERROR;
 			}
 			Topipe = -1;  return(OK);
 		}
-#endif
 #endif
 #ifdef MD
 		fout = fopen(name, openmode);
@@ -1026,7 +1059,6 @@ int sct;
 		fprintf(stderr,"%03d%c",sct,sct%10? ' ' : '\r');
 }
 
-#ifndef vax11c
 /*
  * If called as [-][dir/../]vrzCOMMAND set Verbose to 1
  * If called as [-][dir/../]rzCOMMAND set the pipe flag
@@ -1056,7 +1088,6 @@ char *s;
 	if (s[2] && s[0]=='r' && s[1]=='z')
 		Topipe = 1;
 }
-#endif
 
 /*
  * Totalitarian Communist pathname processing
@@ -1109,12 +1140,17 @@ tryz()
 #endif
 		if (Zctlesc)
 			Txhdr[ZF0] |= TESCCTL;
-		zshhdr(tryzhdrtype, Txhdr);
+		Txhdr[ZF0] |= CANRLE;
+		Txhdr[ZF1] = CANVHDR;
+		/* tryzhdrtype may == ZRINIT */
+		zshhdr(4,tryzhdrtype, Txhdr);
 		if (tryzhdrtype == ZSKIP)	/* Don't skip too far */
 			tryzhdrtype = ZRINIT;	/* CAF 8-21-87 */
 again:
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZRQINIT:
+			if (Rxhdr[ZF3] & 0x80)
+				Usevhdrs = 1;	/* we can var header */
 			continue;
 		case ZEOF:
 			continue;
@@ -1124,25 +1160,27 @@ again:
 			zconv = Rxhdr[ZF0];
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
+			if (Rxhdr[ZF3] & ZCANVHDR)
+				Usevhdrs = TRUE;
 			tryzhdrtype = ZRINIT;
 			c = zrdata(secbuf, 1024);
 			mode(3);
 			if (c == GOTCRCW)
 				return ZFILE;
-			zshhdr(ZNAK, Txhdr);
+			zshhdr(4,ZNAK, Txhdr);
 			goto again;
 		case ZSINIT:
 			Zctlesc = TESCCTL & Rxhdr[ZF0];
 			if (zrdata(Attn, ZATTNLEN) == GOTCRCW) {
 				stohdr(1L);
-				zshhdr(ZACK, Txhdr);
+				zshhdr(4,ZACK, Txhdr);
 				goto again;
 			}
-			zshhdr(ZNAK, Txhdr);
+			zshhdr(4,ZNAK, Txhdr);
 			goto again;
 		case ZFREECNT:
 			stohdr(getfree());
-			zshhdr(ZACK, Txhdr);
+			zshhdr(4,ZACK, Txhdr);
 			goto again;
 		case ZCOMMAND:
 #ifdef vax11c
@@ -1156,7 +1194,7 @@ again:
 					stohdr((long)sys2(secbuf));
 				purgeline();	/* dump impatient questions */
 				do {
-					zshhdr(ZCOMPL, Txhdr);
+					zshhdr(4,ZCOMPL, Txhdr);
 				}
 				while (++errors<20 && zgethdr(Rxhdr,1) != ZFIN);
 				ackbibi();
@@ -1164,7 +1202,7 @@ again:
 					exec2(secbuf);
 				return ZCOMPL;
 			}
-			zshhdr(ZNAK, Txhdr); goto again;
+			zshhdr(4,ZNAK, Txhdr); goto again;
 #endif
 		case ZCOMPL:
 			goto again;
@@ -1228,7 +1266,7 @@ rzfile()
 		chinseg = 0;
 #endif
 		stohdr(rxbytes);
-		zshhdr(ZRPOS, Txhdr);
+		zshhdr(4,ZRPOS, Txhdr);
 nxthdr:
 		switch (c = zgethdr(Rxhdr, 0)) {
 		default:
@@ -1283,6 +1321,7 @@ nxthdr:
 			putsec(secbuf, chinseg);
 			chinseg = 0;
 #endif
+			Modtime = 1;
 			closeit();
 			vfile("rzfile: Sender SKIPPED file");
 			return c;
@@ -1300,7 +1339,7 @@ nxthdr:
 moredata:
 			if (Verbose>1)
 				fprintf(stderr, "\r%7ld ZMODEM%s    ",
-				  rxbytes, Crc32?" CRC-32":"");
+				  rxbytes, Crc32r?" CRC-32":"");
 #ifdef SEGMENTS
 			if (chinseg >= (1024 * SEGMENTS)) {
 				putsec(secbuf, chinseg);
@@ -1350,7 +1389,7 @@ moredata:
 #endif
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
-				zshhdr(ZACK, Txhdr);
+				zshhdr(4,ZACK, Txhdr);
 				sendline(XON);
 				goto nxthdr;
 			case GOTCRCQ:
@@ -1362,7 +1401,7 @@ moredata:
 #endif
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
-				zshhdr(ZACK, Txhdr);
+				zshhdr(4,ZACK, Txhdr);
 				goto moredata;
 			case GOTCRCG:
 				n = 20;
@@ -1451,7 +1490,7 @@ ackbibi()
 	stohdr(0L);
 	for (n=3; --n>=0; ) {
 		purgeline();
-		zshhdr(ZFIN, Txhdr);
+		zshhdr(4,ZFIN, Txhdr);
 		switch (readline(100)) {
 		case 'O':
 			readline(1);	/* Discard 2nd 'O' */

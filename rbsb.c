@@ -1,6 +1,6 @@
 /*
  *
- *  Rev 05-05-1988
+ *  Rev 3-18-89
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
@@ -15,8 +15,10 @@
 #ifdef V7
 #include <sys/types.h>
 #include <sys/stat.h>
+#define STAT
 #include <sgtty.h>
 #define OS "V7/BSD"
+#define ROPMODE "r"
 #ifdef LLITOUT
 long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
 long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
@@ -33,9 +35,10 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #ifdef USG
 #include <sys/types.h>
 #include <sys/stat.h>
+#define STAT
 #include <termio.h>
-#include <sys/ioctl.h>
 #define OS "SYS III/V"
+#define ROPMODE "r"
 #define MODE2OK
 #include <string.h>
 #endif
@@ -102,18 +105,20 @@ rdchk(f)
 #define READCHECK
 #include <fcntl.h>
 
-char checked = '\0' ;
+int checked = 0;
 /*
  * Nonblocking I/O is a bit different in System V, Release 2
  */
 rdchk(f)
 {
 	int lf, savestat;
+	static char bchecked;
 
 	savestat = fcntl(f, F_GETFL) ;
 	fcntl(f, F_SETFL, savestat | O_NDELAY) ;
-	lf = read(f, &checked, 1) ;
+	lf = read(f, &bchecked, 1) ;
 	fcntl(f, F_SETFL, savestat) ;
+	checked = bchecked & 0377;	/* force unsigned byte */
 	return(lf) ;
 }
 #endif
@@ -140,8 +145,6 @@ struct sgttyb oldtty, tty;
 struct tchars oldtch, tch;
 #endif
 
-int iofd = 0;		/* File descriptor for ioctls & reads */
-
 /*
  * mode(n)
  *  3: save old tty stat, set raw mode with flow control
@@ -158,7 +161,7 @@ mode(n)
 #ifdef USG
 	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0)
-			(void) ioctl(iofd, TCGETA, &oldtty);
+			(void) ioctl(0, TCGETA, &oldtty);
 		tty = oldtty;
 
 		tty.c_iflag = BRKINT|IXON;
@@ -186,13 +189,13 @@ mode(n)
 #endif
 		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
 
-		(void) ioctl(iofd, TCSETAW, &tty);
+		(void) ioctl(0, TCSETAW, &tty);
 		did0 = TRUE;
 		return OK;
 	case 1:
 	case 3:
 		if(!did0)
-			(void) ioctl(iofd, TCGETA, &oldtty);
+			(void) ioctl(0, TCGETA, &oldtty);
 		tty = oldtty;
 
 		tty.c_iflag = n==3 ? (IGNBRK|IXOFF) : IGNBRK;
@@ -212,9 +215,9 @@ mode(n)
 		tty.c_cc[VMIN] = HOWMANY; /* This many chars satisfies reads */
 #endif
 		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
-		(void) ioctl(iofd, TCSETAW, &tty);
+		(void) ioctl(0, TCSETAW, &tty);
 		did0 = TRUE;
-		Baudrate = getspeed(tty.c_cflag & CBAUD);
+		Effbaud = Baudrate = getspeed(tty.c_cflag & CBAUD);
 		return OK;
 #endif
 #ifdef V7
@@ -227,11 +230,11 @@ mode(n)
 	 */
 	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0) {
-			ioctl(iofd, TIOCEXCL, 0);
-			ioctl(iofd, TIOCGETP, &oldtty);
-			ioctl(iofd, TIOCGETC, &oldtch);
+			ioctl(0, TIOCEXCL, 0);
+			ioctl(0, TIOCGETP, &oldtty);
+			ioctl(0, TIOCGETC, &oldtch);
 #ifdef LLITOUT
-			ioctl(iofd, TIOCLGET, &Locmode);
+			ioctl(0, TIOCLGET, &Locmode);
 #endif
 		}
 		tty = oldtty;
@@ -243,10 +246,10 @@ mode(n)
 #endif
 		tty.sg_flags |= (ODDP|EVENP|CBREAK);
 		tty.sg_flags &= ~(ALLDELAY|CRMOD|ECHO|LCASE);
-		ioctl(iofd, TIOCSETP, &tty);
-		ioctl(iofd, TIOCSETC, &tch);
+		ioctl(0, TIOCSETP, &tty);
+		ioctl(0, TIOCSETC, &tch);
 #ifdef LLITOUT
-		ioctl(iofd, TIOCLBIS, &Locbit);
+		ioctl(0, TIOCLBIS, &Locbit);
 #endif
 		bibi(99);	/* un-raw doesn't work w/o lit out */
 		did0 = TRUE;
@@ -254,36 +257,36 @@ mode(n)
 	case 1:
 	case 3:
 		if(!did0) {
-			ioctl(iofd, TIOCEXCL, 0);
-			ioctl(iofd, TIOCGETP, &oldtty);
-			ioctl(iofd, TIOCGETC, &oldtch);
+			ioctl(0, TIOCEXCL, 0);
+			ioctl(0, TIOCGETP, &oldtty);
+			ioctl(0, TIOCGETC, &oldtch);
 #ifdef LLITOUT
-			ioctl(iofd, TIOCLGET, &Locmode);
+			ioctl(0, TIOCLGET, &Locmode);
 #endif
 		}
 		tty = oldtty;
-		tty.sg_flags |= RAW;
+		tty.sg_flags |= (RAW|TANDEM);
 		tty.sg_flags &= ~ECHO;
-		ioctl(iofd, TIOCSETP, &tty);
+		ioctl(0, TIOCSETP, &tty);
 		did0 = TRUE;
-		Baudrate = getspeed(tty.sg_ospeed);
+		Effbaud = Baudrate = getspeed(tty.sg_ospeed);
 		return OK;
 #endif
 	case 0:
 		if(!did0)
 			return ERROR;
 #ifdef USG
-		(void) ioctl(iofd, TCSBRK, 1);	/* Wait for output to drain */
-		(void) ioctl(iofd, TCFLSH, 1);	/* Flush input queue */
-		(void) ioctl(iofd, TCSETAW, &oldtty);	/* Restore modes */
-		(void) ioctl(iofd, TCXONC,1);	/* Restart output */
+		(void) ioctl(0, TCSBRK, 1);	/* Wait for output to drain */
+		(void) ioctl(0, TCFLSH, 1);	/* Flush input queue */
+		(void) ioctl(0, TCSETAW, &oldtty);	/* Restore modes */
+		(void) ioctl(0, TCXONC,1);	/* Restart output */
 #endif
 #ifdef V7
-		ioctl(iofd, TIOCSETP, &oldtty);
-		ioctl(iofd, TIOCSETC, &oldtch);
-		ioctl(iofd, TIOCNXCL, 0);
+		ioctl(0, TIOCSETP, &oldtty);
+		ioctl(0, TIOCSETC, &oldtch);
+		ioctl(0, TIOCNXCL, 0);
 #ifdef LLITOUT
-		ioctl(iofd, TIOCLSET, &Locmode);
+		ioctl(0, TIOCLSET, &Locmode);
 #endif
 #endif
 
@@ -299,14 +302,14 @@ sendbrk()
 #ifdef TIOCSBRK
 #define CANBREAK
 	sleep(1);
-	ioctl(iofd, TIOCSBRK, 0);
+	ioctl(0, TIOCSBRK, 0);
 	sleep(1);
-	ioctl(iofd, TIOCCBRK, 0);
+	ioctl(0, TIOCCBRK, 0);
 #endif
 #endif
 #ifdef USG
 #define CANBREAK
-	ioctl(iofd, TCSBRK, 0);
+	ioctl(0, TCSBRK, 0);
 #endif
 }
 

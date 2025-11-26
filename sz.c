@@ -1,9 +1,9 @@
-#define VERSION "sz 2.12 05-29-88"
+#define VERSION "sz 3.01 4-22-89"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
 
-	Following is used for testing, might not be reasonable for production
+/*% cc -Zi -DXX -DNFGVMIN -DREADCHECK sz.c -lx -o xsz; size xsz
 <-xtx-*> cc -Osal -DTXBSIZE=32768  -DSV sz.c -lx -o $B/sz; size $B/sz
 
  ****************************************************************************
@@ -34,7 +34,7 @@
  *		link sz,vvmodem
  *	sz :== $disk$user2:[username.subdir]sz.exe
  *
- *  If you feel adventureous, remove the #define BADSYNC line
+ *  If you feel adventureous, remove the #define BADSEEK line
  *  immediately following the #ifdef vax11c line!  Some VMS
  *  systems know how to fseek, some don't.
  *
@@ -48,6 +48,29 @@
  *
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  *
+ *	This version implements ZMODEM Run Length Encoding, Comparision,
+ *	and variable length headers.  These features were not funded
+ *	by the original Telenet development contract.  This software,
+ *	including these features, may be freely used for non
+ *	commercial and educational purposes.  This software may also
+ *	be freely used to support file transfer operations to or from
+ *	licensed Omen Technology products.  Contact Omen Technology
+ *	for licensing for other uses.  Any programs which use part or
+ *	all of this software must be provided in source form with this
+ *	notice intact except by written permission from Omen
+ *	Technology Incorporated.
+ *
+ *		Omen Technology Inc		FAX: 503-621-3745
+ *		Post Office Box 4681
+ *		Portland OR 97208
+ *
+ *	Previous versions of this program (not containing the extensions
+ *	listed above) remain in the public domain.
+ *
+ *	This code is made available in the hope it will be useful,
+ *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
+ *	DAMAGES OF ANY KIND.
+ *
  *  2.1x hacks to avoid VMS fseek() bogosity, allow input from pipe
  *     -DBADSEEK -DTXBSIZE=32768  
  *  2.x has mods for VMS flavor
@@ -56,14 +79,20 @@
  * in accordance with the 7-31-87 ZMODEM Protocol Description
  */
 
+#ifdef XX
+#define XARGSFILE "args"
+long Thisflen;
+#endif
 
 char *substr(), *getenv();
 
 #ifdef vax11c
+#define STATIC
 #define BADSEEK
 #define TXBSIZE 32768		/* Must be power of two, < MAXINT */
 #include <types.h>
 #include <stat.h>
+#define STAT
 #define LOGFILE "szlog.tmp"
 #include <stdio.h>
 #include <signal.h>
@@ -71,34 +100,66 @@ char *substr(), *getenv();
 #include <ctype.h>
 #include <errno.h>
 #define OS "VMS"
+#define ROPMODE "r"
 #define READCHECK
 #define BUFWRITE
-#define iofd
 extern int errno;
 #define SS_NORMAL SS$_NORMAL
 #define xsendline(c) sendline(c)
 
+#ifndef PROGNAME
+#define PROGNAME "sz"
+#endif
+
 
 #else	/* vax11c */
 
-
+#ifdef GENIE
+#define STATIC static
+#define LOGFILE "szlog"
+#define BADSEEK
+#define TXBSIZE 32768		/* Must be power of two, < MAXINT */
+#define OS "GEnie"
 #define SS_NORMAL 0
+#include <stdio.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <ctype.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <fildes.h>
+FILDES fdes;
+extern int errno;
+int Binfile;
+long Thisflen;
+
+#define sendline(c) putchar(c & 0377)
+#define xsendline(c) putchar(c)
+
+#else
+
 #define LOGFILE "/tmp/szlog"
+#define SS_NORMAL 0
 #include <stdio.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
 extern int errno;
+#define STATIC
 
 #define sendline(c) putchar(c & 0377)
 #define xsendline(c) putchar(c)
 
 #endif
+#endif
 
 #define PATHLEN 256
 #define OK 0
 #define FALSE 0
+#ifdef TRUE
+#undef TRUE
+#endif
 #define TRUE 1
 #define ERROR (-1)
 /* Ward Christensen / CP/M parameters - Don't change these! */
@@ -116,27 +177,37 @@ extern int errno;
 #define WANTG 0107	/* Send G not NAK to get nonstop batch xmsn */
 #define TIMEOUT (-2)
 #define RCDO (-3)
+#define GCOUNT (-4)
 #define RETRYMAX 10
 
 
 #define HOWMANY 2
-int Zmodem=0;		/* ZMODEM protocol requested by receiver */
-unsigned Baudrate=2400;	/* Default, should be set by first mode() call */
-unsigned Txwindow;	/* Control the size of the transmitted window */
-unsigned Txwspac;	/* Spacing between zcrcq requests */
-unsigned Txwcnt;	/* Counter used to space ack requests */
-long Lrxpos;		/* Receiver's last reported offset */
-int errors;
+STATIC int Zmodem=0;		/* ZMODEM protocol requested by receiver */
+unsigned Baudrate=4800;		/* Default, set by first mode() call */
+STATIC unsigned Effbaud = 4800;
+STATIC unsigned Txwindow;	/* Control the size of the transmitted window */
+STATIC unsigned Txwspac;	/* Spacing between zcrcq requests */
+STATIC unsigned Txwcnt;	/* Counter used to space ack requests */
+STATIC long Lrxpos;		/* Receiver's last reported offset */
+STATIC int errors;
 
 #ifdef vax11c
 #include "vrzsz.c"	/* most of the system dependent stuff here */
 #else
+#ifdef GENIE
+#include "genie.c"	/* most of the system dependent stuff here */
+#else
 #include "rbsb.c"	/* most of the system dependent stuff here */
+#ifdef XX
+#undef STAT
 #endif
+#endif
+#endif
+
 #include "crctab.c"
 
-int Filesleft;
-long Totalleft;
+STATIC int Filesleft;
+STATIC long Totalleft;
 
 /*
  * Attention string to be executed by receiver to interrupt streaming data
@@ -144,88 +215,119 @@ long Totalleft;
  *  ^C (03) or after it.
  */
 #ifdef READCHECK
-char Myattn[] = { 0 };
+STATIC char Myattn[] = { 0 };
 #else
 #ifdef USG
-char Myattn[] = { 03, 0336, 0 };
+STATIC char Myattn[] = { 03, 0336, 0 };
 #else
-char Myattn[] = { 0 };
+#ifndef GENIE
+STATIC char Myattn[] = { 0 };
+#endif
 #endif
 #endif
 
 FILE *in;
 
 #ifdef BADSEEK
-int Canseek = 0;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
+STATIC int Canseek = 0;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
 #ifndef TXBSIZE
 #define TXBSIZE 16384		/* Must be power of two, < MAXINT */
 #endif
 #else
-int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
+STATIC int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
 #endif
 
 #ifdef TXBSIZE
 #define TXBMASK (TXBSIZE-1)
-char Txb[TXBSIZE];		/* Circular buffer for file reads */
-char *txbuf = Txb;		/* Pointer to current file segment */
+STATIC char Txb[TXBSIZE];		/* Circular buffer for file reads */
+STATIC char *txbuf = Txb;		/* Pointer to current file segment */
 #else
-char txbuf[1024];
+STATIC char txbuf[1024];
 #endif
-long vpos = 0;			/* Number of bytes read from file */
+STATIC long vpos = 0;			/* Number of bytes read from file */
 
-char Lastrx;
-char Crcflg;
-int Verbose=0;
-int Modem2=0;		/* XMODEM Protocol - don't send pathnames */
-int Restricted=0;	/* restricted; no /.. or ../ in filenames */
-int Quiet=0;		/* overrides logic that would otherwise set verbose */
-int Ascii=0;		/* Add CR's for brain damaged programs */
-int Fullname=0;		/* transmit full pathname */
-int Unlinkafter=0;	/* Unlink file after it is sent */
-int Dottoslash=0;	/* Change foo.bar.baz to foo/bar/baz */
-int firstsec;
-int errcnt=0;		/* number of files unreadable */
-int blklen=128;		/* length of transmitted records */
-int Optiong;		/* Let it rip no wait for sector ACK's */
-int Eofseen;		/* EOF seen on input set by zfilbuf */
-int BEofseen;		/* EOF seen on input set by fooseek */
-int Totsecs;		/* total number of sectors this file */
-int Filcnt=0;		/* count of number of files opened */
-int Lfseen=0;
-unsigned Rxbuflen = 16384;	/* Receiver's max buffer length */
-int Tframlen = 0;	/* Override for tx frame length */
-int blkopt=0;		/* Override value for zmodem blklen */
-int Rxflags = 0;
-long bytcnt;
-int Wantfcs32 = TRUE;	/* want to send 32 bit FCS */
-char Lzconv;	/* Local ZMODEM file conversion request */
-char Lzmanag;	/* Local ZMODEM file management request */
-int Lskipnocor;
-char Lztrans;
-char zconv;		/* ZMODEM file conversion request */
-char zmanag;		/* ZMODEM file management request */
-char ztrans;		/* ZMODEM file transport request */
-int Command;		/* Send a command, then exit. */
-char *Cmdstr;		/* Pointer to the command string */
-int Cmdtries = 11;
-int Cmdack1;		/* Rx ACKs command, then do it */
-int Exitcode;
-int Test;		/* 1= Force receiver to send Attn, etc with qbf. */
+STATIC char Lastrx;
+STATIC char Crcflg;
+STATIC int Verbose=0;
+STATIC int Modem2=0;		/* XMODEM Protocol - don't send pathnames */
+STATIC int Restricted=0;	/* restricted; no /.. or ../ in filenames */
+STATIC int Quiet=0;		/* overrides logic that would otherwise set verbose */
+STATIC int Ascii=0;		/* Add CR's for brain damaged programs */
+STATIC int Fullname=0;		/* transmit full pathname */
+STATIC int Unlinkafter=0;	/* Unlink file after it is sent */
+STATIC int Dottoslash=0;	/* Change foo.bar.baz to foo/bar/baz */
+STATIC int firstsec;
+STATIC int errcnt=0;		/* number of files unreadable */
+STATIC int blklen=128;		/* length of transmitted records */
+STATIC int Optiong;		/* Let it rip no wait for sector ACK's */
+STATIC int Eofseen;		/* EOF seen on input set by zfilbuf */
+STATIC int BEofseen;		/* EOF seen on input set by fooseek */
+STATIC int Totsecs;		/* total number of sectors this file */
+STATIC int Filcnt=0;		/* count of number of files opened */
+STATIC int Lfseen=0;
+STATIC unsigned Rxbuflen = 16384;	/* Receiver's max buffer length */
+STATIC int Tframlen = 0;	/* Override for tx frame length */
+STATIC int blkopt=0;		/* Override value for zmodem blklen */
+STATIC int Rxflags = 0;
+STATIC long bytcnt;
+STATIC int Wantfcs32 = TRUE;	/* want to send 32 bit FCS */
+STATIC char Lzconv;	/* Local ZMODEM file conversion request */
+STATIC char Lzmanag;	/* Local ZMODEM file management request */
+STATIC int Lskipnocor;
+STATIC char Lztrans;
+STATIC int Command;		/* Send a command, then exit. */
+STATIC char *Cmdstr;		/* Pointer to the command string */
+STATIC int Cmdtries = 11;
+STATIC int Cmdack1;		/* Rx ACKs command, then do it */
+STATIC int Exitcode;
+STATIC int Test;		/* 1= Force receiver to send Attn, etc with qbf. */
 			/* 2= Character transparency test */
-char *qbf="The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
-long Lastsync;		/* Last offset to which we got a ZRPOS */
-int Beenhereb4;		/* How many times we've been ZRPOS'd same place */
+STATIC char *qbf=
+ "The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
+STATIC long Lastsync;		/* Last offset to which we got a ZRPOS */
+STATIC int Beenhereb4;		/* How many times we've been ZRPOS'd same place */
 
-jmp_buf tohere;		/* For the interrupt on RX timeout */
-jmp_buf intrjmp;	/* For the interrupt on RX CAN */
+STATIC jmp_buf tohere;		/* For the interrupt on RX timeout */
+STATIC jmp_buf intrjmp;	/* For the interrupt on RX CAN */
+
+#ifdef XARGSFILE
+char *
+mystrsave(s)
+char *s;
+{
+	register char *p;
+	char *malloc();
+
+	if (p = malloc(strlen(s)+1) ) {
+		strcpy(p, s); return p;
+	}
+	fprintf(stderr, "No memory for mystrsave!\n");
+	exit(1);
+}
+
+/* Remove (presumably) terminating CR and/or LF from string */
+uncrlf(s)
+register char *s;
+{
+	for ( ; *s; ++s)
+		switch (*s) {
+		case '\r':
+		case '\n':
+			*s = 0;  return;
+		}
+}
+#endif
+
 
 /* called by signal interrupt or terminate to clean things up */
 bibi(n)
 {
 	canit(); fflush(stdout); mode(0);
 	fprintf(stderr, "sz: caught signal %d; exiting\n", n);
+#ifndef GENIE
 	if (n == SIGQUIT)
 		abort();
+#endif
 	if (n == 99)
 		fprintf(stderr, "mode(2) in rbsb.c not implemented!!\n");
 	cucheck();
@@ -238,12 +340,18 @@ onintr()
 	longjmp(intrjmp, -1);
 }
 
-int Zctlesc;	/* Encode control characters */
-int Nozmodem = 0;	/* If invoked as "sb" */
-char *Progname = "sz";
-int Zrwindow = 1400;	/* RX window size (controls garbage count) */
+STATIC int Zctlesc;	/* Encode control characters */
+STATIC int Nozmodem = 0;	/* If invoked as "sb" */
+STATIC char *Progname = "sz";
+STATIC int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 #include "zm.c"
 
+#include "zmr.c"
+
+#ifdef XARGSFILE
+#define XARGSMAX 256
+char *xargv[XARGSMAX+1];
+#endif
 
 main(argc, argv)
 char *argv[];
@@ -259,7 +367,11 @@ char *argv[];
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 	from_cu();
+#ifdef vax11c
+	chkinvok(PROGNAME);
+#else
 	chkinvok(argv[0]);
+#endif
 
 	Rxtimeout = 600;
 	npats=0;
@@ -334,7 +446,9 @@ char *argv[];
 				case 'p':
 					Lzmanag = ZMPROT;  break;
 				case 'r':
-					Lzconv = ZCRESUM;
+					if (Lzconv == ZCRESUM)
+						Lzmanag = (Lzmanag & ZMMASK) | ZMCRC;
+					Lzconv = ZCRESUM; break;
 				case 'q':
 					Quiet=TRUE; Verbose=0; break;
 				case 't':
@@ -377,6 +491,8 @@ char *argv[];
 					/* **** FALLL THROUGH TO **** */
 				case 'y':
 					Lzmanag = ZMCLOB; break;
+				case 'Z':
+					Lztrans = ZTRLE;  break;
 				default:
 					usage();
 				}
@@ -386,10 +502,6 @@ char *argv[];
 			if (argv[0][0]) {
 				npats=argc;
 				patts=argv;
-#ifndef vax11c
-				if ( !strcmp(*patts, "-"))
-					iofd = 1;
-#endif
 			}
 		}
 	}
@@ -408,16 +520,42 @@ char *argv[];
 	}
 	vfile("%s %s for %s\n", Progname, VERSION, OS);
 
+#ifdef XARGSFILE
+	vfile("npats=%d *patts=%s", npats, *patts);
+	if (npats == 1 && !strcmp(XARGSFILE, *patts)) {
+		in = fopen(XARGSFILE, "r");
+		if (!in) {
+			printf(stderr, "Can't open / control file!\n");
+			exit(2);
+		}
+		for (npats=0,argv=patts=xargv; npats<XARGSMAX; ++npats,++argv) {
+			if (fgets(txbuf, 1024, in) <= 0)
+				break;
+			uncrlf(txbuf);
+			*argv = mystrsave(txbuf);
+		}
+		fclose(in);
+	}
+#endif
+
 	mode(1);
 
+#ifdef GENIE
+	signal(SIGINT, SIG_IGN);
+#else
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
 	} else {
 		signal(SIGINT, bibi); signal(SIGKILL, bibi);
 	}
+#endif
+#ifdef SIGQUIT
 	if ( !Fromcu)
 		signal(SIGQUIT, SIG_IGN);
+#endif
+#ifdef SIGTERM
 	signal(SIGTERM, bibi);
+#endif
 
 	if ( !Modem2) {
 		if (!Nozmodem) {
@@ -428,7 +566,7 @@ char *argv[];
 			stohdr(0L);
 			if (Command)
 				Txhdr[ZF0] = ZCOMMAND;
-			zshhdr(ZRQINIT, Txhdr);
+			zshhdr(4, ZRQINIT, Txhdr);
 		}
 	}
 	fflush(stdout);
@@ -462,6 +600,9 @@ char *argp[];
 	Crcflg=FALSE;
 	firstsec=TRUE;
 	bytcnt = -1;
+	if (Nozmodem) {
+		printf("Start your YMODEM receive. ");  fflush(stdout);
+	}
 	for (n=0; n<argc; ++n) {
 		Totsecs = 0;
 		if (wcs(argp[n])==ERROR)
@@ -469,7 +610,7 @@ char *argp[];
 	}
 	Totsecs = 0;
 	if (Filcnt==0) {	/* bitch if we couldn't open ANY files */
-		if ( !Modem2) {
+		if (!Nozmodem && !Modem2) {
 			Command = TRUE;
 			Cmdstr = "echo \"sz: Can't open any requested files\"";
 			if (getnak()) {
@@ -497,12 +638,50 @@ wcs(oname)
 char *oname;
 {
 	register c;
-	register char *p;
+	register char *p, *q;
+#ifdef STAT
 	struct stat f;
+#endif
 	char name[PATHLEN];
 
 	strcpy(name, oname);
 
+#ifdef XARGSFILE
+	/* Parse GEniename:REALname:length pathname syntax */
+	Thisflen = -1;
+	for (p = oname; *p; ++p) {
+		if (*p == ':') {
+			*p++ = 0;
+			q = p;
+			for (++p; *p; ++p) {
+				if (*p == ':') {
+					*p++ = 0;
+					Thisflen = atol(p);
+					break;
+				}
+			}
+			strcpy(name, q);
+			break;
+		}
+	}
+#endif
+
+#ifdef GENIE
+	_describe(oname,&fdes);		/* An undocumented goodie */
+	if (fdes.type_file == 1) {	/* Fortran Sequential Binary */
+		Binfile = 1;
+		in = fopen(oname,"rB");
+	}
+	else if (fdes.type_file == 0)  { /* Ascii */
+		Binfile = 0;
+		in = fopen(oname,"r");
+	}
+	else {				/* not a SL filetype */
+		fprintf(stderr, "\nUnknown file type %d\n",fdes.type_file);
+		++errcnt;
+		return OK;		/* pass over it, there may be others */
+	}
+#else
 	if (Restricted) {
 		/* restrict pathnames to current tree or uucppublic */
 		if ( substr(name, "../")
@@ -513,18 +692,16 @@ char *oname;
 		}
 	}
 
-	if ( !strcmp(oname, "-")) {
-		if ((p = getenv("ONAME")) && *p)
-			strcpy(name, p);
-		else
-			sprintf(name, "s%d.sz", getpid());
-		in = stdin;
-	}
-	else if ((in=fopen(oname, "r"))==NULL) {
+	in=fopen(oname, ROPMODE);
+#endif
+
+	if (in==NULL) {
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
 	}
 	BEofseen = Eofseen = 0;  vpos = 0;
+
+#ifdef STAT
 	/* Check for directory or block special files */
 	fstat(fileno(in), &f);
 	c = f.st_mode & S_IFMT;
@@ -532,6 +709,7 @@ char *oname;
 		fclose(in);
 		return OK;
 	}
+#endif
 
 	++Filcnt;
 	switch (wctxpn(name)) {
@@ -540,11 +718,18 @@ char *oname;
 	case ZSKIP:
 		return OK;
 	}
+#ifdef STAT
 	if (!Zmodem && wctx(f.st_size)==ERROR)
 		return ERROR;
+#else
+	if (!Zmodem && wctx(1000000000L)==ERROR)
+		return ERROR;
+#endif
 #ifndef vax11c
+#ifndef GENIE
 	if (Unlinkafter)
 		unlink(oname);
+#endif
 #endif
 	return 0;
 }
@@ -561,14 +746,19 @@ char *name;
 {
 	register char *p, *q;
 	char name2[PATHLEN];
+#ifdef STAT
 	struct stat f;
+#endif
 
 	if (Modem2) {
-		if ((in!=stdin) && *name && fstat(fileno(in), &f)!= -1) {
+#ifdef STAT
+		if (*name && fstat(fileno(in), &f)!= -1) {
 			fprintf(stderr, "Sending %s, %ld blocks: ",
 			  name, f.st_size>>7);
 		}
+#endif
 		fprintf(stderr, "Give your local XMODEM receive command now.\r\n");
+		fflush(stderr);
 		return OK;
 	}
 	zperr("Awaiting pathname nak for %s", *name?name:"<END>");
@@ -599,15 +789,35 @@ char *name;
 	p=q;
 	while (q < (txbuf + 1024))
 		*q++ = 0;
-	if (!Ascii && (in!=stdin) && *name && fstat(fileno(in), &f)!= -1)
-		sprintf(p, "%lu %lo %o 0 %d %ld", f.st_size, f.st_mtime,
-		  f.st_mode, Filesleft, Totalleft);
-	Totalleft -= f.st_size;
+	if (*name) {
+#ifdef XX
+		if (Thisflen >= 0) {
+			sprintf(p, "%u 0 0 0 %d %ld",
+			  Thisflen, Filesleft, Totalleft);
+			Totalleft -= Thisflen;
+		}
+#endif
+#ifdef GENIE
+		else
+			sprintf(p, "%d", fdes.current_file_size * 1260);
+		vfile("%s open Binfile=%d size=%ld", name, Binfile,
+		  fdes.current_file_size * 1260);
+#endif
+#ifdef STAT
+#ifndef XX
+		if (fstat(fileno(in), &f)!= -1)
+			sprintf(p, "%lu %lo %o 0 %d %ld", f.st_size, f.st_mtime,
+			  f.st_mode, Filesleft, Totalleft);
+		Totalleft -= f.st_size;
+#endif
+#endif
+	}
 	if (--Filesleft <= 0)
 		Totalleft = 0;
 	if (Totalleft < 0)
 		Totalleft = 0;
 
+#ifdef STAT
 	/* force 1k blocks if name won't fit in 128 byte block */
 	if (txbuf[125])
 		blklen=1024;
@@ -615,6 +825,7 @@ char *name;
 		txbuf[127] = (f.st_size + 127) >>7;
 		txbuf[126] = (f.st_size + 127) >>15;
 	}
+#endif
 	if (Zmodem)
 		return zsendfile(txbuf, 1+strlen(p)+(p-txbuf));
 	if (wcputsec(txbuf, 0, 128)==ERROR)
@@ -827,13 +1038,27 @@ zfilbuf()
 	int n;
 
 #ifdef TXBSIZE
+	vfile("zfilbuf: bytcnt =%lu vpos=%lu blklen=%d", bytcnt, vpos, blklen);
 	/* We assume request is within buffer, or just beyond */
 	txbuf = Txb + (bytcnt & TXBMASK);
 	if (vpos <= bytcnt) {
+#ifdef GENIE
+		if (Binfile) {
+			long l, m;  char *p;
+
+			for (p=txbuf, n=0, l=blklen;  l;  l -= 128, p+= 128) {
+				n += m = fgetb(p, 128, in);
+				if (m == 0)
+					break;
+			}
+		} else
+#endif
 		n = fread(txbuf, 1, blklen, in);
+
 		vpos += n;
 		if (n < blklen)
 			Eofseen = 1;
+		vfile("zfilbuf: n=%d vpos=%lu Eofseen=%d", n, vpos, Eofseen);
 		return n;
 	}
 	if (vpos >= (bytcnt+blklen))
@@ -850,11 +1075,15 @@ zfilbuf()
 }
 
 #ifdef TXBSIZE
+/* Replacement for brain damaged fseek function.  Returns 0==success */
 fooseek(fptr, pos, whence)
 FILE *fptr;
 long pos;
 {
-	int m, n;
+	long m, n;
+#ifdef GENIE
+	long l, k;  char *p;
+#endif
 
 	vfile("fooseek: pos =%lu vpos=%lu Canseek=%d", pos, vpos, Canseek);
 	/* Seek offset < current buffer */
@@ -867,12 +1096,28 @@ long pos;
 			if (fseek(fptr, vpos, 0))
 				return 1;
 		}
-		else if (Canseek == 0)
+		else if (Canseek == 0) {
+#ifdef GENIE
+			if (Binfile) {
+				if (fseekb(fptr, vpos = 0L, 0))
+					return 1;
+				} else
+#endif
 			if (fseek(fptr, vpos = 0L, 0))
 				return 1;
-		else
+		} else
 			return 1;
-		while (vpos <= pos) {
+		while (vpos < pos) {
+#ifdef GENIE
+			if (Binfile) {
+				for (p=Txb,n=0,l=TXBSIZE; l; l -= 128,p+= 128) {
+					n += (k = fgetb(p, 128, fptr));
+					vfile("bsk1: l=%d k=%d", l, k);
+					if (k == 0)
+						break;
+				}
+			} else
+#endif
 			n = fread(Txb, 1, TXBSIZE, fptr);
 			vpos += n;
 			vfile("n=%d vpos=%ld", n, vpos);
@@ -884,7 +1129,7 @@ long pos;
 		vfile("vpos=%ld", vpos);
 		return 0;
 	}
-	/* Seek offset > current buffer (crash recovery, etc.) */
+	/* Seek offset > current buffer (Crash Recovery, etc.) */
 	if (pos > vpos) {
 		if (Canseek)
 			if (fseek(fptr, vpos = (pos & ~TXBMASK), 0))
@@ -892,10 +1137,22 @@ long pos;
 		while (vpos <= pos) {
 			txbuf = Txb + (vpos & TXBMASK);
 			m = TXBSIZE - (vpos & TXBMASK);
-			n = fread(txbuf, 1, m, fptr);
+			vfile("m=%ld vpos=%ld", m,vpos);
+#ifdef GENIE
+			if (Binfile) {
+				for (p=txbuf,n=0,l=m; l; l -= 128,p+= 128) {
+					n += (k = fgetb(p, 128, fptr));
+					vfile("bsk2: l=%d k=%d n=%d", l, k, n);
+					if (k == 0)
+						break;
+				}
+			} else
+#endif
+				n = fread(txbuf, 1, m, fptr);
+			vfile("n=%ld vpos=%ld", n,vpos);
 			vpos += n;
-			vfile("bo=%d n=%d vpos=%ld", txbuf-Txb, n, vpos);
-			if (m < n) {
+			vfile("bo=%d m=%ld vpos=%ld", txbuf-Txb,m,vpos);
+			if (n < m) {
 				BEofseen = 1;
 				break;
 			}
@@ -903,7 +1160,7 @@ long pos;
 		return 0;
 	}
 	/* Seek offset is within current buffer */
-	vfile("vpos=%ld", vpos);
+	vfile("within buffer: vpos=%ld", vpos);
 	return 0;
 }
 #define fseek fooseek
@@ -911,11 +1168,11 @@ long pos;
 
 
 /* VARARGS1 */
-vfile(f, a, b, c)
+vfile(f, a, b, c, d)
 register char *f;
 {
 	if (Verbose > 2) {
-		fprintf(stderr, f, a, b, c);
+		fprintf(stderr, f, a, b, c, d);
 		fprintf(stderr, "\n");
 	}
 }
@@ -927,6 +1184,7 @@ alrm()
 }
 
 
+#ifndef GENIE
 #ifndef vax11c
 /*
  * readline(timeout) reads character(s) from file descriptor 0
@@ -949,7 +1207,7 @@ readline(timeout)
 		fprintf(stderr, "Timeout=%d Calling alarm(%d) ", timeout, c);
 	}
 	signal(SIGALRM, alrm); alarm(c);
-	c=read(iofd, byt, 1);
+	c=read(0, byt, 1);
 	alarm(0);
 	if (Verbose>5)
 		fprintf(stderr, "ret %x\n", byt[0]);
@@ -967,11 +1225,12 @@ flushmo()
 purgeline()
 {
 #ifdef USG
-	ioctl(iofd, TCFLSH, 0);
+	ioctl(0, TCFLSH, 0);
 #else
-	lseek(iofd, 0L, 2);
+	lseek(0, 0L, 2);
 #endif
 }
+#endif
 #endif
 
 /* send cancel string to get the other end to shut up */
@@ -1029,11 +1288,16 @@ register char *s,*t;
 
 char *babble[] = {
 #ifdef vax11c
-	"	Send file(s) with ZMODEM Protocol",
+	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
+	"	(Y) = Option applies to YMODEM only",
+	"	(Z) = Option applies to ZMODEM only",
 	"Usage:	sz [-2+abdefkLlNnquvwYy] [-] file ...",
 	"	sz [-2Ceqv] -c COMMAND",
 	"	\\ Force next option letter to upper case",
-#else
+	"	sb [-2adfkquv] [-] file ...",
+	"	sx [-2akquv] [-] file",
+#endif
+#ifndef vax11c
 	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
 	"	(Y) = Option applies to YMODEM only",
 	"	(Z) = Option applies to ZMODEM only",
@@ -1043,35 +1307,35 @@ char *babble[] = {
 	"	sx [-2akquv] [-] file",
 #endif
 #ifdef CSTOPB
-	"	2 Use 2 stop bits",
+	"	2   Use 2 stop bits",
 #endif
-	"	+ Append to existing destination file (Z)",
-	"	a (ASCII) change NL to CR/LF",
-	"	b Binary file transfer override",
-	"	c send COMMAND (Z)",
+	"	+   Append to existing destination file (Z)",
+	"	a   (ASCII) change NL to CR/LF",
+	"	b   Binary file transfer override",
+	"	c   send COMMAND (Z)",
 #ifndef vax11c
-	"	d Change '.' to '/' in pathnames (Y/Z)",
+	"	d   Change '.' to '/' in pathnames (Y/Z)",
 #endif
-	"	e Escape all control characters (Z)",
-	"	f send Full pathname (Y/Z)",
-	"	i send COMMAND, ack Immediately (Z)",
-	"	k Send 1024 byte packets (Y)",
+	"	e   Escape all control characters (Z)",
+	"	f   send Full pathname (Y/Z)",
+	"	i   send COMMAND, ack Immediately (Z)",
+	"	k   Send 1024 byte packets (Y)",
 	"	L N Limit subpacket length to N bytes (Z)",
 	"	l N Limit frame length to N bytes (l>=L) (Z)",
-	"	n send file if source newer (Z)",
-	"	N send file if source newer or longer (Z)",
-	"	o Use 16 bit CRC instead of 32 bit CRC (Z)",
-	"	p Protect existing destination file (Z)",
-	"	r Resume/Recover interrupted file transfer (Z)",
-	"	q Quiet (no progress reports)",
+	"	n   send file only if source newer (Z)",
+	"	N   send file only if source newer or longer (Z)",
+	"	o   Use 16 bit CRC instead of 32 bit CRC (Z)",
+	"	p   Protect existing destination file (Z)",
+	"	r   Resume/Recover interrupted file transfer (Z)",
+	"	q   Quiet (no progress reports)",
 #ifndef vax11c
-	"	u Unlink file after transmission",
+	"	u   Unlink (remove) file after transmission",
 #endif
-	"	v Verbose - provide debugging information",
-	"	w N Window is N bytes (Z)",
-	"	Y Yes, overwrite existing file, skip if not present at rx (Z)",
-	"	y Yes, overwrite existing file (Z)",
-	"- as pathname sends standard input as sPID.sz or environment ONAME",
+	"	v   Verbose - provide debugging information",
+	"	w N restrict Window to N bytes (Z)",
+	"	Y   Yes, overwrite existing file, skip if not present at rx (Z)",
+	"	y   Yes, overwrite existing file (Z)",
+	"	Z   Activate ZMODEM compression(Z)",
 	""
 };
 
@@ -1094,21 +1358,24 @@ usage()
 getzrxinit()
 {
 	register n;
+#ifdef STAT
 	struct stat f;
+#endif
 
 	for (n=10; --n>=0; ) {
 		
 		switch (zgethdr(Rxhdr, 1)) {
 		case ZCHALLENGE:	/* Echo receiver's challenge numbr */
 			stohdr(Rxpos);
-			zshhdr(ZACK, Txhdr);
+			zshhdr(4, ZACK, Txhdr);
 			continue;
 		case ZCOMMAND:		/* They didn't see out ZRQINIT */
 			stohdr(0L);
-			zshhdr(ZRQINIT, Txhdr);
+			zshhdr(4, ZRQINIT, Txhdr);
 			continue;
 		case ZRINIT:
 			Rxflags = 0377 & Rxhdr[ZF0];
+			Usevhdrs = Rxhdr[ZF1] & CANVHDR;
 			Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
 			Zctlesc |= Rxflags & TESCCTL;
 			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
@@ -1122,11 +1389,13 @@ getzrxinit()
 #endif
 #ifndef READCHECK
 #ifndef USG
+#ifndef GENIE
 			/* Use 1024 byte frames if no sample/interrupt */
 			if (Rxbuflen < 32 || Rxbuflen > 1024) {
 				Rxbuflen = 1024;
 				vfile("Rxbuflen=%d", Rxbuflen);
 			}
+#endif
 #endif
 #endif
 			/* Override to force shorter frame length */
@@ -1136,22 +1405,34 @@ getzrxinit()
 				Rxbuflen = Tframlen;
 			vfile("Rxbuflen=%d", Rxbuflen);
 
+#ifndef GENIE
 #ifndef vax11c
+#ifdef STAT
 			/* If using a pipe for testing set lower buf len */
-			fstat(iofd, &f);
+			fstat(0, &f);
 			if ((f.st_mode & S_IFMT) != S_IFCHR) {
 				Rxbuflen = 1024;
 			}
 #endif
+#endif
+#endif
 #ifdef BADSEEK
-			Canseek = 0;
-			Txwindow = TXBSIZE - 1024;
+#ifdef GENIExx
+			if (Txwindow == 0) {
+				Txwspac = (Txwindow = 8192)/4;
+			}
+#else
+			if (Txwindow == 0)
+				Txwindow = TXBSIZE - 1024;
 			Txwspac = TXBSIZE/4;
+#endif
+			Canseek = 0;
 #endif
 			/*
 			 * If input is not a regular file, force ACK's to
 			 *  prevent running beyond the buffer limits
 			 */
+#ifdef STAT
 			if ( !Command) {
 				fstat(fileno(in), &f);
 				if ((f.st_mode & S_IFMT) != S_IFREG) {
@@ -1164,21 +1445,33 @@ getzrxinit()
 #endif
 				}
 			}
+#endif
 			/* Set initial subpacket length */
 			if (blklen < 1024) {	/* Command line override? */
-				if (Baudrate > 300)
+				if (Effbaud > 300)
 					blklen = 256;
-				if (Baudrate > 1200)
+				if (Effbaud > 1200)
 					blklen = 512;
-				if (Baudrate > 2400)
+				if (Effbaud > 2400)
 					blklen = 1024;
 			}
 			if (Rxbuflen && blklen>Rxbuflen)
 				blklen = Rxbuflen;
 			if (blkopt && blklen > blkopt)
 				blklen = blkopt;
+#ifdef GENIE
+			blklen /= 128;  blklen *= 128;
+			if (blklen < 128)
+				blklen = 128;
+#endif
 			vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
 			vfile("Txwindow = %u Txwspac = %d", Txwindow, Txwspac);
+
+
+			if (Lztrans == ZTRLE && (Rxflags & CANRLE))
+				Txfcs32 = 2;
+			else
+				Lztrans = 0;
 
 			return (sendzsinit());
 		case ZCAN:
@@ -1188,7 +1481,7 @@ getzrxinit()
 			if (Rxhdr[ZF0] == ZCOMMAND)
 				continue;
 		default:
-			zshhdr(ZNAK, Txhdr);
+			zshhdr(4, ZNAK, Txhdr);
 			continue;
 		}
 	}
@@ -1206,10 +1499,10 @@ sendzsinit()
 	for (;;) {
 		stohdr(0L);
 		if (Zctlesc) {
-			Txhdr[ZF0] |= TESCCTL; zshhdr(ZSINIT, Txhdr);
+			Txhdr[ZF0] |= TESCCTL; zshhdr(4, ZSINIT, Txhdr);
 		}
 		else
-			zsbhdr(ZSINIT, Txhdr);
+			zsbhdr(4, ZSINIT, Txhdr);
 		zsdata(Myattn, 1+strlen(Myattn), ZCRCW);
 		c = zgethdr(Rxhdr, 1);
 		switch (c) {
@@ -1231,6 +1524,8 @@ char *buf;
 {
 	register c;
 	register UNSL long crc;
+	long lastcrcrq = -1;
+	char *p;
 
 	for (;;) {
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
@@ -1239,7 +1534,7 @@ char *buf;
 			Txhdr[ZF1] |= ZMSKNOLOC;
 		Txhdr[ZF2] = Lztrans;	/* file transport request */
 		Txhdr[ZF3] = 0;
-		zsbhdr(ZFILE, Txhdr);
+		zsbhdr(4, ZFILE, Txhdr);
 		zsdata(buf, blen, ZCRCW);
 again:
 		c = zgethdr(Rxhdr, 1);
@@ -1258,16 +1553,20 @@ again:
 		case ZFIN:
 			return ERROR;
 		case ZCRC:
-			crc = 0xFFFFFFFFL;
-			if (Canseek >= 0) {
-				while (((c = getc(in)) != EOF) && --Rxpos)
-					crc = UPDC32(c, crc);
-				crc = ~crc;
-				clearerr(in);	/* Clear EOF */
-				fseek(in, 0L, 0);
+			if (Rxpos != lastcrcrq) {
+				lastcrcrq = Rxpos;
+				crc = 0xFFFFFFFFL;
+				if (Canseek >= 0) {
+					fseek(in, 0L, 0);
+					while (((c = getc(in)) != EOF) && --lastcrcrq)
+						crc = UPDC32(c, crc);
+					crc = ~crc;
+					clearerr(in);	/* Clear possible EOF */
+					lastcrcrq = Rxpos;
+				}
 			}
 			stohdr(crc);
-			zsbhdr(ZCRC, Txhdr);
+			zsbhdr(4, ZCRC, Txhdr);
 			goto again;
 		case ZSKIP:
 			fclose(in); return c;
@@ -1276,9 +1575,29 @@ again:
 			 * Suppress zcrcw request otherwise triggered by
 			 * lastyunc==bytcnt
 			 */
-			if (Rxpos && fseek(in, Rxpos, 0))
+#ifdef GENIE
+			/* Special case - turn on RLE unless archive, etc. */
+			if (Rxflags & CANRLE) {		/* RX can do it */
+				bytcnt = 0;
+				zfilbuf();
+				vfile("txbuf012: %x %x %x", txbuf[0], txbuf[1],
+				  txbuf[2]);
+				if ((txbuf[0] != 032)	/* .ARC file */
+				 && (txbuf[0] != 0x1f)	/* .Z file */
+				 && (txbuf[0] != 0x1c)	/* .LHZ file */
+				 && strncmp(txbuf, "ZOO", 3)
+				 && strncmp(txbuf, "GIF", 3)
+				 && (txbuf[2] != 3))	/* .ZIP file */
+					Txfcs32 = 2;
+			}
+			/* GEnie binary can't seek to byte */
+			if (Binfile) {
+				Rxpos &= ~127L;
+			}
+#endif
+			if (fseek(in, Rxpos, 0))
 				return ERROR;
-			Lastsync = (bytcnt = Txpos = Rxpos) -1;
+			Lastsync = (bytcnt = Txpos = Lrxpos = Rxpos) -1;
 			return zsendfdata();
 		}
 	}
@@ -1293,7 +1612,6 @@ zsendfdata()
 	int junkcount;		/* Counts garbage chars received by TX */
 	static int tleft = 6;	/* Counter for test mode */
 
-	Lrxpos = 0;
 	junkcount = 0;
 	Beenhereb4 = FALSE;
 somemore:
@@ -1321,9 +1639,9 @@ gotack:
 		 * If the reverse channel can be tested for data,
 		 *  this logic may be used to detect error packets
 		 *  sent by the receiver, in place of setjmp/longjmp
-		 *  rdchk(fdes) returns non 0 if a character is available
+		 *  rdchk(fd) returns non 0 if a character is available
 		 */
-		while (rdchk(iofd)) {
+		while (rdchk(0)) {
 #ifdef SV
 			switch (checked)
 #else
@@ -1347,7 +1665,7 @@ gotack:
 	newcnt = Rxbuflen;
 	Txwcnt = 0;
 	stohdr(Txpos);
-	zsbhdr(ZDATA, Txhdr);
+	zsbhdr(4, ZDATA, Txhdr);
 
 	/*
 	 * Special testing mode.  This should force receiver to Attn,ZRPOS
@@ -1360,7 +1678,7 @@ gotack:
 				printf(qbf); fflush(stdout);
 				tcount += strlen(qbf);
 #ifdef READCHECK
-				while (rdchk(iofd)) {
+				while (rdchk(0)) {
 #ifdef SV
 					switch (checked)
 #else
@@ -1370,7 +1688,7 @@ gotack:
 					case CAN:
 					case ZPAD:
 #ifdef TCFLSH
-						ioctl(iofd, TCFLSH, 1);
+						ioctl(0, TCFLSH, 1);
 #endif
 						goto waitack;
 					case XOFF:	/* Wait for XON */
@@ -1402,8 +1720,7 @@ gotack:
 			e = ZCRCW;
 		else if (Txwindow && (Txwcnt += n) >= Txwspac) {
 			Txwcnt = 0;  e = ZCRCQ;
-		}
-		else
+		} else
 			e = ZCRCG;
 		if (Verbose>1)
 			fprintf(stderr, "\r%7ld ZMODEM%s    ",
@@ -1417,10 +1734,10 @@ gotack:
 		 * If the reverse channel can be tested for data,
 		 *  this logic may be used to detect error packets
 		 *  sent by the receiver, in place of setjmp/longjmp
-		 *  rdchk(fdes) returns non 0 if a character is available
+		 *  rdchk(fd) returns non 0 if a character is available
 		 */
 		fflush(stdout);
-		while (rdchk(iofd)) {
+		while (rdchk(0)) {
 #ifdef SV
 			switch (checked)
 #else
@@ -1433,7 +1750,7 @@ gotack:
 				if (c == ZACK)
 					break;
 #ifdef TCFLSH
-				ioctl(iofd, TCFLSH, 1);
+				ioctl(0, TCFLSH, 1);
 #endif
 				/* zcrce - dinna wanna starta ping-pong game */
 				zsdata(txbuf, 0, ZCRCE);
@@ -1454,7 +1771,7 @@ gotack:
 				c = getinsync(1);
 				if (c != ZACK) {
 #ifdef TCFLSH
-					ioctl(iofd, TCFLSH, 1);
+					ioctl(0, TCFLSH, 1);
 #endif
 					zsdata(txbuf, 0, ZCRCE);
 					goto gotack;
@@ -1468,7 +1785,7 @@ gotack:
 
 	for (;;) {
 		stohdr(Txpos);
-		zsbhdr(ZEOF, Txhdr);
+		zsbhdr(4, ZEOF, Txhdr);
 		switch (getinsync(0)) {
 		case ZACK:
 			continue;
@@ -1515,11 +1832,13 @@ getinsync(flag)
 				return ERROR;
 			Eofseen = 0;
 			bytcnt = Lrxpos = Txpos = Rxpos;
+#ifndef GENIE
 			if (Lastsync == Rxpos) {
 				if (++Beenhereb4 > 4)
 					if (blklen > 32)
 						blklen /= 2;
 			}
+#endif
 			Lastsync = Rxpos;
 			return c;
 		case ZACK:
@@ -1533,7 +1852,7 @@ getinsync(flag)
 			return c;
 		case ERROR:
 		default:
-			zsbhdr(ZNAK, Txhdr);
+			zsbhdr(4, ZNAK, Txhdr);
 			continue;
 		}
 	}
@@ -1545,7 +1864,7 @@ saybibi()
 {
 	for (;;) {
 		stohdr(0L);		/* CAF Was zsbhdr - minor change */
-		zshhdr(ZFIN, Txhdr);	/*  to make debugging easier */
+		zshhdr(4, ZFIN, Txhdr);	/*  to make debugging easier */
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZFIN:
 			sendline('O'); sendline('O'); flushmo();
@@ -1570,21 +1889,27 @@ char *buf;
 	register c;
 	long cmdnum;
 
+#ifdef GENIE
+	cmdnum = 69;
+#else
 	cmdnum = getpid();
+#endif
 	errors = 0;
 	for (;;) {
 		stohdr(cmdnum);
 		Txhdr[ZF0] = Cmdack1;
-		zsbhdr(ZCOMMAND, Txhdr);
+		zsbhdr(4, ZCOMMAND, Txhdr);
 		zsdata(buf, blen, ZCRCW);
 listen:
 		Rxtimeout = 100;		/* Ten second wait for resp. */
+		Usevhdrs = 0;		/* Allow rx to send fixed len headers */
 		c = zgethdr(Rxhdr, 1);
 
 		switch (c) {
 		case ZRINIT:
 			goto listen;	/* CAF 8-21-87 */
 		case ERROR:
+		case GCOUNT:
 		case TIMEOUT:
 			if (++errors > Cmdtries)
 				return ERROR;
@@ -1622,9 +1947,6 @@ listen:
 chkinvok(s)
 char *s;
 {
-#ifdef vax11c
-	Progname = "sz";
-#else
 	register char *p;
 
 	p = s;
@@ -1643,9 +1965,9 @@ char *s;
 	if (s[0]=='s' && s[1]=='x') {
 		Modem2 = TRUE;
 	}
-#endif
 }
 
+#ifdef STAT
 countem(argc, argv)
 register char **argv;
 {
@@ -1671,6 +1993,46 @@ register char **argv;
 		fprintf(stderr, "\ncountem: Total %d %ld\n",
 		  Filesleft, Totalleft);
 }
+#else
+countem(argc, argv)
+register char **argv;
+{
+	register c;
+	register char *p;
+	long size;
+
+	for (Totalleft = 0, Filesleft = 0; --argc >=0; ++argv) {
+		size = -1;
+		if (Verbose>2) {
+			fprintf(stderr, "\nCountem: %03d %s ", argc, *argv);
+			fflush(stderr);
+		}
+		++Filesleft;  
+#ifdef XARGSFILE
+		/* Look for file length in third colon sep field */
+		for (p = *argv; *p; ++p) {
+			if (*p == ':') {
+				for (++p; *p; ++p) {
+					if (*p == ':') {
+						++p;
+						size = atol(p);
+						Totalleft += size;
+						break;
+					}
+				}
+			break;
+			}
+		}
+#endif
+
+		if (Verbose>2)
+			fprintf(stderr, " %ld", size);
+	}
+	if (Verbose>2)
+		fprintf(stderr, "\ncountem: Total %d %ld\n",
+		  Filesleft, Totalleft);
+}
+#endif
 
 chartest(m)
 {

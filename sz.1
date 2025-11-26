@@ -1,11 +1,11 @@
 '\" Revision Level 
-'\" Last Delta     04-21-88
+'\" Last Delta     04-22-89
 .TH SZ 1 OMEN
 .SH NAME
 sx, sb, sz \- XMODEM, YMODEM, ZMODEM file send
 .SH SYNOPSIS
 sz
-.RB [\- +abdefkLlNnopqTtuvyY ]
+.RB [\- +abdefkLlNnopqTtuvyYZ ]
 .I file ...
 .br
 sb
@@ -31,16 +31,16 @@ uses the ZMODEM, YMODEM or XMODEM error correcting protocol to send
 one or more files over a dial-in serial port to a variety of programs running under
 PC-DOS, CP/M, Unix, VMS, and other operating systems.
 
-While
-.I rz
-is smart enough to be called from
-.I cu(1),
-very few versions of
+
+.B
+.I Sz
+is not intended be called from
 .I cu(1)
-are smart enough to allow
-.I sz
-to work properly.
-Unix flavors of Professional-YAM are available for such dial-out application.
+or other communications programs.
+Unix flavors of Omen Technology's
+Professional-YAM communications software
+are available for dial-out applications.
+.R
 
 
 .B Sz
@@ -66,22 +66,6 @@ selective file transfers,
 and preservation of
 exact file date and length.
 
-Output from another program may be piped to
-.B sz
-for transmission by denoting standard input with "-":
-.ce
-ls -l | sz -
-The program output is transmitted with the filename sPID.sz
-where PID is the process ID of the
-.B sz
-program.
-If the environment variable
-.B ONAME
-is set, that is used instead.
-In this case, the Unix command:
-.ce
-ls -l | ONAME=con sz -ay -
-will send a "file" to the PC-DOS console display.
 The
 .B -y
 option instructs the receiver to open the file for writing unconditionally.
@@ -263,6 +247,10 @@ If the source file is longer than the destination file,
 the transfer commences at the offset in the source file that equals
 the length of the destination file.
 .TP
+.B rr
+As above, but compares the files (the portion common to sender and reciever)
+before resuming the transfer.
+.TP
 .B "t tim"
 Change timeout to
 .I tim
@@ -290,6 +278,9 @@ Instruct a ZMODEM receiving program to overwrite any existing file
 with the same name,
 and to skip any source files that do have a file with the same
 pathname on the destination system.
+.TP
+.B Z
+Use ZMODEM file compression to speed file transfer.
 .PD
 .SH EXAMPLES
 .ne 7
@@ -429,30 +420,30 @@ stops the "transfer" and
 prints the total number of characters "sent" (Tcount).
 The difference between Tcount and 5120 represents the number of characters
 stored in various buffers when the Attn sequence is generated.
-.SH BUGS
-Calling
-.I sz
-from most versions of cu(1) doesn't work because cu's receive process
-fights
-.I sz
-for characters from the modem.
+.SH NOTES
+.I Sz
+is not intended be called from
+.I cu(1)
+or other communications programs.
+Unix flavors of Omen Technology's
+Professional-YAM communications software
+are available for dial-out applications.
 
-On at least one BSD system, sz would hang or exit when it got within
-a few kilobytes of the end of file.
-Using the "-w 8192" flag fixed the problem.
-The real cause is unknown, perhaps a bug in the kernel TTY output routines.
 
-Programs that do not properly implement the specified file transfer protocol
-may cause
-.I sz
-to "hang" the port for a minute or two.
-This problem is corrected by using
-ZCOMM, Pro-YAM, or other program with a correct implementation
+If a program that does not properly implement
+the specified file transfer protocol
+causes
+.I sb
+to "hang" the port after a failed transfer,
+either wait for
+.I sb
+to time out or keyboard a dozen Ctrl-X characters.
+Every reported instance of this problem has been corrected by using
+ZCOMM, Pro-YAM, DSZ, or other program with a correct implementation
 of the specified protocol.
 
 Many programs claiming to support YMODEM only support XMODEM with 1k blocks,
 and they often don't get that quite right.
-
 XMODEM transfers add up to 127 garbage bytes per file.
 XMODEM-1k and YMODEM-1k transfers use 128 byte blocks
 to avoid extra padding.
@@ -464,7 +455,7 @@ This problem does not pertain to ZMODEM transfers, which preserve the exact
 file length unconditionally.
 
 Most ZMODEM options are merely passed to the receiving program;
-some do not implement all these options.
+some programs do not implement all of these options.
 
 Circular buffering and a ZMODEM sliding window should be used
 when input is from pipes instead of acknowledging frames each 1024 bytes.
@@ -473,10 +464,16 @@ If no files can be opened,
 sends a ZMODEM command to echo a suitable complaint;
 perhaps it should check for the presence of at least one accessible file before
 getting hot and bothered.
-The test mode leaves a zero length file on the receiving system.
 
 A few high speed modems have a firmware bug that drops characters when the
 direction of high speed transmissson is reversed.
 The environment variable ZNULLS may be used to specify the number of nulls to
 send before a ZDATA frame.
 Values of 101 for a 4.77 mHz PC and 124 for an AT are typical.
+.SH BUGS
+On at least one BSD system, sz would abend it got within
+a few kilobytes of the end of file.
+Using the "-w 8192" flag fixed the problem.
+The real cause is unknown, perhaps a bug in the kernel TTY output routines.
+
+The test mode leaves a zero length file on the receiving system.

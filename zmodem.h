@@ -1,14 +1,22 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
- *    05-23-87  Chuck Forsberg Omen Technology Inc
+ *    04-17-89  Chuck Forsberg Omen Technology Inc
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
 #define ZDLEE (ZDLE^0100)	/* Escaped ZDLE as transmitted */
-#define ZBIN 'A'	/* Binary frame indicator */
+#define ZBIN 'A'	/* Binary frame indicator (CRC-16) */
 #define ZHEX 'B'	/* HEX frame indicator */
 #define ZBIN32 'C'	/* Binary frame with 32 bit FCS */
+#define ZBINR32 'D'	/* RLE packed Binary frame with 32 bit FCS */
+#define ZVBIN 'a'	/* Binary frame indicator (CRC-16) */
+#define ZVHEX 'b'	/* HEX frame indicator */
+#define ZVBIN32 'c'	/* Binary frame with 32 bit FCS */
+#define ZVBINR32 'd'	/* RLE packed Binary frame with 32 bit FCS */
+#define ZRESC	0176	/* RLE flag/escape character */
+#define ZMAXHLEN 16	/* Max header information length  NEVER CHANGE */
+#define ZMAXSPLEN 1024	/* Max subpacket length  NEVER CHANGE */
 
 /* Frame types (see array "frametypes" in zm.c) */
 #define ZRQINIT	0	/* Request receive init */
@@ -63,11 +71,14 @@
 #define CANFDX	01	/* Rx can send and receive true FDX */
 #define CANOVIO	02	/* Rx can receive data during disk I/O */
 #define CANBRK	04	/* Rx can send a break signal */
-#define CANCRY	010	/* Receiver can decrypt */
+#define CANRLE	010	/* Receiver can decode RLE */
 #define CANLZW	020	/* Receiver can uncompress */
 #define CANFC32	040	/* Receiver can use 32 bit Frame Check */
 #define ESCCTL 0100	/* Receiver expects ctl chars to be escaped */
 #define ESC8   0200	/* Receiver expects 8th bit to be escaped */
+
+/* Bit Masks for ZRINIT flags byte ZF0 */
+#define CANVHDR	01	/* Variable headers OK */
 
 /* Parameters for ZSINIT frame */
 #define ZATTNLEN 32	/* Max length of attention string */
@@ -94,10 +105,10 @@
 #define ZMPROT	7	/* Protect destination file */
 /* Transport options, one of these in ZF2 */
 #define ZTLZW	1	/* Lempel-Ziv compression */
-#define ZTCRYPT	2	/* Encryption */
 #define ZTRLE	3	/* Run Length encoding */
 /* Extended options for ZF3, bit encoded */
 #define ZXSPARS	64	/* Encoding for sparse file operations */
+#define ZCANVHDR	01	/* Variable headers OK */
 
 /* Parameters for ZCOMMAND frame ZF0 (otherwise 0) */
 #define ZCACK1	1	/* Acknowledge, then do command */
@@ -105,13 +116,10 @@
 long rclhdr();
 
 /* Globals used by ZMODEM functions */
-extern Rxframeind;	/* ZBIN ZBIN32, or ZHEX type of frame received */
+extern Rxframeind;	/* ZBIN ZBIN32, or ZHEX type of frame */
 extern Rxtype;		/* Type of header received */
 extern Rxcount;		/* Count of data bytes received */
-extern Zrwindow;	/* RX window size (controls garbage count) */
 extern Rxtimeout;	/* Tenths of seconds to wait for something */
-extern char Rxhdr[4];	/* Received header */
-extern char Txhdr[4];	/* Transmitted header */
 extern long Rxpos;	/* Received file position */
 extern long Txpos;	/* Transmitted file position */
 extern Txfcs32;		/* TURE means send binary frames with 32 bit FCS */

@@ -1,5 +1,7 @@
 # Makefile for Unix/Xenix rz and sz programs
 # the makefile is not too well tested yet
+CC=cc
+OFLAG=
 
 nothing:
 	@echo
@@ -15,12 +17,12 @@ nothing:
 usenet:
 	shar -f /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c rbsb.c \
 	 init.com crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
-	 *.1 gz ptest.sh *.t
+	 zmr.c *.1 gz ptest.sh *.t
 
 shar:
 	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
-	 init.com vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
-	 crc.c rbsb.c minirb.c *.1 gz ptest.sh *.t
+	 zmr.c init.com vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
+	 genie.c crc.c rbsb.c minirb.c *.1 gz ptest.sh *.t
 
 unixforum: shar
 	compress -b12 /tmp/rzsz.sh
@@ -28,17 +30,17 @@ unixforum: shar
 unix:
 	undos README zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
-	 init.com crc.c *.t 
+	 zmr.c genie.c init.com crc.c *.t 
 
 dos:
 	todos README zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
-	 init.com crc.c *.t 
+	 zmr.c genie.c init.com crc.c *.t 
 arc:
 	rm -f /tmp/rzsz.arc
 	arc a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c \
-	 init.com crc.c *.1 gz ptest.sh *.t minirb.c
+	 zmr.c genie.c init.com crc.c *.1 gz ptest.sh *.t minirb.c
 	chmod og-w /tmp/rzsz.arc
 	mv /tmp/rzsz.arc /t/yam
 
@@ -46,61 +48,61 @@ zoo:
 	rm -f /tmp/rzsz.zoo
 	zoo a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c *.1 \
-	 init.com crc.c gz ptest.sh *.t minirb.c
+	 zmr.c genie.c init.com crc.c gz ptest.sh *.t minirb.c
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /t/yam
 
 tags:
-	ctags sz.c rz.c zm.c rbsb.c
+	ctags sz.c rz.c zm.c zmr.c rbsb.c
 
 .PRECIOUS:rz sz
 
 xenix:
-	cc -M0 -Ox -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -Ox -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
-	cc -M0 -Ox -K -i -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -Ox -K -i -DMD rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
 
 x386:
-	cc -Ox -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -Ox -DMD rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -Ox -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -Ox -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
 
 sysv:
-	cc -O -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DMD rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -DSV -O -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
 
 sysvr3:
-	cc -O -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -DSV -O -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
 
 bsd:
-	cc -DMD=2 -Dstrchr=index -DV7 -O rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 -Dstrchr=index -DV7 rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -DV7 -O -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -DV7 -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
