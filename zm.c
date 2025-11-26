@@ -1,5 +1,6 @@
 /*
  *   Z M . C
+ *    Copyright 1991 Omen Technology Inc All Rights Reserved
  *    ZMODEM protocol primitives
  *    05-24-89  Chuck Forsberg Omen Technology Inc
  *
@@ -470,13 +471,6 @@ agn2:
 		if ( --n == 0) {
 			c = GCOUNT;  goto fifi;
 		}
-		if (eflag && ((c &= 0177) & 0140))
-			bttyout(c);
-		else if (eflag > 1)
-			bttyout(c);
-#ifdef UNIX
-		fflush(stderr);
-#endif
 		goto startover;
 	case ZPAD|0200:		/* This is what we want. */
 		Not8bit = c;

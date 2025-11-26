@@ -1,5 +1,20 @@
 # Changelog
 
+## [1991-09-15] RZ 3.10 / SZ 3.16
+
+This release included this `README` update:
+```
+Sep 1991: Major hacking to work around SVR4 bug.  Append and crash
+recovery of shrinking files corrected.  Sz now supports rename.
+Sz -c changed to zcommand, rx -c file changed to rc file.
+```
+
+  - RZ loses the -c and -e options
+  - RZ adds the -a option (back)
+  - New/unique exit codes
+  - Remove idef NFGVMIN hacks
+  - SZ loses the -i, -q, and -X options
+
 ## [1991-07-02] RZ 3.07 / SZ 3.14
 
   - Better error handling (e.g. closing files)

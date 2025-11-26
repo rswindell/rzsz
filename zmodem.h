@@ -1,6 +1,7 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
+ *    Copyright 1991 Omen Technology Inc All Rights Reserved
  *    04-17-89  Chuck Forsberg Omen Technology Inc
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
@@ -104,6 +105,7 @@
 	/* Number 5 is alive ... */
 #define ZMDIFF	6	/* Transfer if dates or lengths different */
 #define ZMPROT	7	/* Protect destination file */
+#define ZMCHNG	8	/* Change filename if destination exists */
 /* Transport options, one of these in ZF2 */
 #define ZTLZW	1	/* Lempel-Ziv compression */
 #define ZTRLE	3	/* Run Length encoding */

@@ -1,7 +1,13 @@
+Sep 1991: Major hacking to work around SVR4 bug.  Append and crash
+recovery of shrinking files corrected.  Sz now supports rename.
+Sz -c changed to zcommand, rx -c file changed to rc file.
+
 Feb 1991: various corrections and simplifications.  Sz now
 stores critical error messages for post mortem display.
 
-Man pages are formatted for those without Unix nroff.
+The Man pages are formatted for those without Unix nroff.
+For best results, use less(1) (available on comp.sources.misc)
+as your manual page reader.
 
 VMS systems are now supported with native VMS versions in
 RZSZ.TLB.  The rz and sz in RZSZ.TLB support wild cards and
@@ -34,16 +40,18 @@ The Makefile is self explanatory; just say "make".
 Naturally, rz and sz work best with comm programs that seamlessly
 support ZMODEM command and file AutoDownload (Pro-YAM and ZCOMM).
 
-The "DSZ" shareware program allows ZMODEM file transfers with
+The "GSZ" shareware program allows ZMODEM file transfers with
 traditional DOS comm programs, but it must be called manually.
-(The computer should do that for you!) DSZ provides a "mini
-term function" that supports ZMODEM AutoDownload.  DSZ (part
-of DSZ.ZIP) and ZCOMM (ZCOMMEXE.ZIP, ZCOMMDOC.ZIP,
+(The computer should do that for you!) GSZ provides a "mini
+term function" that supports ZMODEM AutoDownload.  GSZ (part
+of GSZ.ZIP) and ZCOMM (ZCOMMEXE.ZIP, ZCOMMDOC.ZIP,
 ZCOMMHLP.ZIP) are available on TeleGodzilla and other fine
 bulletin boards.
 
+In order for us to process problem reports, we must have the
+exact error messages displayed by Professional-YAM.
 Chuck Forsberg WA7KGX          ...!tektronix!reed!omen!caf 
-Author of YMODEM, ZMODEM, Professional-YAM, ZCOMM, and DSZ
+Author of YMODEM, ZMODEM, Professional-YAM, ZCOMM, and GSZ
   Omen Technology Inc    "The High Reliability Software"
 17505-V NW Sauvie IS RD   Portland OR 97231   503-621-3406
 TeleGodzilla:621-3746 FAX:621-3735 CIS:70007,2304 Genie:CAF

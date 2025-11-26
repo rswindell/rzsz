@@ -1,9 +1,10 @@
-#define VERSION "3.07 05-30-91"
+#define VERSION "3.10 09-15-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  *
  * rz.c By Chuck Forsberg
+ *    Copyright 1991 Omen Technology Inc All Rights Reserved
  *
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
@@ -46,14 +47,7 @@
  * Iff the program is invoked by rzCOMMAND, output is piped to 
  * "COMMAND filename"  (Unix only)
  *
- *  Some systems (Venix, Coherent, Regulus) may not support tty raw mode
- *  read(2) the same way as Unix. ONEREAD must be defined to force one
- *  character reads for these systems. Added 7-01-84 CAF
- *
  *  Alarm signal handling changed to work with 4.2 BSD 7-15-84 CAF 
- *
- *  NFGVMIN Updated 2-18-87 CAF for Xenix systems where c_cc[VMIN]
- *  doesn't work properly (even though it compiles without error!),
  *
  *  SEGMENTS=n added 2-21-88 as a model for CP/M programs
  *    for CP/M-80 systems that cannot overlap modem and disk I/O.
@@ -71,7 +65,6 @@
 #define LOGFILE "/tmp/rzlog"
 #include <stdio.h>
 #include <signal.h>
-#include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
 extern int errno;
@@ -88,7 +81,7 @@ FILE *popen();
  *   133 corresponds to an XMODEM/CRC sector
  */
 #ifndef HOWMANY
-#define HOWMANY 133
+#define HOWMANY 96
 #endif
 
 /* Ward Christensen / CP/M parameters - Don't change these! */
@@ -139,12 +132,6 @@ int Firstsec;
 int Eofseen;		/* indicates cpm eof (^Z) has been received */
 int errors;
 int Restricted=0;	/* restricted; no /.. or ../ in filenames */
-#ifdef ONEREAD
-/* Sorry, Regulus and some others don't work right in raw mode! */
-int Readnum = 1;	/* Number of bytes to ask for in read() from modem */
-#else
-int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
-#endif
 
 #define DEFBYTL 2000000000L	/* default rx file size */
 long Bytesleft;		/* number of bytes of incoming file left */
@@ -157,8 +144,9 @@ char *Progname;		/* the name by which we were called */
 
 int Batch=0;
 int Topipe=0;
-int Verbose=0;
 int Thisbinary;		/* current file is to be received in bin mode */
+int Rxbinary=FALSE;	/* receive all files in bin mode */
+int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Blklen;		/* record length of received packets */
 
 #ifdef SEGMENTS
@@ -169,18 +157,14 @@ char secbuf[1025];
 #endif
 
 
-char linbuf[HOWMANY];
-int Lleft=0;		/* number of characters in linbuf */
 time_t timep[2];
+char Lzmanag;		/* Local file management request */
+char Lzconv;		/* Local ZMODEM file conversion request */
 char zconv;		/* ZMODEM file conversion request */
 char zmanag;		/* ZMODEM file management request */
 char ztrans;		/* ZMODEM file transport request */
 int Zctlesc;		/* Encode control characters */
 int Zrwindow = 1400;	/* RX window size (controls garbage count) */
-
-jmp_buf tohere;		/* For the interrupt on RX timeout */
-
-#define xsendline(c) sendline(c)
 
 #include "zm.c"
 
@@ -188,10 +172,6 @@ jmp_buf tohere;		/* For the interrupt on RX timeout */
 
 int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
 
-alrm()
-{
-	longjmp(tohere, -1);
-}
 
 /* called by signal interrupt or terminate to clean things up */
 bibi(n)
@@ -200,8 +180,7 @@ bibi(n)
 		zmputs(Attn);
 	canit(); mode(0);
 	fprintf(stderr, "rz: caught signal %d; exiting", n);
-	cucheck();
-	exit(128+n);
+	exit(3);
 }
 
 main(argc, argv)
@@ -218,8 +197,8 @@ char *argv[];
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 
-	from_cu();
 	chkinvok(virgin=argv[0]);	/* if called as [-]rzCOMMAND set flag */
+	inittty();
 	npats = 0;
 	while (--argc) {
 		cp = *++argv;
@@ -228,10 +207,12 @@ char *argv[];
 				switch(*cp) {
 				case '\\':
 					 cp[1] = toupper(cp[1]);  continue;
-				case 'c':
-					Crcflg=TRUE; break;
-				case 'e':
-					Zctlesc = 1; break;
+				case 'a':
+					if (!Batch || Nozmodem)
+						Rxascii=TRUE;
+					else
+						usage();
+					break;
 				case 't':
 					if (--argc < 1) {
 						usage();
@@ -267,14 +248,10 @@ char *argv[];
 	if (Verbose) {
 		if (freopen(LOGFILE, "a", stderr)==NULL) {
 			printf("Can't open log file %s\n",LOGFILE);
-			exit(0200);
+			exit(2);
 		}
 		setbuf(stderr, NULL);
 		fprintf(stderr, "argv[0]=%s Progname=%s\n", virgin, Progname);
-	}
-	if (Fromcu) {
-		if (Verbose == 0)
-			Verbose = 2;
 	}
 	vfile("%s %s for %s\n", Progname, VERSION, OS);
 	mode(1);
@@ -286,60 +263,46 @@ char *argv[];
 	}
 	signal(SIGTERM, bibi);
 	if (wcreceive(npats, patts)==ERROR) {
-		exitcode=0200;
+		exitcode=1;
 		canit();
 	}
 	mode(0);
 	if (exitcode && !Zmodem)	/* bellow again with all thy might. */
 		canit();
-	if (exitcode)
-		cucheck();
 	if (endmsg[0])
 		printf("  %s: %s\r\n", Progname, endmsg);
 	printf("%s %s finished.\r\n", Progname, VERSION);
 	fflush(stdout);
-	exit(exitcode ? exitcode:0);
+	exit(exitcode != 0);
 }
 
 
 usage()
 {
+	fprintf(stderr,
+	"Receive Files and Commands with ZMODEM/YMODEM/XMODEM Protocol\n\n");
 	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
 	  Progname, VERSION, OS);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
-	fprintf(stderr,"Usage:	rz [-ev]		(ZMODEM)\n");
-	fprintf(stderr,"or	rb [-v]			(YMODEM)\n");
-	fprintf(stderr,"or	rx [-cv] file	(XMODEM or XMODEM-1k)\n\n");
-	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
-	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
-	fprintf(stderr,"	  -v Verbose more v's give more info\n\n");
+	fprintf(stderr,"Usage:	rz [-v]		(ZMODEM)\n");
+	fprintf(stderr,"or	rb [-av]	(YMODEM)\n");
+	fprintf(stderr,"or	rc [-av] file	(XMODEM-CRC)\n");
+	fprintf(stderr,"or	rx [-av] file	(XMODEM)\n\n");
+	fprintf(stderr,
+	"\nSee rz.doc for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
 "Supports incoming ZMODEM binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
-newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
-clobber (-y), match+clobber (-Y), compression (-Z), and append (-+).\n");
-	cucheck();
-	exit(1);
-}
-/*
- *  Debugging information output interface routine
- */
-/* VARARGS1 */
-vfile(f, a, b, c, d)
-char *f;
-long a, b, c, d;
-{
-	if (Verbose > 2) {
-		fprintf(stderr, f, a, b, c, d);
-		fprintf(stderr, "\n");
-	}
+	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
+clobber (-y), match+clobber (-Y), compression (-Z), and append (-+).\n\n");
+	fprintf(stderr,"\tCopyright 1991 Omen Technology INC All Rights Reserved\n");
+	exit(2);
 }
 
 /*
  * Let's receive something already.
  */
 
-char *rbmsg =
-"%s ready. To begin transfer, type \"%s file ...\" to your modem program\r\n\n";
+char *rbmsg = "%s ready. Type \"%s file ...\" to your modem program\n\r";
 
 wcreceive(argc, argp)
 char **argp;
@@ -406,11 +369,7 @@ char *rpn;	/* receive a pathname */
 {
 	register c;
 
-#ifdef NFGVMIN
-	readline(1);
-#else
 	purgeline();
-#endif
 
 et_tu:
 	Firstsec=TRUE;  Eofseen=FALSE;
@@ -540,13 +499,8 @@ get2:
 				zperr("Sector number garbled");
 		}
 		/* make sure eot really is eot and not just mixmash */
-#ifdef NFGVMIN
-		else if (firstch==EOT && readline(1)==TIMEOUT)
-			return WCEOT;
-#else
 		else if (firstch==EOT && Lleft==0)
 			return WCEOT;
-#endif
 		else if (firstch==CAN) {
 			if (Lastrx==CAN) {
 				zperr( "Sender CANcelled");
@@ -582,70 +536,6 @@ humbug:
 	return ERROR;
 }
 
-/*
- * This version of readline is reasoably well suited for
- * reading many characters.
- *  (except, currently, for the Regulus version!)
- *
- * timeout is in tenths of seconds
- */
-readline(timeout)
-int timeout;
-{
-	register n;
-	static char *cdq;	/* pointer for removing chars from linbuf */
-
-	if (--Lleft >= 0) {
-		if (Verbose > 8) {
-			fprintf(stderr, "%02x ", *cdq&0377);
-		}
-		return (*cdq++ & 0377);
-	}
-	n = timeout/10;
-	if (n < 2)
-		n = 3;
-	if (Verbose > 5)
-		fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
-		  n, Readnum);
-	if (setjmp(tohere)) {
-#ifdef TIOCFLUSH
-/*		ioctl(0, TIOCFLUSH, 0); */
-#endif
-		Lleft = 0;
-		if (Verbose>1)
-			fprintf(stderr, "Readline:TIMEOUT\n");
-		return TIMEOUT;
-	}
-	signal(SIGALRM, alrm); alarm(n);
-	Lleft=read(0, cdq=linbuf, Readnum);
-	alarm(0);
-	if (Verbose > 5) {
-		fprintf(stderr, "Read returned %d bytes\n", Lleft);
-	}
-	if (Lleft < 1)
-		return TIMEOUT;
-	--Lleft;
-	if (Verbose > 8) {
-		fprintf(stderr, "%02x ", *cdq&0377);
-	}
-	return (*cdq++ & 0377);
-}
-
-
-
-/*
- * Purge the modem input queue of all characters
- */
-purgeline()
-{
-	Lleft = 0;
-#ifdef USG
-	ioctl(0, TCFLSH, 0);
-#else
-	lseek(0, 0L, 2);
-#endif
-}
-
 
 /*
  * Process incoming file information header
@@ -659,12 +549,22 @@ char *name;
 
 	/* set default parameters and overrides */
 	openmode = "w";
+	Thisbinary = (!Rxascii) || Rxbinary;
+	if (zconv == ZCBIN && Lzconv != ZCRESUM)
+		Lzconv = zconv;			/* Remote Binary override */
+	if (Lzconv)
+		zconv = Lzconv;
+	if (Lzmanag)
+		zmanag = Lzmanag;
 
 	/*
 	 *  Process ZMODEM remote file management requests
 	 */
-	Thisbinary = (zconv != ZCNL);	/* Remote ASCII override */
-	if (zmanag == ZMAPND)
+	if (!Rxbinary && zconv == ZCNL)	/* Remote ASCII override */
+		Thisbinary = 0;
+	if (zconv == ZCBIN)	/* Remote Binary override */
+		Thisbinary = TRUE;
+	else if (zmanag == ZMAPND)
 		openmode = "a";
 
 	Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
@@ -701,11 +601,12 @@ char *name;
 		vfile("Current %s is %ld %lo", name, f.st_size, f.st_mtime);
 		if (Thisbinary && zconv==ZCRESUM) {
 			rxbytes = f.st_size & ~511;
-			openit(name, "r+");
+			if (Bytesleft < rxbytes) {
+				rxbytes = 0;  goto doopen;
+			} else
+				openit(name, "r+");
 			if ( !fout)
 				return ZFERR;
-			if (Bytesleft < rxbytes)
-				rxbytes = 0;
 			if (fseek(fout, rxbytes, 0)) {
 				closeit();
 				return ZFERR;
@@ -719,11 +620,13 @@ char *name;
 				goto skipfile;
 			goto doopen;
 		}
-		else if (zmanag==ZMPROT)
+		switch (zmanag & ZMMASK) {
+		case ZMCLOB:
+		case ZMAPND:
+			goto doopen;
+		default:
 			goto skipfile;
-		else if ((zmanag&ZMMASK) != ZMCLOB)
-			goto skipfile;
-		goto doopen;
+		}
 	} else if (zmanag & ZMSKNOLOC) {
 skipfile:
 		vfile("Skipping %s", name);
@@ -831,7 +734,7 @@ int dmode;
 		status = umask(0);	/* Get current umask */
 		status = umask(status | (0777 & ~dmode)); /* Set for mkdir */
 		execl("/bin/mkdir", "mkdir", dpath, (char *)0);
-		_exit(-1);		/* Can't exec /bin/mkdir */
+		_exit(2);		/* Can't exec /bin/mkdir */
 	
 	default:			/* Parent process */
 		while (cpid != wait(&status)) ;	/* Wait for kid to finish */
@@ -880,22 +783,6 @@ register n;
 }
 
 /*
- *  Send a character to modem.  Small is beautiful.
- */
-sendline(c)
-{
-	char d;
-
-	d = c;
-	if (Verbose>6)
-		fprintf(stderr, "Sendline: %x\n", c);
-	write(1, &d, 1);
-}
-
-flushmo() {}
-flushmoc() {}
-
-/*
  * substr(string, token) searches for token in string s
  * returns pointer to token within string if found, NULL otherwise
  */
@@ -931,19 +818,6 @@ char *s, *p, *u;
 	fprintf(stderr, "\n");
 }
 
-/* send cancel string to get the other end to shut up */
-canit()
-{
-	static char canistr[] = {
-	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
-	};
-
-	printf(canistr);
-	Lleft=0;	/* Do read next time ... */
-	fflush(stdout);
-}
-
-
 report(sct)
 int sct;
 {
@@ -973,6 +847,8 @@ char *s;
 	Progname = s;
 	if (s[0]=='r' && s[1]=='z')
 		Batch = TRUE;
+	if (s[0]=='r' && s[1]=='c')
+		Crcflg = TRUE;
 	if (s[0]=='r' && s[1]=='b')
 		Batch = Nozmodem = TRUE;
 	if (s[2] && s[0]=='r' && s[1]=='b')
@@ -1333,26 +1209,6 @@ moredata:
 	}
 }
 
-/*
- * Send a string to the modem, processing for \336 (sleep 1 sec)
- *   and \335 (break signal)
- */
-zmputs(s)
-char *s;
-{
-	register c;
-
-	while (*s) {
-		switch (c = *s++) {
-		case '\336':
-			sleep(1); continue;
-		case '\335':
-			sendbrk(); continue;
-		default:
-			sendline(c);
-		}
-	}
-}
 
 /*
  * Close the receive dataset, return OK or ERROR
@@ -1408,16 +1264,6 @@ ackbibi()
 	}
 }
 
-
-
-/*
- * Local console output simulation
- */
-bttyout(c)
-{
-	if (Verbose || Fromcu)
-		putc(c, stderr);
-}
 
 /*
  * Strip leading ! if present, do shell escape. 

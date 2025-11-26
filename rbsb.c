@@ -1,6 +1,6 @@
 /*
  *
- *  Rev 5-09-89
+ *  Rev 5-15-91
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
@@ -47,29 +47,34 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #include <sys/ioctl.h>		/* JPRadley: for the Tandy 6000 */
 #endif
 
+#include <setjmp.h>
+
 #if HOWMANY  > 255
 Howmany must be 255 or less
 #endif
 
-/*
- * return 1 iff stdout and stderr are different devices
- *  indicating this program operating with a modem on a
- *  different line
+ /*
+ *  Some systems (Venix, Coherent, Regulus) may not support tty raw mode
+ *  read(2) the same way as Unix. ONEREAD must be defined to force one
+ *  character reads for these systems. Added 7-01-84 CAF
  */
-int Fromcu;		/* Were called from cu or yam */
-from_cu()
-{
-	struct stat a, b;
 
-	fstat(1, &a); fstat(2, &b);
-	Fromcu = a.st_rdev != b.st_rdev;
-	return;
-}
-cucheck()
-{
-	if (Fromcu)
-		fprintf(stderr,"Please read the manual page BUGS chapter!\r\n");
-}
+#define sendline(c) putc(c & 0377, Ttystream)
+#define xsendline(c) putc(c, Ttystream)
+
+FILE *Ttystream;
+int Tty;
+char linbuf[HOWMANY];
+char xXbuf[BUFSIZ];
+int Lleft=0;		/* number of characters in linbuf */
+jmp_buf tohere;		/* For the interrupt on RX timeout */
+#ifdef ONEREAD
+/* Sorry, Regulus and some others don't work right in raw mode! */
+int Readnum = 1;	/* Number of bytes to ask for in read() from modem */
+#else
+int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
+#endif
+int Verbose=0;
 
 
 struct {
@@ -176,15 +181,15 @@ mode(n)
 #ifdef USG
 	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0)
-			(void) ioctl(0, TCGETA, &oldtty);
+			(void) ioctl(Tty, TCGETA, &oldtty);
 		tty = oldtty;
 
 		tty.c_iflag = BRKINT|IXON;
 
 		tty.c_oflag = 0;	/* Transparent output */
 
-		tty.c_cflag &= ~PARENB;	/* Disable parity */
-		tty.c_cflag |= CS8;	/* Set character size = 8 */
+		tty.c_cflag &= ~(PARENB|HUPCL);		/* Disable parity */
+		tty.c_cflag |= (CREAD|CS8);	/* Set character size = 8 */
 		if (Twostop)
 			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
 
@@ -204,13 +209,13 @@ mode(n)
 #endif
 		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
 
-		(void) ioctl(0, TCSETAW, &tty);
+		(void) ioctl(Tty, TCSETAW, &tty);
 		did0 = TRUE;
 		return OK;
 	case 1:
 	case 3:
 		if(!did0)
-			(void) ioctl(0, TCGETA, &oldtty);
+			(void) ioctl(Tty, TCGETA, &oldtty);
 		tty = oldtty;
 
 		tty.c_iflag = n==3 ? (IGNBRK|IXOFF) : IGNBRK;
@@ -230,7 +235,7 @@ mode(n)
 		tty.c_cc[VMIN] = HOWMANY; /* This many chars satisfies reads */
 #endif
 		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
-		(void) ioctl(0, TCSETAW, &tty);
+		(void) ioctl(Tty, TCSETAW, &tty);
 		did0 = TRUE;
 		Effbaud = Baudrate = getspeed(tty.c_cflag & CBAUD);
 		return OK;
@@ -245,11 +250,11 @@ mode(n)
 	 */
 	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0) {
-			ioctl(0, TIOCEXCL, 0);
-			ioctl(0, TIOCGETP, &oldtty);
-			ioctl(0, TIOCGETC, &oldtch);
+			ioctl(Tty, TIOCEXCL, 0);
+			ioctl(Tty, TIOCGETP, &oldtty);
+			ioctl(Tty, TIOCGETC, &oldtch);
 #ifdef LLITOUT
-			ioctl(0, TIOCLGET, &Locmode);
+			ioctl(Tty, TIOCLGET, &Locmode);
 #endif
 		}
 		tty = oldtty;
@@ -261,10 +266,10 @@ mode(n)
 #endif
 		tty.sg_flags |= (ODDP|EVENP|CBREAK);
 		tty.sg_flags &= ~(ALLDELAY|CRMOD|ECHO|LCASE);
-		ioctl(0, TIOCSETP, &tty);
-		ioctl(0, TIOCSETC, &tch);
+		ioctl(Tty, TIOCSETP, &tty);
+		ioctl(Tty, TIOCSETC, &tch);
 #ifdef LLITOUT
-		ioctl(0, TIOCLBIS, &Locbit);
+		ioctl(Tty, TIOCLBIS, &Locbit);
 #endif
 		bibi(99);	/* un-raw doesn't work w/o lit out */
 		did0 = TRUE;
@@ -272,17 +277,17 @@ mode(n)
 	case 1:
 	case 3:
 		if(!did0) {
-			ioctl(0, TIOCEXCL, 0);
-			ioctl(0, TIOCGETP, &oldtty);
-			ioctl(0, TIOCGETC, &oldtch);
+			ioctl(Tty, TIOCEXCL, 0);
+			ioctl(Tty, TIOCGETP, &oldtty);
+			ioctl(Tty, TIOCGETC, &oldtch);
 #ifdef LLITOUT
-			ioctl(0, TIOCLGET, &Locmode);
+			ioctl(Tty, TIOCLGET, &Locmode);
 #endif
 		}
 		tty = oldtty;
 		tty.sg_flags |= (RAW|TANDEM);
 		tty.sg_flags &= ~ECHO;
-		ioctl(0, TIOCSETP, &tty);
+		ioctl(Tty, TIOCSETP, &tty);
 		did0 = TRUE;
 		Effbaud = Baudrate = getspeed(tty.sg_ospeed);
 		return OK;
@@ -291,17 +296,17 @@ mode(n)
 		if(!did0)
 			return ERROR;
 #ifdef USG
-		(void) ioctl(0, TCSBRK, 1);	/* Wait for output to drain */
-		(void) ioctl(0, TCFLSH, 1);	/* Flush input queue */
-		(void) ioctl(0, TCSETAW, &oldtty);	/* Restore modes */
-		(void) ioctl(0, TCXONC,1);	/* Restart output */
+		(void) ioctl(Tty, TCSBRK, 1);	/* Wait for output to drain */
+		(void) ioctl(Tty, TCFLSH, 1);	/* Flush input queue */
+		(void) ioctl(Tty, TCSETAW, &oldtty);	/* Restore modes */
+		(void) ioctl(Tty, TCXONC,1);	/* Restart output */
 #endif
 #ifdef V7
-		ioctl(0, TIOCSETP, &oldtty);
-		ioctl(0, TIOCSETC, &oldtch);
-		ioctl(0, TIOCNXCL, 0);
+		ioctl(Tty, TIOCSETP, &oldtty);
+		ioctl(Tty, TIOCSETC, &oldtch);
+		ioctl(Tty, TIOCNXCL, 0);
 #ifdef LLITOUT
-		ioctl(0, TIOCLSET, &Locmode);
+		ioctl(Tty, TIOCLSET, &Locmode);
 #endif
 #endif
 
@@ -317,15 +322,151 @@ sendbrk()
 #ifdef TIOCSBRK
 #define CANBREAK
 	sleep(1);
-	ioctl(0, TIOCSBRK, 0);
+	ioctl(Tty, TIOCSBRK, 0);
 	sleep(1);
-	ioctl(0, TIOCCBRK, 0);
+	ioctl(Tty, TIOCCBRK, 0);
 #endif
 #endif
 #ifdef USG
 #define CANBREAK
-	ioctl(0, TCSBRK, 0);
+	ioctl(Tty, TCSBRK, 0);
 #endif
 }
+
+/* Initialize tty device for serial file xfer */
+inittty()
+{
+	Tty = open("/dev/tty", 2);
+	if (Tty < 0) {
+		perror("/dev/tty");  exit(2);
+	}
+	Ttystream = fdopen(Tty, "w");
+	setbuf(Ttystream, xXbuf);		
+}
+
+flushmoc()
+{
+	fflush(Ttystream);
+}
+flushmo()
+{
+	fflush(Ttystream);
+}
+
+/*
+ * This version of readline is reasoably well suited for
+ * reading many characters.
+ *
+ * timeout is in tenths of seconds
+ */
+alrm()
+{
+	longjmp(tohere, -1);
+}
+readline(timeout)
+int timeout;
+{
+	register n;
+	static char *cdq;	/* pointer for removing chars from linbuf */
+
+	if (--Lleft >= 0) {
+		if (Verbose > 8) {
+			fprintf(stderr, "%02x ", *cdq&0377);
+		}
+		return (*cdq++ & 0377);
+	}
+	n = timeout/10;
+	if (n < 2)
+		n = 3;
+	if (Verbose > 5)
+		fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
+		  n, Readnum);
+	if (setjmp(tohere)) {
+#ifdef TIOCFLUSH
+/*		ioctl(Tty, TIOCFLUSH, 0); */
+#endif
+		Lleft = 0;
+		if (Verbose>1)
+			fprintf(stderr, "Readline:TIMEOUT\n");
+		return TIMEOUT;
+	}
+	signal(SIGALRM, alrm); alarm(n);
+	errno = 0;
+	Lleft=read(0, cdq=linbuf, Readnum);
+	alarm(0);
+	if (Verbose > 5) {
+		fprintf(stderr, "Read returned %d bytes errno=%d\n",
+		  Lleft, errno);
+	}
+	if (Lleft < 1)
+		return TIMEOUT;
+	--Lleft;
+	if (Verbose > 8) {
+		fprintf(stderr, "%02x ", *cdq&0377);
+	}
+	return (*cdq++ & 0377);
+}
+
+
+
+/*
+ * Purge the modem input queue of all characters
+ */
+purgeline()
+{
+	Lleft = 0;
+#ifdef USG
+	ioctl(Tty, TCFLSH, 0);
+#else
+	lseek(Tty, 0L, 2);
+#endif
+}
+
+
+/* send cancel string to get the other end to shut up */
+canit()
+{
+	static char canistr[] = {
+	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
+	};
+
+	zmputs(canistr);
+	Lleft=0;	/* Do read next time ... */
+}
+
+/*
+ * Send a string to the modem, processing for \336 (sleep 1 sec)
+ *   and \335 (break signal)
+ */
+zmputs(s)
+char *s;
+{
+	register c;
+
+	while (*s) {
+		switch (c = *s++) {
+		case '\336':
+			sleep(1); continue;
+		case '\335':
+			sendbrk(); continue;
+		default:
+			sendline(c);
+		}
+	}
+	flushmo();
+}
+
+
+/* VARARGS1 */
+vfile(f, a, b, c, d)
+char *f;
+long a, b, c, d;
+{
+	if (Verbose > 2) {
+		fprintf(stderr, f, a, b, c, d);
+		fprintf(stderr, "\n");
+	}
+}
+
 
 /* End of rbsb.c */
