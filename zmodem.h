@@ -67,6 +67,9 @@
 #define ZP2	2
 #define ZP3	3	/* High order 8 bits of file position */
 
+/* Parameters for ZRINIT header */
+#define ZRPXWN	8	/* 9th byte in header contains window size/256 */
+#define ZRPXQQ	9	/* 10th to 14th bytes contain quote mask */
 /* Bit Masks for ZRINIT flags byte ZF0 */
 #define CANFDX	01	/* Rx can send and receive true FDX */
 #define CANOVIO	02	/* Rx can receive data during disk I/O */
@@ -79,6 +82,9 @@
 
 /* Bit Masks for ZRINIT flags byte ZF1 */
 #define CANVHDR	01	/* Variable headers OK */
+#define ZRRQWN	8	/* Receiver specified window size in ZRPXWN */
+#define ZRRQQQ	16	/* Additional control chars to quote in ZRPXQQ	*/
+#define ZRQNVH	(ZRRQWN|ZRRQQQ)	/* Variable len hdr reqd to access info */
 
 /* Parameters for ZSINIT frame */
 #define ZATTNLEN 32	/* Max length of attention string */

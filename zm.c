@@ -258,10 +258,7 @@ register char *buf;
 	crc = 0xFFFFFFFFL;
 	for (;--length >= 0; ++buf) {
 		c = *buf & 0377;
-		if (c & 0140)
-			xsendline(lastsent = c);
-		else
-			zsendline(c);
+		zsendline(c);
 		crc = UPDC32(c, crc);
 	}
 	xsendline(ZDLE); xsendline(frameend);
@@ -416,13 +413,12 @@ char *hdr;
 {
 	register int c, n, cancount;
 
-	n = Zrwindow + Effbaud;		/* Max bytes before start of frame */
+	n = Zrwindow + Baudrate;
 	Rxframeind = Rxtype = 0;
 
 startover:
 	cancount = 5;
 again:
-	/* Return immediate ERROR if ZCRCW sequence seen */
 	switch (c = readline(Rxtimeout)) {
 	case 021: case 0221:
 		goto again;
@@ -702,30 +698,30 @@ register int c;
 
 /*
  * Send character c with ZMODEM escape sequence encoding.
- *  Escape XON, XOFF. Escape CR following @ (Telenet net escape)
  */
 zsendline(c)
 register c;
 {
-
-	/* Quick check for non control characters */
-	if (c & 0140)
-		xsendline(lastsent = c);
-	else {
-		switch (c &= 0377) {
-		case ZDLE:
-			xsendline(ZDLE);  xsendline (lastsent = (c ^= 0100));
-			break;
-		case 021: case 023:
-		case 0221: case 0223:
-			xsendline(ZDLE);  c ^= 0100;  xsendline(lastsent = c);
-			break;
-		default:
-			if (Zctlesc && ! (c & 0140)) {
-				xsendline(ZDLE);  c ^= 0100;
-			}
-			xsendline(lastsent = c);
+	switch (c &= 0377) {
+	case 0377:
+		lastsent = c;
+		if (Zctlesc || Zsendmask[32]) {
+			xsendline(ZDLE);  c = ZRUB1;
 		}
+		xsendline(c);
+		break;
+	case ZDLE:
+		xsendline(ZDLE);  xsendline (lastsent = (c ^= 0100));
+		break;
+	case 021: case 023:
+	case 0221: case 0223:
+		xsendline(ZDLE);  c ^= 0100;  xsendline(lastsent = c);
+		break;
+	default:
+		if (((c & 0140) == 0) && (Zctlesc || Zsendmask[c & 037])) {
+			xsendline(ZDLE);  c ^= 0100;
+		}
+		xsendline(lastsent = c);
 	}
 }
 

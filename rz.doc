@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 5/18/94)
+     Page 1					     (printed 7/17/94)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 5/18/94)
+     Page 2					     (printed 7/17/94)
 
 
 
@@ -185,14 +185,14 @@
 	  networks.  Terminal servers often interfere with file
 	  transfers by "eating"	control	characters and/or losing data.
 
-	  When terminal	servers	interfere with file transfers, server
-	  commands are often available to help the problem.  When
-	  possible, enable the server and modems for hardware flow
-	  control in and out.  Set the terminal	server to telnet
+	  Accessing a distant system using tttteeeellllnnnneeeetttt or rrrrllllooooggggiiiinnnn on a local
+	  Unix system entails the same problems.  If you have a	choice
+	  between tttteeeellllnnnneeeetttt and rrrrllllooooggggiiiinnnn try	rlogin with the	----8888 option.
+	  Set the escape character to ^P (control P) which is
 
 
 
-     Page 3					     (printed 5/18/94)
+     Page 3					     (printed 7/17/94)
 
 
 
@@ -203,6 +203,12 @@
 
 
 
+	  protected by ZMODEM.
+
+	  When terminal	servers	interfere with file transfers, server
+	  commands are often available to help the problem.  When
+	  possible, enable the server and modems for hardware flow
+	  control in and out.  Set the terminal	server to telnet
 	  transparent mode.  Some typical commands are "SET TERMINAL
 	  DOWNLOAD", "set session passall", and	"SET TERMINAL NO ESC",
 	  but there is no standard set of commands suitable for	all
@@ -214,15 +220,15 @@
 	  until	they adequately	support	high performance file
 	  transfers.
 
-	  Escaping control characters (sz -e) may help if the transfer
-	  gets stuck in	the same place on every	attempt.
+	  Escaping control characters with ZMODEM (sz -e) may help if
+	  the transfer gets stuck in the same place on every attempt.
 	  Professional-YAM and ZCOMM allow selection of	which control
 	  characters need to be	escaped.  In extreme cases 7-bit
 	  transmission may be required (see the	Professional-YAM/ZCOMM
-	  manual).
-
-	  If you encounter problems with control characters Please
-	  refer	to the sz -T command in	sz.doc for more	help.
+	  manual).  If you encounter problems with control characters
+	  you should identify which control characters are causing the
+	  problem.  Please refer to the	sz -T command in sz.doc	for
+	  more help.
 
 	  Flow control between the server and modem is often
 	  defective.  This rarely causes a problem in interactive
@@ -235,30 +241,24 @@
 	  attached to the server is properly configured.
 
 	  If the terminal server is too	brain damaged to support flow
-	  control, you can fake	it with	ZMODEM.	 Try
-	       sz -w1024 file...
-	  to enable software flow control. Experiment with different
-	  values to find the best throughput.
+	  control, ZMODEM lets you fake	it by setting a	window size.
+	  Try
+	       sz -w2048 file...
+	  to enable software flow control.  Experiment with different
+	  window sizes for best	results.
 
 	  Terminal servers are designed	to accept keyboard input from
 	  human	operators.  They may lose data when a program sends
-	  data to the host faster than humans type.  Some servers
+	  more data to the host	faster than humans type.  Some servers
 	  allow	larger input buffers to	support	file uploads.  If you
 	  can upload short files (less than 100	bytes) but not longer
 	  files, try
 	       sz -w1024 file...
 	  with your uploading program.	(Not all programs support this
-	  option; use ZCOMM or Professional-YAM.)
-
-	  When both flow control and character transparency are
-	  problems, use
-	       sz -ew1024 file...
-	  as a starting	point.
 
 
 
-
-     Page 4					     (printed 5/18/94)
+     Page 4					     (printed 7/17/94)
 
 
 
@@ -269,17 +269,38 @@
 
 
 
+	  option; use ZCOMM or Professional-YAM.)
+
+	  When both flow control and character transparency are
+	  problems, use
+	       sz -ew1024 file...
+	  as a starting	point.
+
 	  Sometimes the	terminal server	software is defective and must
-	  be upgraded.	Please contact the network's vendor for
+	  be corrected.	 Please	contact	the network's vendor for
 	  corrective procedures.  An alternative is to install direct
 	  serial ports for users desiring to upload files.
 
+	  We have also encountered problems when networking software
+	  fails	to pass	data after a large amount of data has been
+	  sent to the host.  This has happened on a PPP	internet
+	  connection which prevented uploads of	large amounts of data
+	  via either FTP or a ZMODEM upload (via TELNET).  The PPP
+	  connection grinds to a standstill and	not even PING works.
+	  The same ZMODEM/TELNET combination easily uploaded ten times
+	  as much to a nearby machine connected	by Ethernet.
+
+
+     PPPPOOOORRRRTTTT WWWWAAAATTTTCCCCHHHHEEEERRRRSSSS
 	  Some systems enforce a timeout which disconnects a user
-	  after	several	minutes	of no keyboarding.  This can cause
-	  problems in long, error free ZMODEM transfers.  Restricting
-	  the window size with a "-w8192" option provides terminal
-	  input	at regular intervals even when no error	correction is
-	  needed.  If problems persist,	try setting a packet length.
+	  after	several	minutes	of keyboard inactivity.	 Long, error
+	  free ZMODEM transfers	do not generate	keyboard activity
+	  (this	is why ZMODEM is so efficient).	 Restricting the
+	  window size with
+	       sz -w16384 file...
+	  option generates terminal input at regular intervals even
+	  when no error	correction is needed.  If problems persist,
+	  try setting a	packet length.
 	       sz -l1024 file...
 	  (The default ZMODEM packet length is the file	length.)
 
@@ -300,6 +321,20 @@
 	  throughput, ZMODEM's superior	reliability remains intact.
 
 	  If a program that does not properly implement	the specified
+
+
+
+     Page 5					     (printed 7/17/94)
+
+
+
+
+
+
+     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
+
+
+
 	  file transfer	protocol causes	_r_z to "hang" the port after a
 	  failed transfer, either wait for _r_z to time out or keyboard
 	  a dozen Ctrl-X characters.  Every reported instance of this
@@ -320,20 +355,6 @@
 	  rebooting the	system if the file transfers are not
 	  successful, especially if the	personality of the system
 	  appears altered.
-
-
-
-
-     Page 5					     (printed 5/18/94)
-
-
-
-
-
-
-     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
-
-
 
 	  The Unix "ulimit" parameter must be set high enough to
 	  permit large file transfers to Unix.
@@ -366,13 +387,27 @@
 	  The ASCII option's CR/LF to NL translation merely deletes
 	  CR's;	undos(omen) performs a more intelligent	translation.
 
+
+
+
+     Page 6					     (printed 7/17/94)
+
+
+
+
+
+
+     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
+
+
+
      ZZZZMMMMOOOODDDDEEEEMMMM CCCCAAAAPPPPAAAABBBBIIIILLLLIIIITTTTIIIIEEEESSSS
 	  _R_z supports ZMODEM command execution (zcommand), incoming
-	  ZMODEM binary	(-b), ASCII (-a), newer(-n), newer+longer(-N),
-	  protect (-p),	Crash Recovery(-r), clobber (-y),
-	  match+clobber	(-Y), compression(-Z), and append (-+)
-	  requests.  Other options sent	by the sender are ignored.
-	  The default is protect (-p) and binary (-b).
+	  ZMODEM binary	(-b), ASCII (-a), escape controls (-e),
+	  newer(-n), newer+longer(-N), protect (-p), Crash Recovery(-
+	  r), clobber (-y), match+clobber (-Y),	compression(-Z), and
+	  append (-+) requests.	 Other options sent by the sender are
+	  ignored.  The	default	is protect (-p)	and binary (-b).
 
 	  Unix Professional-YAM	provides higher	performance and	other
 	  features not supported by _r_z.	Please contact Omen Technology
@@ -386,20 +421,6 @@
 
      FFFFIIIILLLLEEEESSSS
 	  rz.c,	crctab.c, rbsb.c, zm.c,	zmr.c, zmodem.h, rz.1
-
-
-
-
-     Page 6					     (printed 5/18/94)
-
-
-
-
-
-
-     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
-
-
 
 	  /tmp/rzlog stores debugging output generated with -vv	option
 
@@ -435,28 +456,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     Page 7					     (printed 5/18/94)
+     Page 7					     (printed 7/17/94)
 
 
 

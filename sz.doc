@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 5/18/94)
+     Page 1					     (printed 7/17/94)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 5/18/94)
+     Page 2					     (printed 7/17/94)
 
 
 
@@ -179,8 +179,9 @@
 	       MSDOS or	CP/M) is transmitted as	C/omenB0000.  If the
 	       resultant filename has more than	8 characters in	the
 	       stem, a "." is inserted to allow	a total	of eleven.
-	  eeee    Escape all control characters; normally only XON, XOFF,
-	       DLE, CR-@-CR, and Ctrl-X	are escaped.
+	  eeee    Escape all control characters and the all ones
+	       character (0xFF); normally only XON, XOFF, DLE, CR-@-
+	       CR, and Ctrl-X are escaped.
 	  ffff    Send Full pathname.  Normally directory prefixes	are
 	       stripped	from the transmitted filename.
 	  gggg    Send ESC-[-?-3-4-l to start DSZ from Kermit.
@@ -188,11 +189,10 @@
 	       rather than the default 128 byte	blocks.	 1024 byte
 	       packets speed file transfers at high bit	rates.
 	       (ZMODEM streams the data	for the	best possible
-	       throughput.)
 
 
 
-     Page 3					     (printed 5/18/94)
+     Page 3					     (printed 7/17/94)
 
 
 
@@ -203,6 +203,7 @@
 
 
 
+	       throughput.)
 	  LLLLNNNN   Use ZMODEM sub-packets of length	N.  A larger N (32 <=
 	       N <= 1024) gives	slightly higher	throughput, a smaller
 	       N speeds	error recovery.	 The default is	128 below 300
@@ -257,8 +258,7 @@
 
 
 
-
-     Page 4					     (printed 5/18/94)
+     Page 4					     (printed 7/17/94)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					     (printed 5/18/94)
+     Page 5					     (printed 7/17/94)
 
 
 
@@ -366,6 +366,12 @@
 	  networks.  Terminal servers often interfere with file
 	  transfers by "eating"	control	characters and/or losing data.
 
+	  Accessing a distant system using tttteeeellllnnnneeeetttt or rrrrllllooooggggiiiinnnn on a local
+	  Unix system entails the same problems.  If you have a	choice
+	  between tttteeeellllnnnneeeetttt and rrrrllllooooggggiiiinnnn try	rlogin with the	----8888 option.
+	  Set the escape character to ^P (control P) which is
+	  protected by ZMODEM.
+
 	  When terminal	servers	interfere with file transfers, server
 	  commands are often available to help the problem.  When
 	  possible, enable the server and modems for hardware flow
@@ -381,16 +387,10 @@
 	  until	they adequately	support	high performance file
 	  transfers.
 
-	  Escaping control characters (sz -e) may help if the transfer
-	  gets stuck in	the same place on every	attempt.
-	  Professional-YAM and ZCOMM allow selection of	which control
-	  characters need to be	escaped.  In extreme cases 7-bit
-	  transmission may be required (see the	Professional-YAM/ZCOMM
-	  manual).
 
 
 
-     Page 6					     (printed 5/18/94)
+     Page 6					     (printed 7/17/94)
 
 
 
@@ -401,8 +401,15 @@
 
 
 
-	  If you encounter problems with control characters Please
-	  refer	to the sz -T command in	sz.doc for more	help.
+	  Escaping control characters with ZMODEM (sz -e) may help if
+	  the transfer gets stuck in the same place on every attempt.
+	  Professional-YAM and ZCOMM allow selection of	which control
+	  characters need to be	escaped.  In extreme cases 7-bit
+	  transmission may be required (see the	Professional-YAM/ZCOMM
+	  manual).  If you encounter problems with control characters
+	  you should identify which control characters are causing the
+	  problem.  Please refer to the	sz -T command in sz.doc	for
+	  more help.
 
 	  Flow control between the server and modem is often
 	  defective.  This rarely causes a problem in interactive
@@ -415,14 +422,15 @@
 	  attached to the server is properly configured.
 
 	  If the terminal server is too	brain damaged to support flow
-	  control, you can fake	it with	ZMODEM.	 Try
-	       sz -w1024 file...
-	  to enable software flow control. Experiment with different
-	  values to find the best throughput.
+	  control, ZMODEM lets you fake	it by setting a	window size.
+	  Try
+	       sz -w2048 file...
+	  to enable software flow control.  Experiment with different
+	  window sizes for best	results.
 
 	  Terminal servers are designed	to accept keyboard input from
 	  human	operators.  They may lose data when a program sends
-	  data to the host faster than humans type.  Some servers
+	  more data to the host	faster than humans type.  Some servers
 	  allow	larger input buffers to	support	file uploads.  If you
 	  can upload short files (less than 100	bytes) but not longer
 	  files, try
@@ -436,27 +444,19 @@
 	  as a starting	point.
 
 	  Sometimes the	terminal server	software is defective and must
-	  be upgraded.	Please contact the network's vendor for
+	  be corrected.	 Please	contact	the network's vendor for
 	  corrective procedures.  An alternative is to install direct
 	  serial ports for users desiring to upload files.
 
-	  Some systems enforce a timeout which disconnects a user
-	  after	several	minutes	of no keyboarding.  This can cause
-	  problems in long, error free ZMODEM transfers.  Restricting
-	  the window size with a "-w8192" option provides terminal
-	  input	at regular intervals even when no error	correction is
-	  needed.  If problems persist,	try setting a packet length.
-	       sz -l1024 file...
-	  (The default ZMODEM packet length is the file	length.)
-
-     NNNNOOOOTTTTEEEESSSS
-	  Particular attention must be paid to flow control.  The
-	  modem	and Unix must agree on the flow	control	method.	 Sz on
-	  USG (SYS III/V) systems use XON/XOFF flow control.  Some
+	  We have also encountered problems when networking software
+	  fails	to pass	data after a large amount of data has been
+	  sent to the host.  This has happened on a PPP	internet
+	  connection which prevented uploads of	large amounts of data
+	  via either FTP or a ZMODEM upload (via TELNET).  The PPP
 
 
 
-     Page 7					     (printed 5/18/94)
+     Page 7					     (printed 7/17/94)
 
 
 
@@ -467,11 +467,29 @@
 
 
 
-	  terminal servers do not provide working flow control.	 If
-	  flow control cannot be properly set up,
-	  Try a	"-w1024" option	(given to the sending program) to
-	  enforce protocol level flow control.	Experiment with
-	  different window sizes for best results.
+	  connection grinds to a standstill and	not even PING works.
+	  The same ZMODEM/TELNET combination easily uploaded ten times
+	  as much to a nearby machine connected	by Ethernet.
+
+
+     PPPPOOOORRRRTTTT WWWWAAAATTTTCCCCHHHHEEEERRRRSSSS
+	  Some systems enforce a timeout which disconnects a user
+	  after	several	minutes	of keyboard inactivity.	 Long, error
+	  free ZMODEM transfers	do not generate	keyboard activity
+	  (this	is why ZMODEM is so efficient).	 Restricting the
+	  window size with
+	       sz -w16384 file...
+	  option generates terminal input at regular intervals even
+	  when no error	correction is needed.  If problems persist,
+	  try setting a	packet length.
+	       sz -l1024 file...
+	  (The default ZMODEM packet length is the file	length.)
+
+     NNNNOOOOTTTTEEEESSSS
+	  Particular attention must be paid to flow control.  The
+	  modem	and Unix must agree on the flow	control	method.	 Sz
+	  does not set or reset	flow control modes (if any).  Most
+	  Unix systems use XON/XOFF ("software") flow control.
 
 	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
 	  YMODEM, or KERMIT.  Setting one of these spoofing modes
@@ -501,6 +519,20 @@
 
 	  Most ZMODEM options are merely passed	to the receiving
 	  program; some	programs do not	implement all of these
+
+
+
+     Page 8					     (printed 7/17/94)
+
+
+
+
+
+
+     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
+
+
+
 	  options.
 
 	  Circular buffering and a ZMODEM sliding window should	be
@@ -518,19 +550,6 @@
 	  503-621-3406
 	  Post Office Box 4681
 	  Portland OR 97208
-
-
-
-
-     Page 8					     (printed 5/18/94)
-
-
-
-
-
-
-     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
-
 
 
      BBBBUUUUGGGGSSSS
@@ -569,26 +588,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     Page 9					     (printed 5/18/94)
+     Page 9					     (printed 7/17/94)
 
 
 

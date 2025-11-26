@@ -1,4 +1,4 @@
-#define VERSION "3.36 04-23-94"
+#define VERSION "3.38 06-03-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -115,12 +115,12 @@ extern int errno;
 int Zmodem=0;		/* ZMODEM protocol requested */
 int Nozmodem = 0;	/* If invoked as "rb" */
 unsigned Baudrate = 9600;
-unsigned Effbaud = 9600;
 
 
 #include "rbsb.c"	/* most of the system dependent stuff here */
 #include "crctab.c"
 char endmsg[90] = {0};	/* Possible message to display on exit */
+char Zsendmask[33];	/* Additional control chars to mask */
 
 char *substr();
 FILE *fout;

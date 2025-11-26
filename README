@@ -18,7 +18,7 @@ The Makefile is self explanatory; just say "make".
 Unregistered users can use our support hotline: 900-737-7836 at
 $4.69 per minute.  Callers must be 18+ years of age.  Registered
 users can obtain free support for problems not involving
-terminal servers or third party ZMODEM software can call the
+terminal servers or third party software using email or the
 regular Omen Technology phone number.
 
 Rz and sz work best with comm programs that properly support
@@ -30,21 +30,30 @@ supports ZMODEM AutoDownload.  GSZ (part of GSZ.ZIP) and ZCOMM
 (ZCOMMEXE.ZIP, ZCOMMDOC.ZIP, ZCOMMHLP.ZIP) are available on
 TeleGodzilla and other fine bulletin boards.
 
+This software may be freely used to support file transfer
+operations to or from duly licensed Omen Technology products.
+This includes DSZ, GSZ, ZCOMM, Professional-YAM and PowerCom.
+Institutions desiring to use rz/sz this way should add the
+following to the sz compile line: -DCOMPL
+Programs based on stolen or public domain ZMODEM materials are
+not included.  Use with other commercial or shareware programs
+(Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+
 Rz ans Sz are Copyrighted shareware programs.  Commercial Use of
 these programs is subject to licensing conditions detailed in
-the rz.c source code.  "Commercial Use" includes use of this
+the sz.c source code.  "Commercial Use" includes use of this
 program to transfer files to/from any commercial or shareware
 program not published by Omen Technology INC.  Please print the
 "mailer.rz" file, fill out the form and return same with your
 registration.
 
-Previous versions of rz and sz (April 1988) are Public Domain,
+1.xx and 2.xx versions of rz and sz (April 1988) are Public Domain,
 but lack recent enhancements and bug fixes.
 
 The Man pages are formatted for those without Unix nroff.  For
 best results, use less(1) (available on comp.sources.misc) as
-your manual page reader.  Sources for the man pages are provided
-with copies of Unix Professional-YAM.
+your manual page reader.  Troff sources for the rz/sz man pages
+are included with copies of Unix Professional-YAM.
 
 
 FTP access is now available at ftp.cs.pdx.edu pub/zmodem
@@ -53,6 +62,9 @@ of OMEN files available for FTP.  The files in this direcotryy
 are uploaded with ZMODEM directly from the Omen home system,
 preserving modification dates and file contents.
 
+June 22 1994: sz -e now escapes the all ones character (0xFF).
+Sz now understands receiver specified control character
+prefixing (ZCOMM/Professional-YAM zmresc string parameter).
 
 Apr 23 1994: Added -DOLD compiler flag for antique SYSV
 compilers without a standard /usr/include/stdlib.h header file.

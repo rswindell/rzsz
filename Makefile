@@ -103,14 +103,14 @@ tags:
 .PRECIOUS:rz sz
 
 xenix:
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -s -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
 	ln sz sx
 	ln sz zcommand
 	ln sz zcommandi
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DUSG -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -s -DUSG -DMD rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb

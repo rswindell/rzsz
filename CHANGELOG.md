@@ -1,5 +1,18 @@
 # Changelog
 
+## [1994-06-22] RZ 3.38 / SZ 3.38
+
+This release included this `README` update:
+```
+June 22 1994: sz -e now escapes the all ones character (0xFF).
+Sz now understands receiver specified control character
+prefixing (ZCOMM/Professional-YAM zmresc string parameter).
+```
+
+## [1994-05-15] RZ 3.36 / SZ 3.37
+
+  - SZ: Add '-x' (skipbitch) option
+
 ## [1994-04-23] RZ 3.36 / SZ 3.36
 
 This release included this `README` update:

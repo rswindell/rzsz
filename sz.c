@@ -1,4 +1,4 @@
-#define VERSION "3.37 05-15-94"
+#define VERSION "3.38 06-22-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -102,13 +102,13 @@ extern int errno;
 #define HOWMANY 2
 STATIC int Zmodem=0;		/* ZMODEM protocol requested by receiver */
 unsigned Baudrate = 9600;		/* Default, set by first mode() call */
-STATIC unsigned Effbaud = 9600;
 STATIC unsigned Txwindow;	/* Control the size of the transmitted window */
 STATIC unsigned Txwspac;	/* Spacing between zcrcq requests */
 STATIC unsigned Txwcnt;	/* Counter used to space ack requests */
 STATIC long Lrxpos;	/* Receiver's last reported offset */
 STATIC int errors;
 char endmsg[80] = {0};	/* Possible message to display on exit */
+char Zsendmask[33];	/* Additional control chars to mask */
 
 #include "rbsb.c"	/* most of the system dependent stuff here */
 
@@ -396,7 +396,7 @@ char *argv[];
 		if (Ksendstr)
 			printf(ksendbuf);
 		printf("rz\r");  fflush(stdout);
-		stohdr(0L);
+		stohdr(0x80L);	/* Show we can var header */
 		if (Command)
 			Txhdr[ZF0] = ZCOMMAND;
 		zshhdr(4, ZRQINIT, Txhdr);
@@ -978,14 +978,21 @@ getzrxinit()
 			zshhdr(4, ZRQINIT, Txhdr);
 			continue;
 		case ZRINIT:
+			if (Rxhlen==4 && (Rxhdr[ZF1] & ZRQNVH)) {
+				stohdr(0x80L);	/* Show we can var header */
+				zshhdr(4, ZRQINIT, Txhdr);
+				continue;
+			}
 			Rxflags = 0377 & Rxhdr[ZF0];
-#ifdef COMPL
+#if COMPL
 			Usevhdrs = 1;
 #else
 			Usevhdrs = Rxhdr[ZF1] & CANVHDR;
 #endif
 			Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
 			Zctlesc |= Rxflags & TESCCTL;
+			if (Rxhdr[ZF1] & ZRRQQQ)	/* Escape ctrls */
+				initzsendmsk(Rxhdr+ZRPXQQ);
 			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
 			if ( !(Rxflags & CANFDX))
 				Txwindow = 0;
@@ -1038,11 +1045,11 @@ getzrxinit()
 
 			/* Set initial subpacket length */
 			if (blklen < 1024) {	/* Command line override? */
-				if (Effbaud > 300)
+				if (Baudrate > 300)
 					blklen = 256;
-				if (Effbaud > 1200)
+				if (Baudrate > 1200)
 					blklen = 512;
-				if (Effbaud > 2400)
+				if (Baudrate > 2400)
 					blklen = 1024;
 			}
 			if (Rxbuflen && blklen>Rxbuflen)
@@ -1583,5 +1590,23 @@ chartest(m)
 	printf("\r\nMode %d character transparency test ends.\r\n", m);
 	fflush(stdout);
 }
+
+/*
+ * Set additional control chars to mask in Zsendmask
+ * according to bit array stored in char array at p
+ */
+initzsendmsk(p)
+register char *p;
+{
+	register c;
+
+	for (c = 0; c < 33; ++c) {
+		if (p[c>>3] & (1 << (c & 7))) {
+			Zsendmask[c] = 1;
+			vfile("Escaping %02o", c);
+		}
+	}
+}
+
 
 /* End of sz.c */

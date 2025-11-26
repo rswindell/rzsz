@@ -287,9 +287,9 @@ mode(n)
 #endif
 		did0 = TRUE;
 #ifdef POSIX
-		Effbaud = Baudrate = getspeed(cfgetospeed(&tty));
+		Baudrate = getspeed(cfgetospeed(&tty));
 #else
-		Effbaud = Baudrate = getspeed(tty.c_cflag & CBAUD);
+		Baudrate = getspeed(tty.c_cflag & CBAUD);
 #endif
 		vfile("Baudrate = %u\n", Baudrate);
 		return OK;
@@ -344,7 +344,7 @@ mode(n)
 		tty.sg_flags &= ~ECHO;
 		ioctl(Tty, TIOCSETP, &tty);
 		did0 = TRUE;
-		Effbaud = Baudrate = getspeed(tty.sg_ospeed);
+		Baudrate = getspeed(tty.sg_ospeed);
 		return OK;
 #endif
 	case 0:
