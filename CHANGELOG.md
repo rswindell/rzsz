@@ -8,7 +8,6 @@ Sep 1991: Major hacking to work around SVR4 bug.  Append and crash
 recovery of shrinking files corrected.  Sz now supports rename.
 Sz -c changed to zcommand, rx -c file changed to rc file.
 ```
-
   - RZ loses the -c and -e options
   - RZ adds the -a option (back)
   - New/unique exit codes
