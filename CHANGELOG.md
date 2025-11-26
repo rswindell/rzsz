@@ -1,6 +1,6 @@
 # Changelog
 
-## [RZ 1.26 / SZ 1.35] - 1987-08-21
+## [1987-08-21] RZ 1.26 / SZ 1.35
 
 ```
  Length   Method    Size  Cmpr    Date    Time   CRC-32   Name
@@ -30,13 +30,13 @@
   - sz 1.34 implements tx backchannel garbage count and ZCRCW after ZRPOS
     in accordance with the 7-31-87 ZMODEM Protocol Description
 
-## [RZ 1.21 / SZ 1.31] - 1987-05-29
+## [1987-05-29] RZ 1.21 / SZ 1.31
 
   - Add XMODEM receive (rx) support
   - Add option to control ZMODEM window size
   - Add option to ignore control characters
 
-## [RZ 1.18 / SZ 1.26] - 1987-03-10
+## [1987-03-10] RZ 1.18 / SZ 1.26
 
 This release was located in a tar file:
 
@@ -82,7 +82,7 @@ TeleGodzilla BBS: 621-3746 2400/1200  CIS:70007,2304  Genie:CAF  Source:TCE022
   omen!/usr/spool/uucppublic/FILES lists all uucp-able files, updated hourly
 ```
 
-## [RZ 1.16 / SZ 1.25] - 1987-01-25
+## [1987-01-25] RZ 1.16 / SZ 1.25
 
 We're back on the high confidence train here as the mysteriously removed
 features (e.g. SVR2 support) are now restored and bugs that reappeared
@@ -91,7 +91,7 @@ features (e.g. SVR2 support) are now restored and bugs that reappeared
 So it is probably best to consider this commit to be the first official release
 with 32-bit CRC error detection - that I was able to sucessfully recover.
 
-## [RZ 1.14 / SZ 1.14] - 1987-01-16 (suspect)
+## [1987-01-16] RZ 1.14 / SZ 1.14 (suspect)
 
 The original [USENET announcement](https://mirrors.nycbug.org/pub/The_Unix_Archive/Unix_Usenet/comp.sources.unix/1987-January/005074.html) of this release by Chuck:
 
@@ -157,7 +157,7 @@ SVR2 support vanishes, and other minor changes that were previously made are
 missing but then reappear in subsequent releases, thus making this revision
 suspect.  Caveat emptor.
 
-## [RZ 1.10 / SZ 1.19] - 1986-11-14
+## [1986-11-14] RZ 1.10 / SZ 1.19
 
   - Support nonblocking I/O in System V, Release 2
   - Support invoking YMODEM (batch) transfers by symlinking sb -> sz
@@ -182,12 +182,12 @@ zipped and uploaded to Night Owls BBS.
 A couple of the RZSZ releases from 1986 were only found on the War Ensemble BBS
 (warensemble.com).  Thank you to the sysop, DaiTengu!
 
-## [RZ 1.09 / SZ 1.17] - 1986-10-23
+## [1986-10-23] RZ 1.09 / SZ 1.17
 
   - Fixed typo in masking of ZP0 byte value in received ZRINIT
   - Reduce expected receive CAN count back from 5 to 2
 
-## [RZ 1.08 / SZ 1.14] - 1986-09-15
+## [1986-09-15] RZ 1.08 / SZ 1.14
 
 Chuck's corresponding USENET announcement follows:
 ```
@@ -208,7 +208,7 @@ omen Any ACU 1200 1-503-621-3746 se:--se: link ord: Giznoid in:--in: uucp
 omen!/usr/spool/uucppublic/FILES lists all uucp-able files, updated hourly
 ```
 
-## [RZ 1.06 / SZ 1.13] - 1986-08-16
+## [1986-08-16] RZ 1.06 / SZ 1.13
 
 SZ changes only:
 
@@ -216,7 +216,7 @@ SZ changes only:
   - Add command-line option to enable encoding of all tx'd control characters
   - Handle (ignore) receipt of ZACK
 
-## [RZ 1.06 / SZ 1.08] - 1986-07-18
+## [1986-07-18] RZ 1.06 / SZ 1.08
 
 This appears to be the third public release of ZMODEM by Chuck Forsberg.
 Chuck's corresponding USENET announcement follows:
@@ -262,7 +262,7 @@ Main change:
 
   - Move from run-time to table-driven 16-bit CRC calculation algorithm
 
-## [RZ 1.04 / SZ 1.07] - 1986-06-12
+## [1986-06-12] RZ 1.04 / SZ 1.07
 
 This appears to be the second public release of ZMODEM by Chuck Forsberg.
 No associated USENET announcement/description article has been located.
@@ -300,7 +300,7 @@ Nelgin (EOTLBBS) found this archive and uploaded it to my BBS, Vertrauen
 (vert.synchro.net) in response to my request for historic RZSZ archives.
 Thanks Nelgin!
 
-## [RZ 1.03 / SZ 1.03] - 1986-05-20
+## [1986-05-20] RZ 1.03 / SZ 1.03
 
 This is the first public release of ZMODEM, originally posted by Chuck Forsberg (caf)
 to the comp.sources.unix (nee net.sources) USENET newsgroup with the following
