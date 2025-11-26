@@ -1,4 +1,4 @@
-#define VERSION "sz 3.03 5-09-89"
+#define VERSION "sz 3.07 2-02-90"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -48,28 +48,38 @@
  *
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  *
- *	This version implements ZMODEM Run Length Encoding, Comparision,
- *	and variable length headers.  These features were not funded
- *	by the original Telenet development contract.  This software,
- *	including these features, may be freely used for non
- *	commercial and educational purposes.  This software may also
- *	be freely used to support file transfer operations to or from
- *	licensed Omen Technology products.  Contact Omen Technology
- *	for licensing for other uses.  Any programs which use part or
- *	all of this software must be provided in source form with this
- *	notice intact except by written permission from Omen
- *	Technology Incorporated.
+ * 
+ *	This version implements numerous enhancements including ZMODEM
+ *	Run Length Encoding and variable length headers.  These
+ *	features were not funded by the original Telenet development
+ *	contract.
+ * 
+ * This software may be freely used for non commercial and
+ * educational (didactic only) purposes.  This software may also
+ * be freely used to support file transfer operations to or from
+ * licensed Omen Technology products.  Any programs which use
+ * part or all of this software must be provided in source form
+ * with this notice intact except by written permission from Omen
+ * Technology Incorporated.
+ * 
+ * Use of this software for commercial or administrative purposes
+ * except when exclusively limited to interfacing Omen Technology
+ * products requires a per port license payment of $20.00 US per
+ * port (less in quantity).  Use of this code by inclusion,
+ * decompilation, reverse engineering or any other means
+ * constitutes agreement to these conditions and acceptance of
+ * liability to license the materials and payment of reasonable
+ * legal costs necessary to enforce this license agreement.
+ *
  *
  *		Omen Technology Inc		FAX: 503-621-3745
  *		Post Office Box 4681
  *		Portland OR 97208
  *
- *	Previous versions of this program (not containing the extensions
- *	listed above) remain in the public domain.
- *
  *	This code is made available in the hope it will be useful,
  *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
  *	DAMAGES OF ANY KIND.
+ *
  *
  *  2.1x hacks to avoid VMS fseek() bogosity, allow input from pipe
  *     -DBADSEEK -DTXBSIZE=32768  
@@ -462,7 +472,7 @@ char *argv[];
 				case 'T':
 					if (++Test > 1) {
 						chartest(1); chartest(2);
-						mode(0);  exit(0);
+						mode(0);  exit(SS_NORMAL);
 					}
 					break;
 #ifndef vax11c
@@ -587,7 +597,8 @@ char *argv[];
 	mode(0);
 	dm = ((errcnt != 0) | Exitcode);
 	if (dm) {
-		cucheck();  exit(dm);
+		cucheck();
+		exit(dm);
 	}
 	exit(SS_NORMAL);
 	/*NOTREACHED*/
@@ -1175,7 +1186,7 @@ long pos;
 
 /* VARARGS1 */
 vfile(f, a, b, c, d)
-register char *f;
+long a, b, c, d;
 {
 	if (Verbose > 2) {
 		fprintf(stderr, f, a, b, c, d);
@@ -1558,13 +1569,12 @@ again:
 				if (c == ZPAD) {
 					goto again;
 				}
-			/* **** FALL THRU TO **** */
-		default:
 			continue;
 		case ZCAN:
 		case TIMEOUT:
 		case ZABORT:
 		case ZFIN:
+		default:
 			return ERROR;
 		case ZCRC:
 			if (Rxpos != lastcrcrq) {
@@ -1582,6 +1592,7 @@ again:
 			stohdr(crc);
 			zsbhdr(4, ZCRC, Txhdr);
 			goto again;
+		case ZFERR:
 		case ZSKIP:
 			fclose(in); return c;
 		case ZRPOS:

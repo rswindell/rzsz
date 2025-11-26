@@ -11,25 +11,34 @@
  *	zrdata(buf, len) receive data
  *	stohdr(pos) store position data in Txhdr
  *	long rclhdr(hdr) recover position offset from header
+ * 
  *
- *	This version implements ZMODEM Run Length Encoding, Comparision,
- *	and variable length headers.  These features were not funded
- *	by the original Telenet development contract.  This software,
- *	including these features, may be freely used for non
- *	commercial and educational purposes.  This software may also
- *	be freely used to support file transfer operations to or from
- *	licensed Omen Technology products.  Contact Omen Technology
- *	for licensing for other uses.  Any programs which use part or
- *	all of this software must be provided in source form with this
- *	notice intact except by written permission from Omen
- *	Technology Incorporated.
+ *	This version implements numerous enhancements including ZMODEM
+ *	Run Length Encoding and variable length headers.  These
+ *	features were not funded by the original Telenet development
+ *	contract.
+ * 
+ * This software may be freely used for non commercial and
+ * educational (didactic only) purposes.  This software may also
+ * be freely used to support file transfer operations to or from
+ * licensed Omen Technology products.  Any programs which use
+ * part or all of this software must be provided in source form
+ * with this notice intact except by written permission from Omen
+ * Technology Incorporated.
+ * 
+ * Use of this software for commercial or administrative purposes
+ * except when exclusively limited to interfacing Omen Technology
+ * products requires a per port license payment of $20.00 US per
+ * port (less in quantity).  Use of this code by inclusion,
+ * decompilation, reverse engineering or any other means
+ * constitutes agreement to these conditions and acceptance of
+ * liability to license the materials and payment of reasonable
+ * legal costs necessary to enforce this license agreement.
+ *
  *
  *		Omen Technology Inc		FAX: 503-621-3745
  *		Post Office Box 4681
  *		Portland OR 97208
- *
- *	Previous versions of this program (not containing the extensions
- *	listed above) remain in the public domain.
  *
  *	This code is made available in the hope it will be useful,
  *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
@@ -422,6 +431,8 @@ startover:
 again:
 	/* Return immediate ERROR if ZCRCW sequence seen */
 	switch (c = readline(Rxtimeout)) {
+	case 021: case 0221:
+		goto again;
 	case RCDO:
 	case TIMEOUT:
 		goto fifi;
@@ -537,6 +548,8 @@ splat:
 	default:
 		goto agn2;
 	}
+	for (n = Rxhlen; ++n < ZMAXHLEN; )	/* Clear unused hdr bytes */
+		hdr[n] = 0;
 	Rxpos = hdr[ZP3] & 0377;
 	Rxpos = (Rxpos<<8) + (hdr[ZP2] & 0377);
 	Rxpos = (Rxpos<<8) + (hdr[ZP1] & 0377);
@@ -676,13 +689,13 @@ char *hdr;
 	if (crc & 0xFFFF) {
 		zperr(badcrc); return ERROR;
 	}
-	switch ( c = readline(1)) {
+	switch ( c = readline(2)) {
 	case 0215:
 		Not8bit = c;
 		/* **** FALL THRU TO **** */
 	case 015:
 	 	/* Throw away possible cr/lf */
-		switch (c = readline(1)) {
+		switch (c = readline(2)) {
 		case 012:
 			Not8bit |= c;
 		}
@@ -690,7 +703,10 @@ char *hdr;
 #ifdef ZMODEM
 	Protocol = ZMODEM;
 #endif
-	Zmodem = 1; return Rxtype;
+	Zmodem = 1;
+	if (c < 0)
+		return c;
+	return Rxtype;
 }
 
 /* Send a byte as two hex digits */

@@ -1,4 +1,4 @@
-#define VERSION "3.01 5-25-89"
+#define VERSION "3.02 6-04-89"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DMD % -o rz; size rz;
@@ -31,28 +31,38 @@
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
  *  rz uses Unix buffered input to reduce wasted CPU time.
  *
- *	This version implements ZMODEM Run Length Encoding 
- *	and variable length headers.  These features were not funded
- *	by the original Telenet development contract.  This software,
- *	including these features, may be freely used for non
- *	commercial and educational purposes.  This software may also
- *	be freely used to support file transfer operations to or from
- *	licensed Omen Technology products.  Contact Omen Technology
- *	for licensing for other uses.  Any programs which use part or
- *	all of this software must be provided in source form with this
- *	notice intact except by written permission from Omen
- *	Technology Incorporated.
+ *
+ *	This version implements numerous enhancements including ZMODEM
+ *	Run Length Encoding and variable length headers.  These
+ *	features were not funded by the original Telenet development
+ *	contract.
+ * 
+ * This software may be freely used for non commercial and
+ * educational (didactic only) purposes.  This software may also
+ * be freely used to support file transfer operations to or from
+ * licensed Omen Technology products.  Any programs which use
+ * part or all of this software must be provided in source form
+ * with this notice intact except by written permission from Omen
+ * Technology Incorporated.
+ * 
+ * Use of this software for commercial or administrative purposes
+ * except when exclusively limited to interfacing Omen Technology
+ * products requires a per port license payment of $20.00 US per
+ * port (less in quantity).  Use of this code by inclusion,
+ * decompilation, reverse engineering or any other means
+ * constitutes agreement to these conditions and acceptance of
+ * liability to license the materials and payment of reasonable
+ * legal costs necessary to enforce this license agreement.
+ *
  *
  *		Omen Technology Inc		FAX: 503-621-3745
  *		Post Office Box 4681
  *		Portland OR 97208
  *
- *	Previous versions of this program (not containing the extensions
- *	listed above) remain in the public domain.
- *
  *	This code is made available in the hope it will be useful,
  *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
  *	DAMAGES OF ANY KIND.
+ *
  *
  *
  * Iff the program is invoked by rzCOMMAND, output is piped to 
@@ -389,11 +399,11 @@ usage()
  *  Debugging information output interface routine
  */
 /* VARARGS1 */
-vfile(f, a, b, c)
-register char *f;
+vfile(f, a, b, c, d)
+long a, b, c, d;
 {
 	if (Verbose > 2) {
-		fprintf(stderr, f, a, b, c);
+		fprintf(stderr, f, a, b, c, d);
 		fprintf(stderr, "\n");
 	}
 }

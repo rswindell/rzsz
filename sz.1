@@ -1,5 +1,5 @@
 '\" Revision Level 
-'\" Last Delta     04-22-89
+'\" Last Delta     07-01-89
 .TH SZ 1 OMEN
 .SH NAME
 sx, sb, sz \- XMODEM, YMODEM, ZMODEM file send
@@ -422,12 +422,20 @@ The difference between Tcount and 5120 represents the number of characters
 stored in various buffers when the Attn sequence is generated.
 .SH NOTES
 .I Sz
-is not intended be called from
+is not designed be called from
 .I cu(1)
-or other communications programs.
+or other outdial communications programs.
 Unix flavors of Omen Technology's
 Professional-YAM communications software
 are available for dial-out applications.
+
+When using TrailBlazer or other buffered modems at high speed,
+particular attention must be paid to flow control.
+The modem and Unix must agree on the flow control method.
+Sz on USG (SYS III/V) systems uses XON/XOFF flow control.
+If flow control cannot be properly set up,
+Try a "-w 2048" option to enforce protocol level flow control.
+Experiment with different window sizes for best results.
 
 
 If a program that does not properly implement

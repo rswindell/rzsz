@@ -1,5 +1,14 @@
 # Changelog
 
+## [1990-02-02] RZ 3.02 / SZ 3.07
+
+  - Major Makefile overhaul
+    Makefile says it "Calls makefile.generic" but it does not
+    The makefile.generic did exist in the archive, but not committing it
+    since it wasn't actually used (and isn't referenced in future Makefiles)
+  - sz treats received ZFERR the same as ZSKIP
+  - zgethdr() ignores received CR (0x0D) and 0x8D characters
+
 ## [1989-05-25] RZ 3.01 / SZ 3.03
 
 The archive that contained this release contained a `README.ATHENA` file:

@@ -1,5 +1,8 @@
 /*
  *
+ * Rev 1997-3-28
+ *  Remove use of alldelay and lcase tty flags - they're gone (at last).
+ *
  *  Rev 5-09-89
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
@@ -20,8 +23,10 @@
 #define OS "V7/BSD"
 #define ROPMODE "r"
 #ifdef LLITOUT
-long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
-long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
+int Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
+int Locbit = LLITOUT|LDECCTQ;	/* Bit SUPPOSED to disable output 
+				   translations and only allow ^Q to 
+				   resume after ^S */
 #include <strings.h>
 #endif
 #endif
@@ -256,7 +261,7 @@ mode(n)
 		tch.t_intrc = Zmodem ? 03:030;	/* Interrupt char */
 #endif
 		tty.sg_flags |= (ODDP|EVENP|CBREAK);
-		tty.sg_flags &= ~(ALLDELAY|CRMOD|ECHO|LCASE);
+		tty.sg_flags &= ~(CRMOD|ECHO);
 		ioctl(0, TIOCSETP, &tty);
 		ioctl(0, TIOCSETC, &tch);
 #ifdef LLITOUT
