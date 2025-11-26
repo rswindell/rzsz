@@ -60,7 +60,7 @@
 
 
 
-     Page 1					      (printed 8/2/96)
+     Page 1					      (printed 1/6/97)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					      (printed 8/2/96)
+     Page 2					      (printed 1/6/97)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					      (printed 8/2/96)
+     Page 3					      (printed 1/6/97)
 
 
 
@@ -258,7 +258,7 @@
 
 
 
-     Page 4					      (printed 8/2/96)
+     Page 4					      (printed 1/6/97)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					      (printed 8/2/96)
+     Page 5					      (printed 1/6/97)
 
 
 
@@ -343,6 +343,9 @@
 	  (The default ZMODEM packet length is the file	length.)
 
      NNNNOOOOTTTTEEEESSSS
+	  RRRRzzzz,,,, rrrrbbbb,,,, (Reg.)and rrrrxxxx are hard	links to the rz	executable.
+	  These	links are automatically	made by	the Makefile.
+
 	  ZMODEM's support of XOFF/XON flow control allows proper
 	  operation in many environments that do not support XMODEM
 	  uploads.  Unfortunately, not all Unix	versions support input
@@ -384,13 +387,10 @@
 	  permit large file transfers to Unix.
 
 	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
-	  YMODEM, or KERMIT.  Setting one of these spoofing modes
-	  interferes with other	protocols.  Telebit's YMODEM spoofing
-	  interferes with YMODEM transfers.
 
 
 
-     Page 6					      (printed 8/2/96)
+     Page 6					      (printed 1/6/97)
 
 
 
@@ -400,6 +400,10 @@
      RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
 
 
+
+	  YMODEM, or KERMIT.  Setting one of these spoofing modes
+	  interferes with other	protocols.  Telebit's YMODEM spoofing
+	  interferes with YMODEM transfers.
 
 	  32 bit CRC code courtesy Gary	S. Brown.  Directory creation
 	  code from John Gilmore's PD TAR program.
@@ -452,11 +456,7 @@
 
 
 
-
-
-
-
-     Page 7					      (printed 8/2/96)
+     Page 7					      (printed 1/6/97)
 
 
 

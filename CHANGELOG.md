@@ -1,5 +1,40 @@
 # Changelog
 
+## [1997-01-06] RZ 3.44 / SZ 3.43
+
+Note: Although the VERSION string in sz.c is "3.43 01-06-96", that appears to
+be a typo/oversight and the actual release date was 01-06-97, as is validated
+by file timestamps within the contents of this found archive file:
+ 
+```
+ Length   Method    Size  Cmpr    Date    Time   CRC-32   Name
+--------  ------  ------- ---- ---------- ----- --------  ----
+    5857  Implode    2894  51% 1996-08-02 13:30 dbdab4b4  readme
+    3510  Implode    1546  56% 1997-01-03 10:40 df7d4d02  mailer.rz
+    7760  Implode    1775  77% 1996-09-16 14:23 c06820fc  makefile
+    6577  Implode    2589  61% 1994-06-03 02:04 6607b78b  zmodem.h
+   17695  Implode    5277  70% 1994-08-02 21:49 cfd293ce  zm.c
+   36849  Implode   13524  63% 1997-01-06 13:09 bdd54565  sz.c
+   29634  Implode   11040  63% 1996-09-16 14:21 6f9ec657  rz.c
+    8764  Implode    4177  52% 1994-10-18 14:55 6c2cfb00  crctab.c
+   10537  Implode    3925  63% 1994-05-21 15:10 59918891  rbsb.c
+    1492  Implode     821  45% 1994-01-20 10:51 81639419  crc.doc
+    2727  Implode    1263  54% 1995-04-21 14:48 9bae9163  minirb.doc
+   19251  Implode    7119  63% 1997-01-06 13:07 53ace258  rz.doc
+   25532  Implode    9158  64% 1997-01-06 13:07 31393fc2  sz.doc
+     367  Shrunk      311  15% 1996-03-05 14:48 f56c04bf  file_id.diz
+    4514  Implode    1884  58% 1994-01-27 13:51 179dfbcd  zmr.c
+    8815  Implode    4150  53% 1993-05-02 19:14 82a86070  crc.c
+      22  Stored       22   0% 1991-09-14 16:16 a4edaaec  gz
+     738  Implode     471  36% 1991-09-15 18:19 835db6ed  zupl.t
+    2868  Implode    1304  55% 1995-01-14 09:58 e3424bec  minirb.c
+--------          -------  ---                            -------
+  193509            73250  62%                            19 files
+```
+
+  - SZ: Optimization and tx keep-alives (SYN byte) when handling ZCRC
+    requests, which can take a long time on large files.
+
 ## [1996-09-16] RZ 3.44 / SZ 3.40
 
 This release included this `README` update:

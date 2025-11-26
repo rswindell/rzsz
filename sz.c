@@ -1,4 +1,4 @@
-#define VERSION "3.40 02-21-95"
+#define VERSION "3.43 01-06-96"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -90,6 +90,7 @@ extern int errno;
 #define EOT 4
 #define ACK 6
 #define NAK 025
+#define SYN 026
 #define CPMEOF 032
 #define WANTCRC 0103	/* send C not NAK to get crc not checksum */
 #define WANTG 0107	/* Send G not NAK to get nonstop batch xmsn */
@@ -134,13 +135,19 @@ FILE *in;
 
 STATIC int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
 
+#if 1
 #ifndef TXBSIZE
 #define TXBSIZE 32768
 #endif
 
 #define TXBMASK (TXBSIZE-1)
-STATIC char Txb[TXBSIZE];		/* Circular buffer for file reads */
+STATIC char Txb[TXBSIZE + 1024];	/* Circular buffer for file reads */
 STATIC char *txbuf = Txb;		/* Pointer to current file segment */
+#else
+char txbuf[1024];
+#endif
+
+
 STATIC long vpos = 0;		/* Number of bytes read from file */
 
 STATIC char Lastrx;
@@ -153,6 +160,7 @@ STATIC int Dottoslash=0;	/* Change foo.bar.baz to foo/bar/baz */
 STATIC int firstsec;
 STATIC int errcnt=0;		/* number of files unreadable */
 STATIC int Skipbitch=0;
+STATIC int Skipcount=0;		/* Count of skipped files */
 STATIC int blklen=128;		/* length of transmitted records */
 STATIC int Optiong;		/* Let it rip no wait for sector ACK's */
 STATIC int Eofseen;		/* EOF seen on input set by zfilbuf */
@@ -163,7 +171,7 @@ STATIC unsigned Rxbuflen=16384;	/* Receiver's max buffer length */
 STATIC long Tframlen = 0;	/* Override for tx frame length */
 STATIC int blkopt=0;		/* Override value for zmodem blklen */
 STATIC int Rxflags = 0;
-STATIC long bytcnt;
+STATIC long bytcnt, maxbytcnt;
 STATIC int Wantfcs32 = TRUE;	/* want to send 32 bit FCS */
 STATIC char Lzconv;	/* Local ZMODEM file conversion request */
 STATIC char Lzmanag;	/* Local ZMODEM file management request */
@@ -414,6 +422,11 @@ char *argv[];
 		Exitcode=1;
 		canit();
 	}
+	if (Skipcount) {
+		printf("%d file(s) skipped by receiver request\r\n", Skipcount);
+		if (Verbose) fprintf(stderr,
+		  "%d file(s) skipped by receiver request\r\n", Skipcount);
+	}
 	if (endmsg[0]) {
 		printf("\r\n%s: %s\r\n", Progname, endmsg);
 		if (Verbose)
@@ -461,7 +474,7 @@ char *argp[];
 
 	Crcflg=FALSE;
 	firstsec=TRUE;
-	bytcnt = -1;
+	bytcnt = maxbytcnt = -1;
 	vfile("wcsend: argc=%d", argc);
 	if (Nozmodem) {
 		printf("Start your local YMODEM receive.     ");
@@ -1136,7 +1149,11 @@ char *buf;
 {
 	register c;
 	register unsigned long crc;
+	int m, n, i;
+	char *p;
 	long lastcrcrq = -1;
+	long lastcrcof = -1;
+	long l;
 
 	for (errors=0; ++errors<11;) {
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
@@ -1169,16 +1186,39 @@ again:
 		case ZNAK:
 			continue;
 		case ZCRC:
-			if (Rxpos != lastcrcrq) {
+			l = Rxhdr[9] & 0377;
+			l = (l<<8) + (Rxhdr[8] & 0377);
+			l = (l<<8) + (Rxhdr[7] & 0377);
+			l = (l<<8) + (Rxhdr[6] & 0377);
+			if (Rxpos != lastcrcrq || l != lastcrcof) {
 				lastcrcrq = Rxpos;
 				crc = 0xFFFFFFFFL;
 				if (Canseek >= 0) {
-					fseek(in, 0L, 0);
-					while (((c = getc(in)) != EOF) && --lastcrcrq)
-						crc = UPDC32(c, crc);
+					fseek(in, bytcnt = l, 0);  i = 0;
+					vfile("CRC32 on %ld bytes", Rxpos);
+					do {
+						/* No rx timeouts! */
+						if (--i < 0) {
+							i = 32768L/blklen;
+							sendline(SYN);
+							flushmoc();
+						}
+						bytcnt += m = n = zfilbuf();
+						if (bytcnt > maxbytcnt)
+							maxbytcnt = bytcnt;
+						for (p = txbuf; --m >= 0; ++p) {
+							c = *p & 0377;
+							crc = UPDC32(c, crc);
+						}
+#ifdef DEBUG
+						vfile("bytcnt=%ld crc=%08lX",
+						  bytcnt, crc);
+#endif
+					} while (n && bytcnt < lastcrcrq);
 					crc = ~crc;
+#ifndef MMIO
 					clearerr(in);	/* Clear possible EOF */
-					lastcrcrq = Rxpos;
+#endif
 				}
 			}
 			stohdr(crc);
@@ -1186,9 +1226,9 @@ again:
 			goto again;
 		case ZFERR:
 		case ZSKIP:
+			++Skipcount;
 			if (Skipbitch)
 				++errcnt;
-			sprintf(endmsg, "File skipped by receiver request");
 			fclose(in); return c;
 		case ZRPOS:
 			/*
@@ -1197,7 +1237,7 @@ again:
 			 */
 			if (fseek(in, Rxpos, 0))
 				return ERROR;
-			Lastsync = (bytcnt = Txpos = Lrxpos = Rxpos) -1;
+			Lastsync = (maxbytcnt = bytcnt = Txpos = Lrxpos = Rxpos) -1;
 			return zsendfdata();
 		}
 	}
@@ -1214,7 +1254,7 @@ zsendfdata()
 	static int tleft = 6;	/* Counter for test mode */
 
 	junkcount = 0;
-	Beenhereb4 = FALSE;
+	Beenhereb4 = 0;
 somemore:
 	if (setjmp(intrjmp)) {
 waitack:
@@ -1230,6 +1270,7 @@ gotack:
 			fclose(in);
 			return ZSKIP;
 		case ZSKIP:
+			++Skipcount;
 			if (Skipbitch)
 				++errcnt;
 			fclose(in);
@@ -1325,6 +1366,8 @@ gotack:
 			  Txpos, Crc32t?" CRC-32":"");
 		zsdata(txbuf, n, e);
 		bytcnt = Txpos += n;
+		if (bytcnt > maxbytcnt)
+			maxbytcnt = bytcnt;
 		if (e == ZCRCW)
 			goto waitack;
 #ifdef READCHECK
@@ -1388,10 +1431,10 @@ egotack:
 			fclose(in);
 			return OK;
 		case ZSKIP:
+			++Skipcount;
 			if (Skipbitch)
 				++errcnt;
 			fclose(in);
-			sprintf(endmsg, "File skipped by receiver request");
 			return c;
 		default:
 			sprintf(endmsg, "Got %d trying to send end of file", c);
@@ -1424,7 +1467,11 @@ getinsync(flag)
 			return ERROR;
 		case ZRPOS:
 			if (Rxpos > bytcnt) {
-				sprintf(endmsg, "Nonstandard Protocol");
+				vfile("getinsync: Rxpos=%lx bytcnt=%lx Maxbytcnt=%lx",
+				  Rxpos, bytcnt, maxbytcnt);
+				if (Rxpos > maxbytcnt)
+					sprintf(endmsg,
+					  "Nonstandard Protocol at %lX", Rxpos);
 				return ZRPOS;
 			}
 			/* ************************************* */
@@ -1446,7 +1493,8 @@ getinsync(flag)
 				if (Beenhereb4 > 4)
 					if (blklen > 32)
 						blklen /= 2;
-			}
+			} else
+				Beenhereb4 = 0;
 			Lastsync = Rxpos;
 			return c;
 		case ZACK:
@@ -1457,9 +1505,9 @@ getinsync(flag)
 		case ZRINIT:
 			return c;
 		case ZSKIP:
+			++Skipcount;
 			if (Skipbitch)
 				++errcnt;
-			sprintf(endmsg, "File skipped by receiver request");
 			return c;
 		case ERROR:
 		default:
