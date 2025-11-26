@@ -1,6 +1,6 @@
 /*
  *
- *  Rev 03-06-1988
+ *  Rev 05-05-1988
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
@@ -231,7 +231,7 @@ mode(n)
 			ioctl(iofd, TIOCGETP, &oldtty);
 			ioctl(iofd, TIOCGETC, &oldtch);
 #ifdef LLITOUT
-			ioctl(TIOCLGET, &Locmode);	/* Get "local mode" */
+			ioctl(iofd, TIOCLGET, &Locmode);
 #endif
 		}
 		tty = oldtty;
@@ -246,7 +246,7 @@ mode(n)
 		ioctl(iofd, TIOCSETP, &tty);
 		ioctl(iofd, TIOCSETC, &tch);
 #ifdef LLITOUT
-		ioctl(TIOCLBIS, &Locbit);
+		ioctl(iofd, TIOCLBIS, &Locbit);
 #endif
 		bibi(99);	/* un-raw doesn't work w/o lit out */
 		did0 = TRUE;
@@ -258,7 +258,7 @@ mode(n)
 			ioctl(iofd, TIOCGETP, &oldtty);
 			ioctl(iofd, TIOCGETC, &oldtch);
 #ifdef LLITOUT
-			ioctl(TIOCLGET, &Locmode);	/* Get "local mode" */
+			ioctl(iofd, TIOCLGET, &Locmode);
 #endif
 		}
 		tty = oldtty;
@@ -283,7 +283,7 @@ mode(n)
 		ioctl(iofd, TIOCSETC, &oldtch);
 		ioctl(iofd, TIOCNXCL, 0);
 #ifdef LLITOUT
-		ioctl(TIOCLSET, &Locmode);	/* Restore "local mode" */
+		ioctl(iofd, TIOCLSET, &Locmode);
 #endif
 #endif
 

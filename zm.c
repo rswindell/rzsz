@@ -1,7 +1,7 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    11-10-87  Chuck Forsberg Omen Technology Inc
+ *    05-09-88  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -38,7 +38,7 @@ int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
 char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 
 static lastsent;	/* Last char we sent */
-static evenp;		/* Even parity seen on header */
+static Not8bit;		/* Seven bits seen on header */
 
 static char *frametypes[] = {
 	"Carrier Lost",		/* -3 */
@@ -70,7 +70,6 @@ static char *frametypes[] = {
 			/*  not including psuedo negative entries */
 };
 
-static char masked[] = "8 bit transparent path required";
 static char badcrc[] = "Bad CRC";
 
 /* Send ZMODEM binary header hdr of type type */
@@ -146,7 +145,7 @@ register char *hdr;
 	zputhex(crc>>8); zputhex(crc);
 
 	/* Make it printable on remote machine */
-	sendline(015); sendline(012);
+	sendline(015); sendline(0212);
 	/*
 	 * Uncork the remote in case a fake XOFF has stopped data flow
 	 */
@@ -386,8 +385,8 @@ agn2:
 #endif
 		goto startover;
 	case ZPAD|0200:		/* This is what we want. */
+		Not8bit = c;
 	case ZPAD:		/* This is what we want. */
-		evenp = c & 0200;
 		break;
 	}
 	cancount = 5;
@@ -475,8 +474,6 @@ register char *hdr;
 		return c;
 	crc = updcrc(c, crc);
 	if (crc & 0xFFFF) {
-		if (evenp)
-			zperr(masked);
 		zperr(badcrc);
 		return ERROR;
 	}
@@ -520,8 +517,6 @@ register char *hdr;
 #endif
 	}
 	if (crc != 0xDEBB20E3) {
-		if (evenp)
-			zperr(masked);
 		zperr(badcrc);
 		return ERROR;
 	}
@@ -561,8 +556,17 @@ char *hdr;
 	if (crc & 0xFFFF) {
 		zperr(badcrc); return ERROR;
 	}
-	if (readline(1) == '\r')	/* Throw away possible cr/lf */
-		readline(1);
+	switch ( c = readline(1)) {
+	case 0215:
+		Not8bit = c;
+		/* **** FALL THRU TO **** */
+	case 015:
+	 	/* Throw away possible cr/lf */
+		switch (c = readline(1)) {
+		case 012:
+			Not8bit |= c;
+		}
+	}
 #ifdef ZMODEM
 	Protocol = ZMODEM;
 #endif

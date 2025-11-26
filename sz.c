@@ -1,35 +1,45 @@
-#define VERSION "sz 2.01 04-21-88"
+#define VERSION "sz 2.10 05-09-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -compat -M2 -Ox -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
-<-xtx-*> cc -Osal -K -i -DSV sz.c -lx -o $B/sz; size $B/sz
+/*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
+
+	Following is used for testing, might not be reasonable for production
+<-xtx-*> cc -Osal -DTXBSIZE=32768  -DSV sz.c -lx -o $B/sz; size $B/sz
+
+ ****************************************************************************
  *
- * sz.c By Chuck Forsberg
+ * sz.c By Chuck Forsberg,  Omen Technology INC
+ *
+ ****************************************************************************
+ *
+ * Typical Unix/Xenix/Clone compiles:
  *
  *	cc -O sz.c -o sz		USG (SYS III/V) Unix
  *	cc -O -DSV sz.c -o sz		Sys V Release 2 with non-blocking input
  *					Define to allow reverse channel checking
  *	cc -O -DV7  sz.c -o sz		Unix Version 7, 2.8 - 4.3 BSD
  *
- *	cc -O -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz	Xenix
+ *	cc -O -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz	Classic Xenix
  *
  *	ln sz sb			**** All versions ****
  *	ln sz sx			**** All versions ****
  *
+ ****************************************************************************
  *
  * Typical VMS compile and install sequence:
+ *
  *		define LNK$LIBRARY   SYS$LIBRARY:VAXCRTL.OLB
  *		cc sz.c
  *		cc vvmodem.c
  *		link sz,vvmodem
- *
  *	sz :== $disk$user2:[username.subdir]sz.exe
  *
+ *  If you feel adventureous, remove the #define BADSYNC line
+ *  immediately following the #ifdef vax11c line!  Some VMS
+ *  systems know how to fseek, some don't.
  *
- *  ******* Some systems (Venix, Coherent, Regulus) do not *******
- *  ******* support tty raw mode read(2) identically to    *******
- *  ******* Unix. ONEREAD must be defined to force one     *******
- *  ******* character reads for these systems.		   *******
+ ****************************************************************************
+ *
  *
  * A program for Unix to send files and commands to computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting Y/XMODEM.
@@ -38,6 +48,8 @@
  *
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  *
+ *  2.1x hacks to avoid VMS fseek() bogosity, allow streaming if input from pipe
+ *     -DBADSEEK -DTXBSIZE=32768  
  *  2.x has mods for VMS flavor
  *
  * 1.34 implements tx backchannel garbage count and ZCRCW after ZRPOS
@@ -48,6 +60,8 @@
 char *substr(), *getenv();
 
 #ifdef vax11c
+#define BADSEEK
+#define TXBSIZE 32768		/* Must be power of two, < MAXINT */
 #include <types.h>
 #include <stat.h>
 #define LOGFILE "szlog.tmp"
@@ -140,6 +154,25 @@ char Myattn[] = { 0 };
 #endif
 
 FILE *in;
+
+#ifdef BADSEEK
+int Canseek = 0;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
+#ifndef TXBSIZE
+#define TXBSIZE 16384		/* Must be power of two, < MAXINT */
+#endif
+#else
+int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
+#endif
+
+#ifdef TXBSIZE
+#define TXBMASK (TXBSIZE-1)
+char Txb[TXBSIZE];		/* Circular buffer for file reads */
+char *txbuf = Txb;		/* Pointer to current file segment */
+#else
+char txbuf[1024];
+#endif
+long vpos = 0;			/* Number of bytes read from file */
+
 char Lastrx;
 char Crcflg;
 int Verbose=0;
@@ -154,9 +187,9 @@ int firstsec;
 int errcnt=0;		/* number of files unreadable */
 int blklen=128;		/* length of transmitted records */
 int Optiong;		/* Let it rip no wait for sector ACK's */
-int Noeofseen;
+int Eofseen;		/* EOF seen on input set by zfilbuf */
+int BEofseen;		/* EOF seen on input set by fooseek */
 int Totsecs;		/* total number of sectors this file */
-char txbuf[1024];
 int Filcnt=0;		/* count of number of files opened */
 int Lfseen=0;
 unsigned Rxbuflen = 16384;	/* Receiver's max buffer length */
@@ -493,7 +526,8 @@ char *oname;
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
 	}
-	++Noeofseen;  Lastread = 0;  Lastn = -1; Dontread = FALSE;
+	BEofseen = Eofseen = 0;  vpos = 0;
+	Lastread = 0;  Lastn = -1; Dontread = FALSE;
 	/* Check for directory or block special files */
 	fstat(fileno(in), &f);
 	c = f.st_mode & S_IFMT;
@@ -597,7 +631,7 @@ getnak()
 
 	Lastrx = 0;
 	for (;;) {
-		switch (firstch = readock(800,1)) {
+		switch (firstch = readline(800)) {
 		case ZPAD:
 			if (getzrxinit())
 				return ERROR;
@@ -617,7 +651,7 @@ getnak()
 		case NAK:
 			return FALSE;
 		case CAN:
-			if ((firstch = readock(20,1)) == CAN && Lastrx == CAN)
+			if ((firstch = readline(20)) == CAN && Lastrx == CAN)
 				return TRUE;
 		default:
 			break;
@@ -637,7 +671,7 @@ long flen;
 	charssent = 0;  firstsec=TRUE;  thisblklen = blklen;
 	vfile("wctx:file length=%ld", flen);
 
-	while ((firstch=readock(Rxtimeout, 2))!=NAK && firstch != WANTCRC
+	while ((firstch=readline(Rxtimeout))!=NAK && firstch != WANTCRC
 	  && firstch != WANTG && firstch!=TIMEOUT && firstch!=CAN)
 		;
 	if (firstch==CAN) {
@@ -666,7 +700,7 @@ long flen;
 		fflush(stdout);
 		++attempts;
 	}
-		while ((firstch=(readock(Rxtimeout, 1)) != ACK) && attempts < RETRYMAX);
+		while ((firstch=(readline(Rxtimeout)) != ACK) && attempts < RETRYMAX);
 	if (attempts == RETRYMAX) {
 		zperr("No ACK on EOT");
 		return ERROR;
@@ -714,7 +748,7 @@ int cseclen;	/* data length of this sector to send */
 		if (Optiong) {
 			firstsec = FALSE; return OK;
 		}
-		firstch = readock(Rxtimeout, (Noeofseen&&sectnum) ? 2:1);
+		firstch = readline(Rxtimeout);
 gotnak:
 		switch (firstch) {
 		case CAN:
@@ -741,7 +775,7 @@ cancan:
 		}
 		for (;;) {
 			Lastrx = firstch;
-			if ((firstch = readock(Rxtimeout, 2)) == TIMEOUT)
+			if ((firstch = readline(Rxtimeout)) == TIMEOUT)
 				break;
 			if (firstch == NAK || firstch == WANTCRC)
 				goto gotnak;
@@ -789,20 +823,95 @@ register char *buf;
 			*buf++ = CPMEOF;
 	return count;
 }
-/* fill buf with count chars */
-zfilbuf(buf, count)
-register char *buf;
-{
-	register c, m;
 
-	m=count;
-	while ((c=getc(in))!=EOF) {
-		*buf++ =c;
-		if (--m == 0)
-			break;
+/* Fill buffer with blklen chars */
+zfilbuf()
+{
+	int n;
+
+#ifdef TXBSIZE
+	/* We assume request is within buffer, or just beyond */
+	txbuf = Txb + (bytcnt & TXBMASK);
+	if (vpos <= bytcnt) {
+		n = fread(txbuf, 1, blklen, in);
+		vpos += n;
+		if (n < blklen)
+			Eofseen = 1;
+		return n;
 	}
-	return (count - m);
+	if (vpos >= (bytcnt+blklen))
+		return blklen;
+	/* May be a short block if crash recovery etc. */
+	Eofseen = BEofseen;
+	return (vpos - bytcnt);
+#else
+	n = fread(txbuf, 1, blklen, in);
+	if (n < blklen)
+		Eofseen = 1;
+	return n;
+#endif
 }
+
+#ifdef TXBSIZE
+fooseek(fptr, pos, whence)
+FILE *fptr;
+long pos;
+{
+	int m, n;
+
+	vfile("fooseek: pos =%lu vpos=%lu Canseek=%d", pos, vpos, Canseek);
+	/* Seek offset < current buffer */
+	if (pos < (vpos -TXBSIZE +1024)) {
+		BEofseen = 0;
+		if (Canseek > 0) {
+			vpos = pos & ~TXBMASK;
+			if (vpos >= pos)
+				vpos -= TXBSIZE;
+			if (fseek(fptr, vpos, 0))
+				return 1;
+		}
+		else if (Canseek == 0)
+			if (fseek(fptr, vpos = 0L, 0))
+				return 1;
+		else
+			return 1;
+		while (vpos <= pos) {
+			n = fread(Txb, 1, TXBSIZE, fptr);
+			vpos += n;
+			vfile("n=%d vpos=%ld", n, vpos);
+			if (n < TXBSIZE) {
+				BEofseen = 1;
+				break;
+			}
+		}
+		vfile("vpos=%ld", vpos);
+		return 0;
+	}
+	/* Seek offset > current buffer (crash recovery, etc.) */
+	if (pos > vpos) {
+		if (Canseek)
+			if (fseek(fptr, vpos = (pos & ~TXBMASK), 0))
+				return 1;
+		while (vpos <= pos) {
+			txbuf = Txb + (vpos & TXBMASK);
+			m = TXBSIZE - (vpos & TXBMASK);
+			n = fread(txbuf, 1, m, fptr);
+			vpos += n;
+			vfile("bo=%d n=%d vpos=%ld", txbuf-Txb, n, vpos);
+			if (m < n) {
+				BEofseen = 1;
+				break;
+			}
+		}
+		return 0;
+	}
+	/* Seek offset is within current buffer */
+	vfile("vpos=%ld", vpos);
+	return 0;
+}
+#define fseek fooseek
+#endif
+
 
 /* VARARGS1 */
 vfile(f, a, b, c)
@@ -823,22 +932,13 @@ alrm()
 
 #ifndef vax11c
 /*
- * readock(timeout, count) reads character(s) from file descriptor 0
- *  (1 <= count <= 3)
- * it attempts to read count characters. If it gets more than one,
- * it is an error unless all are CAN
- * (otherwise, only normal response is ACK, CAN, or C)
- *  Only looks for one if Optiong, which signifies cbreak, not raw input
- *
+ * readline(timeout) reads character(s) from file descriptor 0
  * timeout is in tenths of seconds
  */
-readock(timeout, count)
+readline(timeout)
 {
 	register int c;
-	static char byt[5];
-
-	if (Optiong)
-		count = 1;	/* Special hack for cbreak */
+	static char byt[1];
 
 	fflush(stdout);
 	if (setjmp(tohere)) {
@@ -850,30 +950,15 @@ readock(timeout, count)
 		c=2;
 	if (Verbose>5) {
 		fprintf(stderr, "Timeout=%d Calling alarm(%d) ", timeout, c);
-		byt[1] = 0;
 	}
 	signal(SIGALRM, alrm); alarm(c);
-#ifdef ONEREAD
-	c=read(iofd, byt, 1);		/* regulus raw read is unique */
-#else
-	c=read(iofd, byt, count);
-#endif
+	c=read(iofd, byt, 1);
 	alarm(0);
 	if (Verbose>5)
-		fprintf(stderr, "ret cnt=%d %x %x\n", c, byt[0], byt[1]);
+		fprintf(stderr, "ret %x\n", byt[0]);
 	if (c<1)
 		return TIMEOUT;
-	if (c==1)
-		return (byt[0]&0377);
-	else
-		while (c)
-			if (byt[--c] != CAN)
-				return ERROR;
-	return CAN;
-}
-readline(n)
-{
-	return (readock(n, 1));
+	return (byt[0]&0377);
 }
 
 flushmo()
@@ -1057,19 +1142,30 @@ getzrxinit()
 #ifndef vax11c
 			/* If using a pipe for testing set lower buf len */
 			fstat(iofd, &f);
-			if ((f.st_mode & S_IFMT) != S_IFCHR
-			  && (Rxbuflen == 0 || Rxbuflen > 4096))
-				Rxbuflen = 4096;
+			if ((f.st_mode & S_IFMT) != S_IFCHR) {
+				Rxbuflen = 1024;
+			}
+#endif
+#ifdef BADSEEK
+			Canseek = 0;
+			Txwindow = TXBSIZE - 1024;
+			Txwspac = TXBSIZE/4;
 #endif
 			/*
-			 * If input is not a regular file, force ACK's each 1024
-			 *  (A smarter strategey could be used here ...)
+			 * If input is not a regular file, force ACK's to
+			 *  prevent running beyond the buffer limits
 			 */
 			if ( !Command) {
 				fstat(fileno(in), &f);
-				if (((f.st_mode & S_IFMT) != S_IFREG)
-				  && (Rxbuflen == 0 || Rxbuflen > 1024))
+				if ((f.st_mode & S_IFMT) != S_IFREG) {
+					Canseek = -1;
+#ifdef TXBSIZE
+					Txwindow = TXBSIZE - 1024;
+					Txwspac = TXBSIZE/4;
+#else
 					Rxbuflen = 1024;
+#endif
+				}
 			}
 			/* Set initial subpacket length */
 			if (blklen < 1024) {	/* Command line override? */
@@ -1170,8 +1266,9 @@ again:
 			 * Suppress zcrcw request otherwise triggered by
 			 * lastyunc==bytcnt
 			 */
+			if (Rxpos && fseek(in, Rxpos, 0))
+				return ERROR;
 			Lastsync = (bytcnt = Txpos = Rxpos) -1;
-			fseek(in, Rxpos, 0);
 			Dontread = FALSE;
 			return zsendfdata();
 		}
@@ -1288,11 +1385,11 @@ gotack:
 		if (Dontread) {
 			n = Lastn;
 		} else {
-			n = zfilbuf(txbuf, blklen);
+			n = zfilbuf();
 			Lastread = Txpos;  Lastn = n;
 		}
 		Dontread = FALSE;
-		if (n < blklen)
+		if (Eofseen)
 			e = ZCRCE;
 		else if (junkcount > 3)
 			e = ZCRCW;
@@ -1362,7 +1459,7 @@ gotack:
 			}
 			vfile("window = %ld", tcount);
 		}
-	} while (n == blklen);
+	} while (!Eofseen);
 	if ( !Fromcu)
 		signal(SIGINT, SIG_IGN);
 
@@ -1407,14 +1504,16 @@ getinsync(flag)
 			return ERROR;
 		case ZRPOS:
 			/* ************************************* */
-			/*  If sending to a modem beuufer, you   */
+			/*  If sending to a buffered modem, you  */
 			/*   might send a break at this point to */
 			/*   dump the modem's buffer.		 */
 			if (Lastn >= 0 && Lastread == Rxpos) {
 				Dontread = TRUE;
 			} else {
 				clearerr(in);	/* In case file EOF seen */
-				fseek(in, Rxpos, 0);
+				if (fseek(in, Rxpos, 0))
+					return ERROR;
+				Eofseen = 0;
 			}
 			bytcnt = Lrxpos = Txpos = Rxpos;
 			if (Lastsync == Rxpos) {
@@ -1506,10 +1605,14 @@ listen:
 			saybibi();
 			return OK;
 		case ZRQINIT:
+#ifdef vax11c		/* YAMP :== Yet Another Missing Primitive */
+			return ERROR;
+#else
 			vfile("******** RZ *******");
 			system("rz");
 			vfile("******** SZ *******");
 			goto listen;
+#endif
 		}
 	}
 }
@@ -1603,4 +1706,5 @@ chartest(m)
 	printf("\r\nMode %d character transparency test ends.\r\n", m);
 	fflush(stdout);
 }
+
 /* End of sz.c */

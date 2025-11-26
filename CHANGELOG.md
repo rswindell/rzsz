@@ -1,5 +1,20 @@
 # Changelog
 
+## [1988-05-09] RZ 2.02 / SZ 2.10
+
+  - Sends hex headers terminated with 0x0D,0x8A instead of 0x0D,0x0A (CR LF).
+    This change is curious as Even Parity (used more often in serial
+	communications than Odd Parity) would mean the high (parity) bit would be
+	set in the CR (0x0D) byte, not the LF (0x0A) byte.
+  - Handle CR (0x0A) with or without parity bit set when receiving hex headers
+  - Detect 7-bit connections based on whether high bit (0x80) is set in the CR
+    or *not* set in the LF following a received hex header.
+	It seems Chuck was using this scheme to detect if the high bit was being
+	stripped in transit.
+	The included ZMODEM.DOC file still documents the HEX header format as
+	HEX Header Packet
+       * * ZDLE TYPE F3/P0 F2/P1 F1/P2 F0/P3 CRC-1 CRC-2 CR LF XON
+
 ## [1988-04-22] RZ 2.02 / SZ 2.01
 
   - VMS flavor hacks

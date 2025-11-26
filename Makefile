@@ -15,12 +15,12 @@ nothing:
 usenet:
 	shar -f /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c rbsb.c \
 	 crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
-	 *.1 gz ptest.sh zupl.t
+	 *.1 gz ptest.sh *.t
 
 shar:
 	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
 	 vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
-	 crc.c rbsb.c minirb.c *.1 gz ptest.sh zupl.t
+	 crc.c rbsb.c minirb.c *.1 gz ptest.sh *.t
 
 unixforum: shar
 	compress -b12 /tmp/rzsz.sh
@@ -29,7 +29,7 @@ arc:
 	rm -f /tmp/rzsz.arc
 	arc a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c \
-	 crc.c *.1 gz ptest.sh zupl.t minirb.c
+	 crc.c *.1 gz ptest.sh *.t minirb.c
 	chmod og-w /tmp/rzsz.arc
 	mv /tmp/rzsz.arc /t/yam
 
@@ -37,7 +37,7 @@ zoo:
 	rm -f /tmp/rzsz.zoo
 	zoo a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c *.1 \
-	 crc.c gz ptest.sh zupl.t minirb.c
+	 crc.c gz ptest.sh *.t minirb.c
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /t/yam
 

@@ -4,11 +4,19 @@ frog stompers.  The following performance log entries give the story!
  2400 Z  splat.arc         3968  220   18  0  0   0  512  30 (rz) 0 ccvax off
  2400 K  splat.arc         3968  110   36  0  0   0   89  -1 get  -1 ccvax off
 
-The contents of RZSZ.ARC are designed to be uploaded to a Unix or Xenix
-system by ZCOMM or Professional-YAM using the supplied zupl.t script.
-Connect to your Unix/Xenix system, select an empty directory, and then
-give the YAM/ZCOMM command: "source zupl.t".  This will upload minirb.c,
-compile it, and then use minirb to upload the rz/sz files.
+The contents of RZSZ.ARC can be uploaded to a VAX/XMS system by ZCOMM or
+Professional-YAM using the supplied vupl.t script.  Connect to your VMS
+system, select an empty directory, and then give the YAM/ZCOMM command:
+"source vupl.t".  This will attempt to start a Kermit server ans upload
+the files to it.  If the script can't fire up a Kermit server, the
+script will use the VMS DCL "create" command to upload the files
+directly.  In the latter case, use a clean line for best results.
+
+The contents of RZSZ.ARC can be uploaded to a Unix or Xenix system by
+ZCOMM or Professional-YAM using the supplied zupl.t script.  Connect to
+your Unix/Xenix system, select an empty directory, and then give the
+YAM/ZCOMM command: "source zupl.t".  This will upload minirb.c, compile
+it, and then use minirb to upload the rz/sz files.
 
 Once these files are on your Unix system, you can type "make".
 The Makefile will list the various systems it knows how to
