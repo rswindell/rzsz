@@ -18,7 +18,8 @@ The Makefile is self explanatory; just say "make".
 Unregistered users can use our support hotline: 900-737-7836 at
 $4.69 per minute.  Callers must be 18+ years of age.  Registered
 users can obtain free support for problems not involving
-terminal servers or third party ZMODEM software.
+terminal servers or third party ZMODEM software can call the
+regular Omen Technology phone number.
 
 Rz and sz work best with comm programs that properly support
 ZMODEM command and file AutoDownload (Pro-YAM and ZCOMM).
@@ -44,6 +45,15 @@ The Man pages are formatted for those without Unix nroff.  For
 best results, use less(1) (available on comp.sources.misc) as
 your manual page reader.  Sources for the man pages are provided
 with copies of Unix Professional-YAM.
+
+Apr 23 1994: Added -DOLD compiler flag for antique SYSV
+compilers without a standard /usr/include/stdlib.h header file.
+This causes rbsb.c to define char *getenv() etc. instead of
+getting these definitons from stdlib.h.  You may have to fiddle
+with the declarations in rbsb.c #ifdef OLD to get a clean compile.
+
+Registration and support has been clarified and simplified
+(see mailer.rz).
 
 Feb 18 94: A bug in sz that caused constipation at the end of a
 file under certain options was corrected.

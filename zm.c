@@ -852,6 +852,7 @@ noxrd7()
 			return c;
 		}
 	}
+	/* NOTREACHED */
 }
 
 /* Store long integer pos in Txhdr */

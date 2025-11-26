@@ -13,6 +13,7 @@ char *Copyr = "Copyright 1994 Omen Technology Inc All Rights Reserved";
 #define STAT
 #include <sgtty.h>
 #define OS "V7/BSD"
+char *getenv(), *ttyname();
 #ifdef LLITOUT
 long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
 long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
@@ -28,7 +29,9 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #define OS "SYS III/V"
 #define MODE2OK
 #include <string.h>
+#ifndef OLD
 #include <stdlib.h>
+#endif
 #include <unistd.h>
 #endif
 
@@ -48,6 +51,12 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #define SV
 #endif
 #endif
+#endif
+
+#ifdef OLD
+char *ttyname();
+char *getenv();
+#define time_t long
 #endif
 
 

@@ -1,4 +1,4 @@
-#define VERSION "3.34 02-18-94"
+#define VERSION "3.36 04-23-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -10,17 +10,30 @@
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
  *  rz uses Unix buffered input to reduce wasted CPU time.
  *
+ * 
+ *********************************************************************
+ *********************************************************************
+ * 
  *
  *	This version implements numerous enhancements including ZMODEM
  *	Run Length Encoding and variable length headers.  These
  *	features were not funded by the original Telenet development
  *	contract.
  * 
- *  This software may be freely used for educational (didactic
- *  only) purposes.  This software may also be freely used to
- *  support file transfer operations to or from licensed Omen
- *  Technology products.  Use with other commercial or shareware
- *  programs (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ * 
+ * This software may be freely used for educational (didactic
+ * only) purposes.  "Didactic" means it is used as a study item
+ * in a course teaching the workings of computer protocols.
+ * 
+ * This software may also be freely used to support file transfer
+ * operations to or from duly licensed Omen Technology products.
+ * This includes DSZ, GSZ, ZCOMM, Professional-YAM and PowerCom.
+ * Institutions desiring to use rz/sz this way should add the
+ * following to the sz compile line:	-DCOMPL
+ * Programs based on stolen or public domain ZMODEM materials are
+ * not included.  Use with other commercial or shareware programs
+ * (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ * 
  *
  *  Any programs which incorporate part or all of this code must be
  *  provided in source form with this notice intact except by
@@ -31,8 +44,8 @@
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
- * products requires a per port license payment of $20.00 US per
- * port (less in quantity, see mailer.rz).  Use of this code by
+ * products requires license payment of $20.00 US per user
+ * (less in quantity, see mailer.rz).  Use of this code by
  * inclusion, decompilation, reverse engineering or any other means
  * constitutes agreement to these conditions and acceptance of
  * liability to license the materials and payment of reasonable
@@ -48,16 +61,8 @@
  *	DAMAGES OF ANY KIND.
  *
  *
- *
- *  Alarm signal handling changed to work with 4.2 BSD 7-15-84 CAF 
- *
- *  SEGMENTS=n added 2-21-88 as a model for CP/M programs
- *    for CP/M-80 systems that cannot overlap modem and disk I/O.
- *
  *  -DMD may be added to compiler command line to compile in
  *    Directory-creating routines from Public Domain TAR by John Gilmore
- *
- *  HOWMANY may be tuned for best performance
  *
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
@@ -311,6 +316,7 @@ char *argv[];
 	}
 #endif
 	exit(0);
+	/* NOTREACHED */
 }
 
 
@@ -330,11 +336,13 @@ usage()
 	compression (-Z), binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
 	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
 	clobber (-y), match+clobber (-Y),  and append (-+).\n\n");
-	fprintf(stderr,"Copyright 1994 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"Copyright (c) 1994 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	"See rz.doc for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
-	"This program is intended to interface with terminal programs,\nnot to act as one.\n\n");
+	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
+	fprintf(stderr,
+	"\nTechnical support hotline: 900-737-7836 (1-900-737-RTFM) $4.69/min.\n\n");
 	exit(2);
 }
 
@@ -472,6 +480,7 @@ wcrx()
 			return ERROR;
 		}
 	}
+	/* NOTREACHED */
 }
 
 /*
@@ -993,6 +1002,8 @@ again:
 		case ZCOMMAND:
 			cmdzack1flg = Rxhdr[ZF0];
 			if (zrdata(secbuf, 1024) == GOTCRCW) {
+				void exec2();
+
 				if (cmdzack1flg & ZCACK1)
 					stohdr(0L);
 				else
@@ -1047,6 +1058,7 @@ rzfiles()
 			return ERROR;
 		}
 	}
+	/* NOTREACHED */
 }
 
 /*
@@ -1290,6 +1302,7 @@ register char *s;
 /*
  * Strip leading ! if present, do exec.
  */
+void
 exec2(s)
 register char *s;
 {

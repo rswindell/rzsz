@@ -30,7 +30,7 @@
 
      SSSSUUUUPPPPPPPPOOOORRRRTTTT
 	  Unregistered users may dial 900-737-7836 (900-737-RTFM) for
-	  technical assistance.	 There is a charge of $3.69 per	minute
+	  technical assistance.	 There is a charge of $4.69 per	minute
 	  to use this support line.  Callers must be 18	years or
 	  older.
 
@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 2/18/94)
+     Page 1					     (printed 3/30/94)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 2/18/94)
+     Page 2					     (printed 3/30/94)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					     (printed 2/18/94)
+     Page 3					     (printed 3/30/94)
 
 
 
@@ -204,8 +204,15 @@
 
 
 	  transparent mode.  Some typical commands are "SET TERMINAL
-	  DOWNLOAD" and	"SET TERMINAL NO ESC", but there is no
-	  standard set of commands suitable for	all terminal servers.
+	  DOWNLOAD", "set session passall", and	"SET TERMINAL NO ESC",
+	  but there is no standard set of commands suitable for	all
+	  terminal servers.  Normally these commands are given before
+	  attempting file transfers, but one user has reported that
+	  the command must be given _a_f_t_e_r the file transfer is
+	  started(!).  Until terminal server vendors improve the
+	  quality of their product, you	may have to get	on their case
+	  until	they adequately	support	high performance file
+	  transfers.
 
 	  Escaping control characters (sz -e) may help if the transfer
 	  gets stuck in	the same place on every	attempt.
@@ -249,16 +256,9 @@
 	  corrective procedures.  An alternative is to install direct
 	  serial ports for users desiring to upload files.
 
-	  Some systems enforce a timeout which disconnects a user
-	  after	several	minutes	of no keyboarding.  This can cause
-	  problems in long, error free ZMODEM transfers.  Restricting
-	  the window size with a "-w8192" option provides terminal
-	  input	at regular intervals even when no error	correction is
-	  needed.  If problems persist,	try setting a packet length
 
 
-
-     Page 4					     (printed 2/18/94)
+     Page 4					     (printed 3/30/94)
 
 
 
@@ -269,7 +269,14 @@
 
 
 
+	  Some systems enforce a timeout which disconnects a user
+	  after	several	minutes	of no keyboarding.  This can cause
+	  problems in long, error free ZMODEM transfers.  Restricting
+	  the window size with a "-w8192" option provides terminal
+	  input	at regular intervals even when no error	correction is
+	  needed.  If problems persist,	try setting a packet length
 	  (sz -l1024).
+
 
      NNNNOOOOTTTTEEEESSSS
 	  ZMODEM's support of XOFF/XON flow control allows proper
@@ -314,17 +321,10 @@
 
 	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
 	  YMODEM, or KERMIT.  Setting one of these spoofing modes
-	  interferes with other	protocols.  Telebit's YMODEM spoofing
-	  interferes with YMODEM transfers.
-
-	  32 bit CRC code courtesy Gary	S. Brown.  Directory creation
-	  code from John Gilmore's PD TAR program.
-
-     NNNNEEEETTTTWWWWOOOORRRRKKKK NNNNOOOOTTTTEEEESSSS
 
 
 
-     PPPPaaaaggggeeee 5555					     ((((pppprrrriiiinnnntttteeeedddd 2222////11118888////99994444))))
+     Page 5					     (printed 3/30/94)
 
 
 
@@ -335,6 +335,13 @@
 
 
 
+	  interferes with other	protocols.  Telebit's YMODEM spoofing
+	  interferes with YMODEM transfers.
+
+	  32 bit CRC code courtesy Gary	S. Brown.  Directory creation
+	  code from John Gilmore's PD TAR program.
+
+     NNNNEEEETTTTWWWWOOOORRRRKKKK NNNNOOOOTTTTEEEESSSS
 	  Escaping all control characters (sz -e) may help if the
 	  transfer gets	stuck in the same place	on every attempt.
 	  Professional-YAM and ZCOMM allow selection of	which control
@@ -383,14 +390,7 @@
 
 
 
-
-
-
-
-
-
-
-     Page 6					     (printed 2/18/94)
+     Page 6					     (printed 3/30/94)
 
 
 

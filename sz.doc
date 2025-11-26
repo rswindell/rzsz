@@ -32,7 +32,7 @@
 
      SSSSUUUUPPPPPPPPOOOORRRRTTTT
 	  Unregistered users may dial 900-737-7836 (900-737-RTFM) for
-	  technical assistance.	 There is a charge of $3.69 per	minute
+	  technical assistance.	 There is a charge of $4.69 per	minute
 	  to use this support line.  Callers must be 18	years or
 	  older.
 
@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 2/18/94)
+     Page 1					     (printed 3/30/94)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 2/18/94)
+     Page 2					     (printed 3/30/94)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					     (printed 2/18/94)
+     Page 3					     (printed 3/30/94)
 
 
 
@@ -258,7 +258,7 @@
 
 
 
-     Page 4					     (printed 2/18/94)
+     Page 4					     (printed 3/30/94)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					     (printed 2/18/94)
+     Page 5					     (printed 3/30/94)
 
 
 
@@ -365,8 +365,15 @@
 	  possible, enable the server and modems for hardware flow
 	  control in and out.  Set the terminal	server to telnet
 	  transparent mode.  Some typical commands are "SET TERMINAL
-	  DOWNLOAD" and	"SET TERMINAL NO ESC", but there is no
-	  standard set of commands suitable for	all terminal servers.
+	  DOWNLOAD", "set session passall", and	"SET TERMINAL NO ESC",
+	  but there is no standard set of commands suitable for	all
+	  terminal servers.  Normally these commands are given before
+	  attempting file transfers, but one user has reported that
+	  the command must be given _a_f_t_e_r the file transfer is
+	  started(!).  Until terminal server vendors improve the
+	  quality of their product, you	may have to get	on their case
+	  until	they adequately	support	high performance file
+	  transfers.
 
 	  Escaping control characters (sz -e) may help if the transfer
 	  gets stuck in	the same place on every	attempt.
@@ -380,17 +387,10 @@
 
 	  Flow control between the server and modem is often
 	  defective.  This rarely causes a problem in interactive
-	  applications whose short bursts (a screenfull	at most) fit
-	  within the available memory buffers.	Streaming protocols
-	  such as YMODEM-g, long packet	SuperKermit, and ZMODEM	can
-	  overload the available buffering.  Some terminal servers
-	  support commands to enable hardware flow control such	as
-	  "TERM	FLOWCONTROL HARDWARE IN	OUT"; this assumes the modem
-	  attached to the server is properly configured.
 
 
 
-     Page 6					     (printed 2/18/94)
+     Page 6					     (printed 3/30/94)
 
 
 
@@ -400,6 +400,14 @@
      SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
 
 
+
+	  applications whose short bursts (a screenfull	at most) fit
+	  within the available memory buffers.	Streaming protocols
+	  such as YMODEM-g, long packet	SuperKermit, and ZMODEM	can
+	  overload the available buffering.  Some terminal servers
+	  support commands to enable hardware flow control such	as
+	  "TERM	FLOWCONTROL HARDWARE IN	OUT"; this assumes the modem
+	  attached to the server is properly configured.
 
 	  If the terminal server is too	brain damaged to support flow
 	  control, you can fake	it with	ZMODEM.	 Try "sz -
@@ -431,6 +439,7 @@
 	  needed.  If problems persist,	try setting a packet length
 	  (sz -l1024).
 
+
      NNNNOOOOTTTTEEEESSSS
 	  Particular attention must be paid to flow control.  The
 	  modem	and Unix must agree on the flow	control	method.	 Sz on
@@ -444,19 +453,10 @@
 	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
 	  YMODEM, or KERMIT.  Setting one of these spoofing modes
 	  interferes with other	protocols.  Telebit's YMODEM spoofing
-	  interferes with YMODEM transfers.
-
-	  If a program that does not properly implement	the specified
-	  file transfer	protocol causes	_s_b to "hang" the port after a
-	  failed transfer, either wait for _s_b to time out or keyboard
-	  a dozen Ctrl-X characters.  Every reported instance of this
-	  problem has been corrected by	using ZCOMM, Pro-YAM, DSZ, or
-	  other	program	with a correct implementation of the specified
-	  protocol.
 
 
 
-     Page 7					     (printed 2/18/94)
+     Page 7					     (printed 3/30/94)
 
 
 
@@ -466,6 +466,16 @@
      SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
 
 
+
+	  interferes with YMODEM transfers.
+
+	  If a program that does not properly implement	the specified
+	  file transfer	protocol causes	_s_b to "hang" the port after a
+	  failed transfer, either wait for _s_b to time out or keyboard
+	  a dozen Ctrl-X characters.  Every reported instance of this
+	  problem has been corrected by	using ZCOMM, Pro-YAM, DSZ, or
+	  other	program	with a correct implementation of the specified
+	  protocol.
 
 	  Many programs	claiming to support YMODEM only	support	XMODEM
 	  with 1k blocks, and they often don't get that	quite right.
@@ -512,17 +522,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-     Page 8					     (printed 2/18/94)
+     Page 8					     (printed 3/30/94)
 
 
 

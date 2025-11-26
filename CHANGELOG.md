@@ -1,8 +1,19 @@
 # Changelog
 
+## [1994-04-23] RZ 3.36 / SZ 3.36
+
+This release included this `README` update:
+```
+Apr 23 1994: Added -DOLD compiler flag for antique SYSV
+compilers without a standard /usr/include/stdlib.h header file.
+This causes rbsb.c to define char *getenv() etc. instead of
+getting these definitons from stdlib.h.  You may have to fiddle
+with the declarations in rbsb.c #ifdef OLD to get a clean compile.
+```
+
 ## [1994-02-24] RZ 3.34 / SZ 3.34
 
-  - SZ: Increase max -l value from 1K to 64K bytes
+  - SZ: Increase max -l (tx frame length) value from 1K to 64K bytes
 
 ## [1994-02-18] RZ 3.33 / SZ 3.33
 

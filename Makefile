@@ -14,11 +14,12 @@ nothing:
 	@echo "then type 'make SYSTEM' where SYSTEM is one of:"
 	@echo
 	@echo "	posix	POSIX compliant systems"
-	@echo "	odt	SCO Open Desktop"
+	@echo "	odt	SCO Open Desktop (strict)"
 	@echo "	icc	SCO Open Desktop, Intel compiler"
-	@echo "	sysvr4	SYSTEM 5.4 Unix, SCO Open Desktop"
+	@echo "	sysvr4	SYSTEM 5.4 Unix"
 	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2), COHERENT 4.2"
 	@echo "	sysv	SYSTEM 3/5 Unix"
+	@echo "	sysiii  SYS III/V  Older Unix or Xenix compilers"
 	@echo "	xenix	Xenix"
 	@echo "	x386	386 Xenix"
 	@echo "	bsd	Berkeley 4.x BSD, Ultrix, V7"
@@ -52,12 +53,6 @@ unixforum: shar
 	compress /tmp/rzsz.sh
 	cp /tmp/rzsz.sh.Z /u/t/yam
 
-unix:
-	undos $(ARCFILES)
-
-dos:
-	todos $(ARCFILES)
-
 doc:rz.doc sz.doc crc.doc minirb.doc
 
 clean:
@@ -85,7 +80,7 @@ zoo: doc
 	mv /tmp/rzsz.zoo /u/t/yam
 	-rm -f rzsz.zip
 	zip rzsz readme mailer.rz makefile zmodem.h zm.c sz.c rz.c
-	zip rzsz crctab.c rbsb.c *.doc
+	zip rzsz crctab.c rbsb.c *.doc file_id.diz
 	zip rzsz zmr.c crc.c gz *.t minirb.c
 	mv rzsz.zip /u/t/yam
 
@@ -130,13 +125,28 @@ x386:
 	ln sz zcommandi
 
 sysv:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD -DOLD rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN sz.c -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN -DOLD sz.c -o sz
+	size sz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
+sysiii:
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DOLD rz.c -o rz
+	size rz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN -DOLD sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -221,13 +231,13 @@ posix:
 
 POSIX:
 	@echo "Well, stricter, as in *safer sex* ..."
-	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX -DMD=2 -DCOMPL rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX sz.c -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX -DCOMPL sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -312,6 +322,9 @@ amiga:
 	ln sz zcommand
 	ln sz zcommandi
 
+lint:
+	lint -DUSG -DSV -DOLD sz.c >/tmp/sz.fluff
+	lint -DUSG -DSV -DOLD rz.c >/tmp/rz.fluff
 
 
 sz: nothing

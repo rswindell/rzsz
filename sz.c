@@ -1,4 +1,4 @@
-#define VERSION "3.34 02-24-94"
+#define VERSION "3.36 04-23-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -6,18 +6,30 @@
  *
  * sz.c By Chuck Forsberg,  Omen Technology INC
  *    Copyright 1994 Omen Technology Inc All Rights Reserved
- *
  * 
+ *********************************************************************
+ *********************************************************************
+ * 
+ *
  *	This version implements numerous enhancements including ZMODEM
  *	Run Length Encoding and variable length headers.  These
  *	features were not funded by the original Telenet development
  *	contract.
  * 
- *  This software may be freely used for educational (didactic
- *  only) purposes.  This software may also be freely used to
- *  support file transfer operations to or from licensed Omen
- *  Technology products.  Use with other commercial or shareware
- *  programs (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ * 
+ * This software may be freely used for educational (didactic
+ * only) purposes.  "Didactic" means it is used as a study item
+ * in a course teaching the workings of computer protocols.
+ * 
+ * This software may also be freely used to support file transfer
+ * operations to or from duly licensed Omen Technology products.
+ * This includes DSZ, GSZ, ZCOMM, Professional-YAM and PowerCom.
+ * Institutions desiring to use rz/sz this way should add the
+ * following to the sz compile line:	-DCOMPL
+ * Programs based on stolen or public domain ZMODEM materials are
+ * not included.  Use with other commercial or shareware programs
+ * (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ * 
  *
  *  Any programs which incorporate part or all of this code must be
  *  provided in source form with this notice intact except by
@@ -28,8 +40,8 @@
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
- * products requires a per port license payment of $20.00 US per
- * port (less in quantity, see mailer.rz).  Use of this code by
+ * products requires license payment of $20.00 US per user
+ * (less in quantity, see mailer.rz).  Use of this code by
  * inclusion, decompilation, reverse engineering or any other means
  * constitutes agreement to these conditions and acceptance of
  * liability to license the materials and payment of reasonable
@@ -401,7 +413,7 @@ char *argv[];
 		canit();
 	}
 	if (endmsg[0]) {
-		printf("  %s: %s\r\n", Progname, endmsg);
+		printf("\r\n%s: %s\r\n", Progname, endmsg);
 		if (Verbose)
 			fprintf(stderr, "%s\r\n", endmsg);
 	}
@@ -933,11 +945,13 @@ usage()
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
 	for (pp=usinfo; **pp; ++pp)
 		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr,"\nCopyright 1994 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"\nCopyright (c) 1994 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	 "See sz.doc for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
-	"This program is intended to interface with terminal programs,\nnot to act as one.\n\n");
+	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
+	fprintf(stderr,
+	"\nTechnical support hotline: 900-737-7836 (1-900-737-RTFM) $4.69/min.\n\n");
 	exit(3);
 }
 
@@ -962,7 +976,11 @@ getzrxinit()
 			continue;
 		case ZRINIT:
 			Rxflags = 0377 & Rxhdr[ZF0];
+#ifdef COMPL
+			Usevhdrs = 1;
+#else
 			Usevhdrs = Rxhdr[ZF1] & CANVHDR;
+#endif
 			Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
 			Zctlesc |= Rxflags & TESCCTL;
 			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
