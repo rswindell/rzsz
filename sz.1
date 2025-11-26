@@ -437,11 +437,16 @@ fights
 .I sz
 for characters from the modem.
 
+On at least one BSD system, sz would hang or exit when it got within
+a few kilobytes of the end of file.
+Using the "-w 8192" flag fixed the problem.
+The real cause is unknown, perhaps a bug in the kernel TTY output routines.
+
 Programs that do not properly implement the specified file transfer protocol
 may cause
 .I sz
 to "hang" the port for a minute or two.
-Every reported instance of this problem has been corrected by using
+This problem is corrected by using
 ZCOMM, Pro-YAM, or other program with a correct implementation
 of the specified protocol.
 

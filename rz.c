@@ -1,8 +1,8 @@
-#define VERSION "2.02 04-22-88"
+#define VERSION "2.03 05-17-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -compat -M2 -Ox -K -i -DMD % -o rz; size rz;
-<-xtx-*> cc386 -Ox -DMD -DSEGMENTS=8 rz.c -o $B/rz;  size $B/rz
+/*% cc -compat -M2 -Ox -K -i -DMD -DOMEN % -o rz; size rz;
+<-xtx-*> cc386 -Ox -DMD -DOMEN -DSEGMENTS=8 rz.c -o $B/rz;  size $B/rz
  *
  * rz.c By Chuck Forsberg
  *
@@ -306,6 +306,7 @@ char *argv[];
 		if (Verbose == 0)
 			Verbose = 2;
 	}
+	vfile("%s %s for %s\n", Progname, VERSION, OS);
 	mode(1);
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
@@ -748,7 +749,7 @@ char *name;
 	  && !(Filemode&UNIXFILE))
 		uncaps(name);
 #endif
-	if (Topipe) {
+	if (Topipe > 0) {
 		sprintf(Pathname, "%s %s", Progname+2, name);
 		if (Verbose)
 			fprintf(stderr,  "Topipe: %s %s\n",
@@ -766,6 +767,16 @@ char *name;
 		checkpath(name);
 		if (Nflag)
 			name = "/dev/null";
+#ifndef vax11c
+#ifdef OMEN
+		if (name[0] == '!' || name[0] == '|') {
+			if ( !(fout = popen(name+1, "w"))) {
+				return ERROR;
+			}
+			Topipe = -1;  return(OK);
+		}
+#endif
+#endif
 #ifdef MD
 		fout = fopen(name, openmode);
 		if ( !fout)
@@ -1041,9 +1052,9 @@ char *s;
 	if (s[0]=='r' && s[1]=='b')
 		Batch = Nozmodem = TRUE;
 	if (s[2] && s[0]=='r' && s[1]=='b')
-		Topipe=TRUE;
+		Topipe = 1;
 	if (s[2] && s[0]=='r' && s[1]=='z')
-		Topipe=TRUE;
+		Topipe = 1;
 }
 #endif
 

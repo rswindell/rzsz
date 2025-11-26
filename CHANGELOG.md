@@ -1,5 +1,10 @@
 # Changelog
 
+## [1988-05-29] RZ 2.03 / SZ 2.12
+
+  - Last full Public Domain release
+  - Add ZCRC frame handling
+
 ## [1988-05-09] RZ 2.02 / SZ 2.10
 
   - Sends hex headers terminated with 0x0D,0x8A instead of 0x0D,0x0A (CR LF).

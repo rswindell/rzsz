@@ -14,22 +14,31 @@ nothing:
 
 usenet:
 	shar -f /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c rbsb.c \
-	 crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
+	 init.com crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
 	 *.1 gz ptest.sh *.t
 
 shar:
 	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
-	 vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
+	 init.com vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
 	 crc.c rbsb.c minirb.c *.1 gz ptest.sh *.t
 
 unixforum: shar
 	compress -b12 /tmp/rzsz.sh
 
+unix:
+	undos README zmodem.h zm.c sz.c rz.c \
+	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
+	 init.com crc.c *.t 
+
+dos:
+	todos README zmodem.h zm.c sz.c rz.c \
+	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
+	 init.com crc.c *.t 
 arc:
 	rm -f /tmp/rzsz.arc
 	arc a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c \
-	 crc.c *.1 gz ptest.sh *.t minirb.c
+	 init.com crc.c *.1 gz ptest.sh *.t minirb.c
 	chmod og-w /tmp/rzsz.arc
 	mv /tmp/rzsz.arc /t/yam
 
@@ -37,14 +46,17 @@ zoo:
 	rm -f /tmp/rzsz.zoo
 	zoo a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c *.1 \
-	 crc.c gz ptest.sh *.t minirb.c
+	 init.com crc.c gz ptest.sh *.t minirb.c
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /t/yam
+
+tags:
+	ctags sz.c rz.c zm.c rbsb.c
 
 .PRECIOUS:rz sz
 
 xenix:
-	cc -M0 -Ox -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	cc -M0 -Ox -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
@@ -58,7 +70,7 @@ x386:
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -Ox -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	cc -Ox -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
@@ -68,7 +80,7 @@ sysv:
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -DSV -O -DNFGVMIN sz.c -o sz
+	cc -DSV -O -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
@@ -78,7 +90,7 @@ sysvr3:
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -DSV -O -DNFGVMIN sz.c -o sz
+	cc -DSV -O -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
@@ -88,7 +100,7 @@ bsd:
 	size rz
 	-ln rz rb
 	-ln rz rx
-	cc -DV7 -O -DNFGVMIN sz.c -o sz
+	cc -DV7 -O -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx

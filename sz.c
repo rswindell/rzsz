@@ -1,4 +1,4 @@
-#define VERSION "sz 2.10 05-09-88"
+#define VERSION "sz 2.12 05-29-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -48,7 +48,7 @@
  *
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  *
- *  2.1x hacks to avoid VMS fseek() bogosity, allow streaming if input from pipe
+ *  2.1x hacks to avoid VMS fseek() bogosity, allow input from pipe
  *     -DBADSEEK -DTXBSIZE=32768  
  *  2.x has mods for VMS flavor
  *
@@ -213,9 +213,6 @@ int Exitcode;
 int Test;		/* 1= Force receiver to send Attn, etc with qbf. */
 			/* 2= Character transparency test */
 char *qbf="The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
-long Lastread;		/* Beginning offset of last buffer read */
-int Lastn;		/* Count of last buffer read or -1 */
-int Dontread;		/* Don't read the buffer, it's still there */
 long Lastsync;		/* Last offset to which we got a ZRPOS */
 int Beenhereb4;		/* How many times we've been ZRPOS'd same place */
 
@@ -409,6 +406,7 @@ char *argv[];
 		if (Verbose == 0)
 			Verbose = 2;
 	}
+	vfile("%s %s for %s\n", Progname, VERSION, OS);
 
 	mode(1);
 
@@ -527,7 +525,6 @@ char *oname;
 		return OK;	/* pass over it, there may be others */
 	}
 	BEofseen = Eofseen = 0;  vpos = 0;
-	Lastread = 0;  Lastn = -1; Dontread = FALSE;
 	/* Check for directory or block special files */
 	fstat(fileno(in), &f);
 	c = f.st_mode & S_IFMT;
@@ -1163,7 +1160,7 @@ getzrxinit()
 					Txwindow = TXBSIZE - 1024;
 					Txwspac = TXBSIZE/4;
 #else
-					Rxbuflen = 1024;
+					return ERROR;
 #endif
 				}
 			}
@@ -1233,6 +1230,7 @@ zsendfile(buf, blen)
 char *buf;
 {
 	register c;
+	register UNSL long crc;
 
 	for (;;) {
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
@@ -1259,6 +1257,18 @@ again:
 		case ZABORT:
 		case ZFIN:
 			return ERROR;
+		case ZCRC:
+			crc = 0xFFFFFFFFL;
+			if (Canseek >= 0) {
+				while (((c = getc(in)) != EOF) && --Rxpos)
+					crc = UPDC32(c, crc);
+				crc = ~crc;
+				clearerr(in);	/* Clear EOF */
+				fseek(in, 0L, 0);
+			}
+			stohdr(crc);
+			zsbhdr(ZCRC, Txhdr);
+			goto again;
 		case ZSKIP:
 			fclose(in); return c;
 		case ZRPOS:
@@ -1269,7 +1279,6 @@ again:
 			if (Rxpos && fseek(in, Rxpos, 0))
 				return ERROR;
 			Lastsync = (bytcnt = Txpos = Rxpos) -1;
-			Dontread = FALSE;
 			return zsendfdata();
 		}
 	}
@@ -1382,13 +1391,7 @@ gotack:
 	}
 
 	do {
-		if (Dontread) {
-			n = Lastn;
-		} else {
-			n = zfilbuf();
-			Lastread = Txpos;  Lastn = n;
-		}
-		Dontread = FALSE;
+		n = zfilbuf();
 		if (Eofseen)
 			e = ZCRCE;
 		else if (junkcount > 3)
@@ -1507,14 +1510,10 @@ getinsync(flag)
 			/*  If sending to a buffered modem, you  */
 			/*   might send a break at this point to */
 			/*   dump the modem's buffer.		 */
-			if (Lastn >= 0 && Lastread == Rxpos) {
-				Dontread = TRUE;
-			} else {
-				clearerr(in);	/* In case file EOF seen */
-				if (fseek(in, Rxpos, 0))
-					return ERROR;
-				Eofseen = 0;
-			}
+			clearerr(in);	/* In case file EOF seen */
+			if (fseek(in, Rxpos, 0))
+				return ERROR;
+			Eofseen = 0;
 			bytcnt = Lrxpos = Txpos = Rxpos;
 			if (Lastsync == Rxpos) {
 				if (++Beenhereb4 > 4)
