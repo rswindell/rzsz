@@ -1,6 +1,6 @@
 /*
  *
- *  Rev 5-15-91
+ *  Rev 9-15-91
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM

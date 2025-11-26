@@ -1,5 +1,12 @@
 # Changelog
 
+## [1991-10-04] RZ 3.11 / SZ 3.16
+
+This release included this `README` update:
+```
+Oct 4 1991:  Fixed bug in rz crash recovery.
+```
+
 ## [1991-09-15] RZ 3.10 / SZ 3.16
 
 This release included this `README` update:

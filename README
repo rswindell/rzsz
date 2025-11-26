@@ -1,3 +1,5 @@
+Oct 4 1991:  Fixed bug in rz crash recovery.
+
 Sep 1991: Major hacking to work around SVR4 bug.  Append and crash
 recovery of shrinking files corrected.  Sz now supports rename.
 Sz -c changed to zcommand, rx -c file changed to rc file.

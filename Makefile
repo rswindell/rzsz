@@ -34,7 +34,7 @@ shar:doc
 	 mailer.rz crc.c rbsb.c minirb.c *.doc gz *.t
 
 unixforum: shar
-	compress -b12 /tmp/rzsz.sh
+	compress /tmp/rzsz.sh
 
 unix:
 	undos $(ARCFILES)

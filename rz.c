@@ -1,4 +1,4 @@
-#define VERSION "3.10 09-15-91"
+#define VERSION "3.11 10-04-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -1016,14 +1016,13 @@ rzfiles()
 rzfile()
 {
 	register c, n;
-	long rxbytes;
 
 	Eofseen=FALSE;
+	n = 20; rxbytes = 0l;
+
 	if (c = procheader(secbuf)) {
 		return (tryzhdrtype = c);
 	}
-
-	n = 20; rxbytes = 0l;
 
 	for (;;) {
 #ifdef SEGMENTS
