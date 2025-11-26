@@ -1,7 +1,22 @@
 # Changelog
 
+## [1993-05-16] RZ 3.24 / SZ 3.24
+
+This release included this `README` update:
+```
+May 16 1993: More bugfixes, POSIX support.  Tested on SCO Unix,
+BSDI 1.0, and SunOS 4.1.2.  Code simplified to avoid certain
+compiler brain damage.  (Some complaints about redefinitons
+with some POSIX compiles.) (Void and Unsigned Long are required.)
+```
+  - SZ: Add -g (kermit) option
+  - zrhhdr(): No longer auto-detects 7-bit connections based on received HEX
+    header terminator: just reads and throws-away any 2 consecutive bytes
+    (this change impacts RZ behavior though the version number is unchanged)
+
 ## [1993-05-05] RZ 3.24 / SZ 3.23
 
+This release included this `README` update:
 ```
 May 3 1993: More bugfixes, POSIX support.  Tested on SCO Unix,
 BSDI 1.0, and SunOS 4.1.2.  (Some complaints about redefinions

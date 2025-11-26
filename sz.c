@@ -1,4 +1,4 @@
-#define VERSION "3.23 5-03-93"
+#define VERSION "3.24 5-16-93"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -165,6 +165,8 @@ STATIC char *qbf=
  "The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
 STATIC unsigned long Lastsync;	/* Last offset to which we got a ZRPOS */
 STATIC int Beenhereb4;		/* How many times we've been ZRPOS'd here */
+STATIC int Ksendstr;		/* 1= Send esc-?-3-4-l to remote kermit */
+STATIC char *ksendbuf = "\033[?34l";
 
 STATIC jmp_buf tohere;		/* For the interrupt on RX timeout */
 STATIC jmp_buf intrjmp;	/* For the interrupt on RX CAN */
@@ -265,6 +267,8 @@ char *argv[];
 					/* **** FALL THROUGH TO **** */
 				case 'f':
 					Fullname=TRUE; break;
+		                case 'g' :
+					Ksendstr = TRUE; break;
 				case 'e':
 					Zctlesc = 1; break;
 				case 'k':
@@ -377,19 +381,19 @@ char *argv[];
 	signal(SIGTERM, bibi);
 #endif
 
-	if ( !Modem2) {
-		if (!Nozmodem) {
-			printf("rz\r");  fflush(stdout);
-		}
-		countem(npats, patts);
-		if (!Nozmodem) {
-			stohdr(0L);
-			if (Command)
-				Txhdr[ZF0] = ZCOMMAND;
-			zshhdr(4, ZRQINIT, Txhdr);
-		}
+	countem(npats, patts);
+
+	if (!Modem2 && !Nozmodem) {
+		if (Ksendstr)
+			printf(ksendbuf);
+		printf("rz\r");  fflush(stdout);
+		stohdr(0L);
+		if (Command)
+			Txhdr[ZF0] = ZCOMMAND;
+		zshhdr(4, ZRQINIT, Txhdr);
 	}
 	fflush(stdout);
+
 
 	if (Command) {
 		if (getzrxinit()) {
@@ -916,9 +920,9 @@ register char *s,*t;
 
 char *usinfo[] = {
 	"Send Files and Commands with ZMODEM/YMODEM/XMODEM Protocol\n",
-	"Usage:	sz [-2+abcdefklLnNuvwyY] [-] file ...",
-	"\t	zcommand [-2Cev] COMMAND",
-	"\t	zcommandi [-2Cev] COMMAND",
+	"Usage:	sz [-2+abcdefgklLnNuvwyY] [-] file ...",
+	"\t	zcommand [-2Cegv] COMMAND",
+	"\t	zcommandi [-2Cegv] COMMAND",
 	"\t	sb [-2adfkuv] [-] file ...",
 	"\t	sx [-2akuv] [-] file",
 	""
@@ -1207,7 +1211,6 @@ gotack:
 				c = getinsync(1);
 				goto gotack;
 			case XOFF:		/* Wait a while for an XON */
-			case XOFF|0200:
 				readline(100);
 			}
 		}
@@ -1242,7 +1245,6 @@ gotack:
 					case ZPAD:
 						goto waitack;
 					case XOFF:	/* Wait for XON */
-					case XOFF|0200:
 						readline(100);
 					}
 				}
@@ -1303,7 +1305,6 @@ gotack:
 				zsdata(txbuf, 0, ZCRCE);
 				goto gotack;
 			case XOFF:		/* Wait a while for an XON */
-			case XOFF|0200:
 				readline(100);
 			default:
 				++junkcount;

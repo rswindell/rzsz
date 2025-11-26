@@ -60,7 +60,7 @@
 
 
 
-     Page 1					      (printed 5/2/93)
+     Page 1					     (printed 5/16/93)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					      (printed 5/2/93)
+     Page 2					     (printed 5/16/93)
 
 
 
@@ -172,6 +172,7 @@
 	       DLE, CR-@-CR, and Ctrl-X	are escaped.
 	  ffff    Send Full pathname.  Normally directory prefixes	are
 	       stripped	from the transmitted filename.
+	  gggg    Send ESC-[-?-3-4-l to start DSZ from Kermit.
 	  kkkk    (XMODEM/YMODEM) Send files using	1024 byte blocks
 	       rather than the default 128 byte	blocks.	 1024 byte
 	       packets speed file transfers at high bit	rates.
@@ -188,11 +189,10 @@
 	  nnnn    (ZMODEM)	Send each file if destination file does	not
 	       exist.  Overwrite destination file if source file is
 	       newer than the destination file.
-	  NNNN    (ZMODEM)	Send each file if destination file does	not
 
 
 
-     Page 3					      (printed 5/2/93)
+     Page 3					     (printed 5/16/93)
 
 
 
@@ -203,6 +203,7 @@
 
 
 
+	  NNNN    (ZMODEM)	Send each file if destination file does	not
 	       exist.  Overwrite destination file if source file is
 	       newer or	longer than the	destination file.
 	  oooo    (ZMODEM)	Disable	automatic selection of 32 bit CRC.
@@ -254,11 +255,10 @@
 	   cpszall:all
 	      zcommand "c:;cd /yam/dist"
 	      sz -ya $(YD)/*.me
-	      sz -yb y*.exe
 
 
 
-     Page 4					      (printed 5/2/93)
+     Page 4					     (printed 5/16/93)
 
 
 
@@ -269,6 +269,7 @@
 
 
 
+	      sz -yb y*.exe
 	      zcommand "cd /yam"
 	      zcommandi	"!insms"
 	  This Makefile	fragment uses zzzzccccoooommmmmmmmaaaannnndddd to issue	commands to
@@ -323,8 +324,7 @@
 
 
 
-
-     Page 5					      (printed 5/2/93)
+     Page 5					     (printed 5/16/93)
 
 
 
@@ -390,7 +390,7 @@
 
 
 
-     Page 6					      (printed 5/2/93)
+     Page 6					     (printed 5/16/93)
 
 
 
@@ -456,7 +456,7 @@
 
 
 
-     Page 7					      (printed 5/2/93)
+     Page 7					     (printed 5/16/93)
 
 
 

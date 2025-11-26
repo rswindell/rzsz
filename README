@@ -41,9 +41,10 @@ best results, use less(1) (available on comp.sources.misc) as
 your manual page reader.  Sources for the man pages are provided
 with copies of Unix Professional-YAM.
 
-May 3 1993: More bugfixes, POSIX support.  Tested on SCO Unix,
-BSDI 1.0, and SunOS 4.1.2.  (Some complaints about redefinitons
-with some POSIX compiles.)
+May 16 1993: More bugfixes, POSIX support.  Tested on SCO Unix,
+BSDI 1.0, and SunOS 4.1.2.  Code simplified to avoid certain
+compiler brain damage.  (Some complaints about redefinitons
+with some POSIX compiles.) (Void and Unsigned Long are required.)
 
 Jan 2 1992: Documentation on the sz -T command has been
 improved.  Please use this command and Professional-YAM to

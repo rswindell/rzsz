@@ -1,6 +1,6 @@
 /*
  *   Z M . C
- *    Copyright 1991 Omen Technology Inc All Rights Reserved
+ *    Copyright 1993 Omen Technology Inc All Rights Reserved
  *    ZMODEM protocol primitives
  *
  * Entry point Functions:
@@ -73,7 +73,6 @@ char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 char *Altcan;		/* Alternate canit string */
 
 static lastsent;	/* Last char we sent */
-static Not8bit;		/* Seven bits seen on header */
 
 static char *frametypes[] = {
 	"No Response to Error Correction Request",	/* -4 */
@@ -468,8 +467,6 @@ agn2:
 			c = GCOUNT;  goto fifi;
 		}
 		goto startover;
-	case ZPAD|0200:		/* This is what we want. */
-		Not8bit = c;
 	case ZPAD:		/* This is what we want. */
 		break;
 	}
@@ -680,17 +677,10 @@ char *hdr;
 	if (crc & 0xFFFF) {
 		zperr(badcrc); return ERROR;
 	}
-	switch ( c = readline(2)) {
-	case 0215:
-		Not8bit = c;
-		/* **** FALL THRU TO **** */
-	case 015:
-	 	/* Throw away possible cr/lf */
-		switch (c = readline(2)) {
-		case 012:
-			Not8bit |= c;
-		}
-	}
+	c = readline(2);
+	if (c < 0)
+		return c;
+	c = readline(2);
 #ifdef ZMODEM
 	Protocol = ZMODEM;
 #endif
