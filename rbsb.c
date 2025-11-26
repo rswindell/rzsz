@@ -1,8 +1,8 @@
 /*
  *
  * -rev 04-16-87
- *  This file contains Unix specific stuff for setting terminal modes,
- *  very little is specific to ZMODEM or YMODEM per se (that stuff is in
+ *  This file contains Unix specific code for setting terminal modes,
+ *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
  *  are also in this file, a fast table driven macro version
  *

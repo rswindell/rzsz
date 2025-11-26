@@ -1,4 +1,4 @@
-#define VERSION "1.26 08-21-87"
+#define VERSION "1.26 10-11-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -M0 -Ox -K -i % -o rz; size rz;
@@ -238,6 +238,8 @@ char *argv[];
 	}
 	if (npats > 1)
 		usage();
+	if (Batch && npats)
+		usage();
 	if (Verbose) {
 		if (freopen(LOGFILE, "a", stderr)==NULL) {
 			printf("Can't open log file %s\n",LOGFILE);
@@ -280,7 +282,7 @@ usage()
 	fprintf(stderr,"	  -a ASCII transfer (strip CR)\n");
 	fprintf(stderr,"	  -b Binary transfer for all files\n");
 	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
-	fprintf(stderr,"	  -e Ignore control characters	(ZMODEM)\n");
+	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
 	fprintf(stderr,"	  -v Verbose more v's give more info\n");
 	exit(1);
 }
@@ -486,7 +488,7 @@ get2:
 						goto bilge;
 					oldcrc=updcrc(firstch, oldcrc);
 					if (oldcrc & 0xFFFF)
-						zperr( "CRC Error");
+						zperr( "CRC");
 					else {
 						Firstsec=FALSE;
 						return sectcurr;
@@ -497,7 +499,7 @@ get2:
 					return sectcurr;
 				}
 				else
-					zperr( "Checksum Error");
+					zperr( "Checksum");
 			}
 			else
 				zperr("Sector number garbled");
@@ -798,7 +800,7 @@ char *s, *p, *u;
 {
 	if (Verbose <= 0)
 		return;
-	fprintf(stderr, "Error %d: ", errors);
+	fprintf(stderr, "Retry %d: ", errors);
 	fprintf(stderr, s, p, u);
 	fprintf(stderr, "\n");
 }
@@ -855,8 +857,10 @@ char *s;
 		Verbose=1; ++s;
 	}
 	Progname = s;
+	if (s[0]=='r' && s[1]=='z')
+		Batch = TRUE;
 	if (s[0]=='r' && s[1]=='b')
-		Nozmodem = TRUE;
+		Batch = Nozmodem = TRUE;
 	if (s[2] && s[0]=='r' && s[1]=='b')
 		Topipe=TRUE;
 	if (s[2] && s[0]=='r' && s[1]=='z')

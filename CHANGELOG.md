@@ -1,5 +1,15 @@
 # Changelog
 
+## [1987-10-11] RZ 1.26 / SZ 1.36
+
+### RZ
+
+  - Same version number (1.26), but slight changes to code
+  
+### SZ
+
+  - Improved support for XMODEM protocol
+
 ## [1987-08-21] RZ 1.26 / SZ 1.35
 
 ```

@@ -1,5 +1,5 @@
 '\" Revision Level 
-'\" Last Delta     05-25-87
+'\" Last Delta     09-08-87
 .TH MINIRB 1 OMEN
 .SH NAME
 minirb \- Bootstrap YMODEM Batch file receive
@@ -14,6 +14,8 @@ was developed for use as a bootstrap to simplify uploading of the longer
 and
 .I sz
 programs, such as are contained in the
+.I rzsz.zoo
+"zoo" archive or the
 .I rzsz1et2.sh
 shell archive.
 .SH SEE ALSO
@@ -40,7 +42,7 @@ claiming to support YMODEM batch transfers.
 uses the
 YMODEM header
 file length information
-to prevent extraneous characters.
+to avoid storing extraneous characters.
 .I Minirb
 deletes carriage returns and CPMEOF (^Z) characters
 encountered in uploaded files.

@@ -1,4 +1,4 @@
-#define VERSION "sz 1.35 08-21-87"
+#define VERSION "sz 1.36 08-31-87"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -M0 -Ox -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -99,7 +99,7 @@ char Lastrx;
 char Crcflg;
 int Wcsmask=0377;
 int Verbose=0;
-int Modem=0;		/* MODEM - don't send pathnames */
+int Modem2=0;		/* XMODEM Protocol - don't send pathnames */
 int Restricted=0;	/* restricted; no /.. or ../ in filenames */
 int Quiet=0;		/* overrides logic that would otherwise set verbose */
 int Ascii=0;		/* Add CR's for brain damaged programs */
@@ -298,7 +298,7 @@ char *argv[];
 						blkopt = Txwspac;
 					break;
 				case 'X':
-					++Modem; break;
+					++Modem2; break;
 				case 'Y':
 					Lskipnocor = TRUE;
 					/* **** FALLL THROUGH TO **** */
@@ -343,7 +343,7 @@ char *argv[];
 		signal(SIGQUIT, SIG_IGN);
 	signal(SIGTERM, bibi);
 
-	if ( !Modem) {
+	if ( !Modem2) {
 		if (!Nozmodem) {
 			printf("rz\r");  fflush(stdout);
 		}
@@ -416,7 +416,7 @@ char *argp[];
 	}
 	if (Zmodem)
 		saybibi();
-	else
+	else if ( !Modem2)
 		wctxpn("");
 	return OK;
 }
@@ -489,7 +489,7 @@ char *name;
 	char name2[PATHLEN];
 	struct stat f;
 
-	if (Modem) {
+	if (Modem2) {
 		if ((in!=stdin) && *name && fstat(fileno(in), &f)!= -1) {
 			fprintf(stderr, "Sending %s, %ld blocks: ",
 			  name, f.st_size>>7);
@@ -858,7 +858,7 @@ char *s, *p, *u;
 {
 	if (Verbose <= 0)
 		return;
-	fprintf(stderr, "Error %d: ", errors);
+	fprintf(stderr, "Retry %d: ", errors);
 	fprintf(stderr, s, p, u);
 	fprintf(stderr, "\n");
 }
@@ -1337,6 +1337,10 @@ getinsync(flag)
 		case TIMEOUT:
 			return ERROR;
 		case ZRPOS:
+			/* ************************************* */
+			/*  If sending to a modem beuufer, you   */
+			/*   might send a break at this point to */
+			/*   dump the modem's buffer.		 */
 			if (Lastn >= 0 && Lastread == Rxpos) {
 				Dontread = TRUE;
 			} else {
@@ -1373,8 +1377,8 @@ getinsync(flag)
 saybibi()
 {
 	for (;;) {
-		stohdr(0L);
-		zsbhdr(ZFIN, Txhdr);
+		stohdr(0L);		/* CAF Was zsbhdr - minor change */
+		zshhdr(ZFIN, Txhdr);	/*  to make debugging easier */
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZFIN:
 			sendline('O'); sendline('O'); flushmo();
@@ -1463,7 +1467,7 @@ char *s;
 		Nozmodem = TRUE; blklen=KSIZE;
 	}
 	if (s[0]=='s' && s[1]=='x') {
-		Modem = TRUE;
+		Modem2 = TRUE;
 	}
 }
 /* End of sz.c */
