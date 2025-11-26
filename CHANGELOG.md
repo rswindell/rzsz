@@ -1,5 +1,28 @@
 # Changelog
 
+## [1989-05-25] RZ 3.01 / SZ 3.03
+
+The archive that contained this release contained a `README.ATHENA` file:
+```
+  I got the files in this directory from the subdirectory
+pd3:<misc.zmodem> on the machine simtel20.arpa by doing "mget
+pd3:<misc.zmodem>*" and then frobbing the filenames to get rid of the
+extra garbage.
+
+  These are supposed to be the most up-to-date versions, although I
+don't know how true that is.
+
+  jik (9/3/89)
+```
+
+The archive also included an interesting text file, [zmodem.rtc](https://vert.synchro.net/files/main/text/zmodem.rtc),
+which contained an edited transcript of the special GEnie IBM RoundTable Real
+Time Conference held June 15, 1986 to discuss micro communication protocols,
+especially Xmodem, Ymodem, and Zmodem.  Chuck Forsberg ... was the guest of
+honor.
+
+  - Long source lines are now unwrapped again
+
 ## [1989-05-09] RZ 3.00 / SZ 3.03
 
   - Corrections for undefined variable and multiply defined rdchk()

@@ -1,4 +1,4 @@
-#define VERSION "3.00 4-19-89"
+#define VERSION "3.01 5-25-89"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DMD % -o rz; size rz;
@@ -232,8 +232,7 @@ jmp_buf tohere;		/* For the interrupt on RX timeout */
 
 #include "zmr.c"
 
-int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to
-Last rx close */
+int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
 
 alrm()
 {

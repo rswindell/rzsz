@@ -1,8 +1,7 @@
 #define VERSION "sz 3.03 5-09-89"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK
-sz.c -lx -o sz; size sz
+/*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
 
 /*% cc -Zi -DXX -DNFGVMIN -DREADCHECK sz.c -lx -o xsz; size xsz
 <-xtx-*> cc -Osal -DTXBSIZE=32768  -DSV sz.c -lx -o $B/sz; size $B/sz
@@ -252,8 +251,7 @@ STATIC char Crcflg;
 STATIC int Verbose=0;
 STATIC int Modem2=0;		/* XMODEM Protocol - don't send pathnames */
 STATIC int Restricted=0;	/* restricted; no /.. or ../ in filenames */
-STATIC int Quiet=0;		/* overrides logic that would otherwise
-set verbose */
+STATIC int Quiet=0;		/* overrides logic that would otherwise set verbose */
 STATIC int Ascii=0;		/* Add CR's for brain damaged programs */
 STATIC int Fullname=0;		/* transmit full pathname */
 STATIC int Unlinkafter=0;	/* Unlink file after it is sent */
@@ -449,8 +447,7 @@ char *argv[];
 					Lzmanag = ZMPROT;  break;
 				case 'r':
 					if (Lzconv == ZCRESUM)
-						Lzmanag = (Lzmanag &
-ZMMASK) | ZMCRC;
+						Lzmanag = (Lzmanag & ZMMASK) | ZMCRC;
 					Lzconv = ZCRESUM; break;
 				case 'q':
 					Quiet=TRUE; Verbose=0; break;
@@ -916,8 +913,7 @@ long flen;
 		flushmo();
 		++attempts;
 	}
-		while ((firstch=(readline(Rxtimeout)) != ACK) &&
-attempts < RETRYMAX);
+		while ((firstch=(readline(Rxtimeout)) != ACK) && attempts < RETRYMAX);
 	if (attempts == RETRYMAX) {
 		zperr("No ACK on EOT");
 		return ERROR;
@@ -1576,8 +1572,7 @@ again:
 				crc = 0xFFFFFFFFL;
 				if (Canseek >= 0) {
 					fseek(in, 0L, 0);
-					while (((c = getc(in)) != EOF)
-&& --lastcrcrq)
+					while (((c = getc(in)) != EOF) && --lastcrcrq)
 						crc = UPDC32(c, crc);
 					crc = ~crc;
 					clearerr(in);	/* Clear possible EOF */
@@ -1788,7 +1783,7 @@ gotack:
 		}
 #endif	/* READCHECK */
 		if (Txwindow) {
-			while ((tcount = Txpos - Lrxpos) >= Txwindow) {
+			while ((tcount = (Txpos - Lrxpos)) >= Txwindow) {
 				vfile("%ld window >= %u", tcount, Txwindow);
 				if (e != ZCRCQ)
 					zsdata(txbuf, 0, e = ZCRCQ);

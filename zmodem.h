@@ -77,7 +77,7 @@
 #define ESCCTL 0100	/* Receiver expects ctl chars to be escaped */
 #define ESC8   0200	/* Receiver expects 8th bit to be escaped */
 
-/* Bit Masks for ZRINIT flags byte ZF0 */
+/* Bit Masks for ZRINIT flags byte ZF1 */
 #define CANVHDR	01	/* Variable headers OK */
 
 /* Parameters for ZSINIT frame */
@@ -110,6 +110,8 @@
 /* Extended options for ZF3, bit encoded */
 #define ZXSPARS	64	/* Encoding for sparse file operations */
 #define ZCANVHDR	01	/* Variable headers OK */
+/* Receiver window size override */
+#define ZRWOVR 4	/* byte position for receive window override/256 */
 
 /* Parameters for ZCOMMAND frame ZF0 (otherwise 0) */
 #define ZCACK1	1	/* Acknowledge, then do command */

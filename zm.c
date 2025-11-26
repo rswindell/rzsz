@@ -1,7 +1,7 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    04-17-89  Chuck Forsberg Omen Technology Inc
+ *    05-24-89  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -403,6 +403,8 @@ garbitch()
  *	0:  no display
  *	1:  display printing characters only
  *	2:  display all non ZMODEM characters
+ *
+ *   Set Rxhlen to size of header (default 4) (valid iff good hdr)
  *  On success, set Zmodem to 1, set Rxpos and return type of header.
  *   Otherwise return negative on error.
  *   Return ERROR instantly if ZCRCW sequence, for fast error recovery.
@@ -488,7 +490,7 @@ splat:
 	Rxframeind = c = noxrd7();
 	switch (c) {
 	case ZVBIN32:
-		if ((Rxhlen = c = readline(Rxtimeout)) < 0)
+		if ((Rxhlen = c = zdlread()) < 0)
 			goto fifi;
 		if (c > ZMAXHLEN)
 			goto agn2;
@@ -498,7 +500,7 @@ splat:
 			goto agn2;
 		Crc32r = 1;  c = zrbhd32(hdr); break;
 	case ZVBINR32:
-		if ((Rxhlen = c = readline(Rxtimeout)) < 0)
+		if ((Rxhlen = c = zdlread()) < 0)
 			goto fifi;
 		if (c > ZMAXHLEN)
 			goto agn2;
@@ -511,7 +513,7 @@ splat:
 	case TIMEOUT:
 		goto fifi;
 	case ZVBIN:
-		if ((Rxhlen = c = readline(Rxtimeout)) < 0)
+		if ((Rxhlen = c = zdlread()) < 0)
 			goto fifi;
 		if (c > ZMAXHLEN)
 			goto agn2;
@@ -558,7 +560,7 @@ fifi:
 			vfile("zgethdr: %c %d %s %lx", Rxframeind, Rxhlen,
 			  frametypes[c+FTOFFSET], Rxpos);
 		else
-			vfile("zgethdr: %d %lx", c, Rxpos);
+			vfile("zgethdr: %c %d %lx", Rxframeind, c, Rxpos);
 #endif
 	}
 	/* Use variable length headers if we got one */

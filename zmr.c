@@ -1,18 +1,30 @@
 /*
- * File: zmr.c 12-04-1988
- * Copyright 1988 Omen Technology Inc All Rights Reserved
+ * File: zmr.c 07-30-1989
+ * Copyright 1988, 1989 Omen Technology Inc All Rights Reserved
  *
  *
- *	This code implements ZMODEM Run Length Encoding, not funded
- *	by the original Telenet development contract.  This software,
- *	including these features, may be freely used for non
- *	commercial and educational purposes.  This software may also
- *	be freely used to support file transfer operations to or from
- *	licensed Omen Technology products.  Contact Omen Technology
- *	for licensing for other uses.  Any programs which use part or
- *	all of this software must be provided in source form with this
- *	notice intact except by written permission from Omen
- *	Technology Incorporated.
+ * 
+ * This module implements ZMODEM Run Length Encoding, an
+ * extension that was not funded by the original Telenet
+ * development contract.
+ * 
+ * This software may be freely used for non commercial and
+ * educational (didactic only) purposes.  This software may also
+ * be freely used to support file transfer operations to or from
+ * licensed Omen Technology products.  Any programs which use
+ * part or all of this software must be provided in source form
+ * with this notice intact except by written permission from Omen
+ * Technology Incorporated.
+ * 
+ * Use of this software for commercial or administrative purposes
+ * except when exclusively limited to interfacing Omen Technology
+ * products requires a per port license payment of $20.00 US per
+ * port (less in quantity).  Use of this code by inclusion,
+ * decompilation, reverse engineering or any other means
+ * constitutes agreement to these conditions and acceptance of
+ * liability to license the materials and payment of reasonable
+ * legal costs necessary to enforce this license agreement.
+ *
  *
  *		Omen Technology Inc		FAX: 503-621-3745
  *		Post Office Box 4681
@@ -21,6 +33,7 @@
  *	This code is made available in the hope it will be useful,
  *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
  *	DAMAGES OF ANY KIND.
+ *
  *	ZMODEM RLE compression and decompression functions
  */
 
