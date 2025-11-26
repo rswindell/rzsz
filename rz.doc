@@ -33,7 +33,11 @@
 	  This program is not designed to be called from _c_u(_1),
 	  _t_i_p(_1), or other communications programs.  Unix flavors of
 	  Omen Technology's Professional-YAM communications software
-	  are available	for dial-out applications.
+	  are available	for dial-out applications.  Unix
+	  Professional-YAM supports dial-out applications with
+	  telephone directory, a powerful script language with learn
+	  function, high quality multiple protocol support, and	UUCP
+	  port arbitration.
 
 
 	  RRRRzzzz (Receive ZMODEM) receives one or more files with the
@@ -54,13 +58,9 @@
 	  modify time and file mode (iff non zero) are set
 	  accordingly.
 
-	  If True YMODEM file information is not received, slashes in
-	  the pathname are changed to underscore, and any trailing
-	  period in the	pathname is eliminated.	 This conversion is
 
 
-
-     Page 1					     (printed 10/3/91)
+     Page 1					    (printed 10/30/91)
 
 
 
@@ -71,6 +71,9 @@
 
 
 
+	  If True YMODEM file information is not received, slashes in
+	  the pathname are changed to underscore, and any trailing
+	  period in the	pathname is eliminated.	 This conversion is
 	  useful for files received from CP/M and other	historical
 	  systems.
 
@@ -121,12 +124,9 @@
 	  existing file, and removes any files received	in error.
 
 
-	  The meanings of the available	options	are:
 
 
-
-
-     Page 2					     (printed 10/3/91)
+     Page 2					    (printed 10/30/91)
 
 
 
@@ -136,6 +136,8 @@
      RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
 
 
+
+	  The meanings of the available	options	are:
 
 	  tttt ttttiiiimmmm
 	       Change timeout to _t_i_m tenths of seconds.
@@ -187,12 +189,10 @@
 	  protocol.
 
 	  Many programs	claiming to support YMODEM only	support	XMODEM
-	  with 1k blocks, and they often don't get that	quite right.
 
 
 
-
-     Page 3					     (printed 10/3/91)
+     Page 3					    (printed 10/30/91)
 
 
 
@@ -202,6 +202,8 @@
      RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
 
 
+
+	  with 1k blocks, and they often don't get that	quite right.
 
 	  In the case of a few poorly designed microcomputers, sending
 	  serial data to a tty port at sustained high speeds has been
@@ -256,9 +258,7 @@
 
 
 
-
-
-     Page 4					     (printed 10/3/91)
+     Page 4					    (printed 10/30/91)
 
 
 

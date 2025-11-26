@@ -1,5 +1,9 @@
 # Changelog
 
+## [1991-10-30] RZ 3.17 / SZ 3.17
+
+  - One small change to read /dev/tty instead of STDIN (file descriptor 0)
+
 ## [1991-10-04] RZ 3.11 / SZ 3.16
 
 This release included this `README` update:

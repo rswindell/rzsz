@@ -1,4 +1,4 @@
-#define VERSION "3.16 09-15-91"
+#define VERSION "3.17 10-30-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -74,7 +74,6 @@ char *substr(), *getenv();
 #define LOGFILE "/tmp/szlog"
 #include <stdio.h>
 #include <signal.h>
-#include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
 extern int errno;

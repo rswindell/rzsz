@@ -33,7 +33,10 @@
 	  This program is not designed to be called from _c_u(_1) _t_i_p(_1),
 	  or other communications programs.  Unix flavors of Omen
 	  Technology's Professional-YAM	communications software	are
-	  available for	dial-out applications.
+	  available for	dial-out applications.	Unix Professional-YAM
+	  supports dial-out applications with telephone	directory, a
+	  powerful script language with	learn function,	high quality
+	  multiple protocol support, and UUCP port arbitration.
 
 
 	  SSSSzzzz sends one or more files with ZMODEM protocol.
@@ -54,13 +57,10 @@
 	  file transfers, and preservation of exact file date and
 	  length.
 
-	  The ----yyyy option	instructs the receiver to open the file	for
-	  writing unconditionally.  The	----aaaa option causes the receiver
-	  to convert Unix newlines to PC-DOS carriage returns and
 
 
 
-     Page 1					     (printed 10/3/91)
+     Page 1					    (printed 10/30/91)
 
 
 
@@ -71,6 +71,9 @@
 
 
 
+	  The ----yyyy option	instructs the receiver to open the file	for
+	  writing unconditionally.  The	----aaaa option causes the receiver
+	  to convert Unix newlines to PC-DOS carriage returns and
 	  linefeeds.
 
 
@@ -120,13 +123,10 @@
 
 	  The meanings of the available	options	are:
 
-	  ++++    Instruct	the receiver to	append transmitted data	to an
-	       existing	file (ZMODEM only).
-	  aaaa    Instruct	the ZMODEM receiver to convert text file
 
 
 
-     Page 2					     (printed 10/3/91)
+     Page 2					    (printed 10/30/91)
 
 
 
@@ -137,6 +137,9 @@
 
 
 
+	  ++++    Instruct	the receiver to	append transmitted data	to an
+	       existing	file (ZMODEM only).
+	  aaaa    Instruct	the ZMODEM receiver to convert text file
 	       format as appropriate for the receiving system.	Valid
 	       only for	ZMODEM.
 	  bbbb    (ZMODEM)	Binary override: transfer file without any
@@ -186,13 +189,10 @@
 	  wwww NNNN  Limit the transmit window size to N bytes (ZMODEM).
 	  vvvv    Verbose causes a	list of	file names to be appended to
 	       /tmp/szlog .  More v's generate more output.
-	  yyyy    Instruct	a ZMODEM receiving program to overwrite	any
-	       existing	file with the same name.
-	  YYYY    Instruct	a ZMODEM receiving program to overwrite	any
 
 
 
-     Page 3					     (printed 10/3/91)
+     Page 3					    (printed 10/30/91)
 
 
 
@@ -203,6 +203,9 @@
 
 
 
+	  yyyy    Instruct	a ZMODEM receiving program to overwrite	any
+	       existing	file with the same name.
+	  YYYY    Instruct	a ZMODEM receiving program to overwrite	any
 	       existing	file with the same name, and to	skip any
 	       source files that do have a file	with the same pathname
 	       on the destination system.
@@ -252,13 +255,10 @@
 	  % ssssxxxx ffffoooooooo....cccc
 	  EEEESSSSCCCC
 	  rrrrxxxx ffffoooooooo....cccc
-	  The above three commands transfer a single file from Unix to
-	  a PC and Crosstalk.  This combination	is much	slower and
-	  less reliable	than ZMODEM.
 
 
 
-     Page 4					     (printed 10/3/91)
+     Page 4					    (printed 10/30/91)
 
 
 
@@ -268,6 +268,10 @@
      SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
 
 
+
+	  The above three commands transfer a single file from Unix to
+	  a PC and Crosstalk.  This combination	is much	slower and
+	  less reliable	than ZMODEM.
 
      EEEERRRRRRRROOOORRRR MMMMEEEESSSSSSSSAAAAGGGGEEEESSSS
 	  "Caught signal 99" indicates the program was not properly
@@ -317,14 +321,10 @@
 
 	  Telebit modems must not be set to "spoof" UUCP, XMODEM, or
 	  KERMIT.  Setting one of these	spoofing modes interferes with
-	  other	protoocls.
-
-	  If a program that does not properly implement	the specified
-	  file transfer	protocol causes	_s_b to "hang" the port after a
 
 
 
-     Page 5					     (printed 10/3/91)
+     Page 5					    (printed 10/30/91)
 
 
 
@@ -335,6 +335,10 @@
 
 
 
+	  other	protoocls.
+
+	  If a program that does not properly implement	the specified
+	  file transfer	protocol causes	_s_b to "hang" the port after a
 	  failed transfer, either wait for _s_b to time out or keyboard
 	  a dozen Ctrl-X characters.  Every reported instance of this
 	  problem has been corrected by	using ZCOMM, Pro-YAM, DSZ, or
@@ -386,11 +390,7 @@
 
 
 
-
-
-
-
-     Page 6					     (printed 10/3/91)
+     Page 6					    (printed 10/30/91)
 
 
 

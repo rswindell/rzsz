@@ -1,6 +1,6 @@
 /*
  *
- *  Rev 9-15-91
+ *  Rev 10-30-91
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
@@ -392,7 +392,7 @@ int timeout;
 	}
 	signal(SIGALRM, alrm); alarm(n);
 	errno = 0;
-	Lleft=read(0, cdq=linbuf, Readnum);
+	Lleft=read(Tty, cdq=linbuf, Readnum);
 	alarm(0);
 	if (Verbose > 5) {
 		fprintf(stderr, "Read returned %d bytes errno=%d\n",
