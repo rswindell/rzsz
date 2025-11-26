@@ -1,4 +1,4 @@
-#define VERSION "3.17 10-30-91"
+#define VERSION "3.18 12-07-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -556,12 +556,15 @@ char *oname;
 
 	++Filcnt;
 	switch (wctxpn(name)) {
-	case ERROR:
-		return ERROR;
 	case ZSKIP:
+	case ZFERR:
 		return OK;
+	case OK:
+		break;
+	default:
+		return ERROR;
 	}
-	if (!Zmodem && wctx(f.st_size)==ERROR)
+	if (!Zmodem && wctx(f.st_size))
 		return ERROR;
 
 	if (Unlinkafter)

@@ -20,18 +20,21 @@ nothing:
 	@echo "	x386	386 Xenix"
 	@echo "	bsd	Berkeley 4.x BSD, Ultrix, V7"
 	@echo "	tandy	Tandy 6000 Xenix"
+	@echo "	dnix	DIAB Dnix 5.2"
+	@echo "	dnix5r3	DIAB Dnix 5.3"
 	@echo
 	@echo "	doc	Format the man pages with nroff"
 	@echo
 
 usenet:doc
-	shar -f /tmp/rzsz README Makefile zmodem.h zm.c rz.c rbsb.c \
-	 crc.c crctab.c minirb.c mailer.rz zmr.c *.doc gz sz.c *.t
+	shar -s "...!reed!omen!caf" -c -a -n rzsz -o /tmp/rzsz -l52 \
+	  README Makefile zmodem.h zm.c rz.c rbsb.c \
+	 crc.c crctab.c minirb.c mailer.rz zmr.c *.doc gz sz.c *.t 
 
 shar:doc
-	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
+	shar -c README Makefile zmodem.h zm.c \
 	 zmr.c sz.c rz.c crctab.c \
-	 mailer.rz crc.c rbsb.c minirb.c *.doc gz *.t
+	 mailer.rz crc.c rbsb.c minirb.c *.doc gz *.t >/tmp/rzsz 
 
 unixforum: shar
 	compress /tmp/rzsz.sh
@@ -70,9 +73,9 @@ zoo: doc
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /u/t/yam
 	rm -f rzsz.zip
-	pkzip rzsz readme mailer.rz makefile zmodem.h zm.c sz.c rz.c
-	pkzip rzsz crctab.c rbsb.c *.doc
-	pkzip rzsz zmr.c crc.c gz *.t minirb.c
+	zip rzsz readme mailer.rz makefile zmodem.h zm.c sz.c rz.c
+	zip rzsz crctab.c rbsb.c *.doc
+	zip rzsz zmr.c crc.c gz *.t minirb.c
 	mv rzsz.zip /u/t/yam
 
 tar:doc
@@ -86,24 +89,24 @@ tags:
 .PRECIOUS:rz sz
 
 xenix:
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -Ox -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
 	-ln sz zcommand
 	-ln sz zcommandi
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -Ox -K -i -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DMD rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
 	-ln rz rc
 
 x386:
-	$(CC) $(CFLAGS) $(OFLAG) -Ox -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DMD rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
-	$(CC) $(CFLAGS) $(OFLAG) -Ox -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
@@ -187,6 +190,32 @@ tandy:
 	-ln rz rb
 	-ln rz rx
 	-ln rz rc
+
+dnix:
+	$(CC) $(CFLAGS) $(OFLAG) -DMD rz.c -o rz
+	size rz
+	-ln rz rb
+	-ln rz rx
+	-ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -o sz
+	size sz
+	-ln sz sb
+	-ln sz sx
+	-ln sz zcommand
+	-ln sz zcommandi
+
+dnix5r3:
+	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 rz.c -o rz
+	size rz
+	-ln rz rb
+	-ln rz rx
+	-ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -o sz
+	size sz
+	-ln sz sb
+	-ln sz sx
+	-ln sz zcommand
+	-ln sz zcommandi
 
 
 sz: nothing

@@ -1,5 +1,17 @@
 # Changelog
 
+## [1991-12-07] RZ 3.17 / SZ 3.18
+
+This release included this `README` update:
+```
+Oct 30 1991: Changed shar programs to aid net.digestion.
+Rs and sz now use the same version number.
+```
+Interesting that RZ and SZ actually have different version numbers in this
+release.
+
+  - SZ Received ZFERR is treated the same as ZSKIP (again?).
+
 ## [1991-10-30] RZ 3.17 / SZ 3.17
 
   - One small change to read /dev/tty instead of STDIN (file descriptor 0)
