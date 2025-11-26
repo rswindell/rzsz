@@ -1,5 +1,21 @@
 # Changelog
 
+## [1993-05-05] RZ 3.24 / SZ 3.23
+
+```
+May 3 1993: More bugfixes, POSIX support.  Tested on SCO Unix,
+BSDI 1.0, and SunOS 4.1.2.  (Some complaints about redefinions
+with some POSIX compiles.)
+
+Jan 2 1992: Documentation on the sz -T command has been
+improved.  Please use this command and Professional-YAM to
+diagnose file transfer problems before calling for support.
+```
+(It seems from this note we might be missing a release/step from Jan-1992)
+
+  - Added REGISTERED (versus not registered) build indication to enable
+    "for pay" feature (e.g. variable length headers).
+
 ## [1991-12-07] RZ 3.17 / SZ 3.18
 
 This release included this `README` update:

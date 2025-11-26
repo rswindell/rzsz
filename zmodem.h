@@ -1,8 +1,7 @@
 /*
  *   Z M O D E M . H     Manifest constants for ZMODEM
  *    application to application file transfer protocol
- *    Copyright 1991 Omen Technology Inc All Rights Reserved
- *    04-17-89  Chuck Forsberg Omen Technology Inc
+ *    Copyright 1993 Omen Technology Inc All Rights Reserved
  */
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
@@ -118,15 +117,15 @@
 /* Parameters for ZCOMMAND frame ZF0 (otherwise 0) */
 #define ZCACK1	1	/* Acknowledge, then do command */
 
-long rclhdr();
+unsigned long rclhdr();
 
 /* Globals used by ZMODEM functions */
 extern Rxframeind;	/* ZBIN ZBIN32, or ZHEX type of frame */
 extern Rxtype;		/* Type of header received */
 extern Rxcount;		/* Count of data bytes received */
 extern Rxtimeout;	/* Tenths of seconds to wait for something */
-extern long Rxpos;	/* Received file position */
-extern long Txpos;	/* Transmitted file position */
+extern unsigned long Rxpos;	/* Received file position */
+extern unsigned long Txpos;	/* Transmitted file position */
 extern Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
 extern Crc32t;		/* Display flag indicating 32 bit CRC being sent */
 extern Crc32;		/* Display flag indicating 32 bit CRC being received */
@@ -134,4 +133,4 @@ extern Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
 extern char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 extern char *Altcan;	/* Alternate canit string */
 
-/* End of ZMODEM.H */
+/* End of zmodem.h */

@@ -8,13 +8,15 @@
  * extension that was not funded by the original Telenet
  * development contract.
  * 
- * This software may be freely used for non commercial and
- * educational (didactic only) purposes.  This software may also
- * be freely used to support file transfer operations to or from
- * licensed Omen Technology products.  Any programs which use
- * part or all of this software must be provided in source form
- * with this notice intact except by written permission from Omen
- * Technology Incorporated.
+ *  This software may be freely used for educational (didactic
+ *  only) purposes.  This software may also be freely used to
+ *  support file transfer operations to or from licensed Omen
+ *  Technology products.  Use with other commercial or shareware
+ *  programs (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ *
+ *  Any programs which use part or all of this software must be
+ *  provided in source form with this notice intact except by
+ *  written permission from Omen Technology Incorporated.
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
@@ -26,7 +28,7 @@
  * legal costs necessary to enforce this license agreement.
  *
  *
- *		Omen Technology Inc		FAX: 503-621-3745
+ *		Omen Technology Inc
  *		Post Office Box 4681
  *		Portland OR 97208
  *
@@ -42,7 +44,7 @@ zsdar32(buf, length, frameend)
 char *buf;
 {
 	register int c, l, n;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	crc = 0xFFFFFFFFL;  l = *buf++ & 0377;
 	if (length == 1) {
@@ -101,7 +103,7 @@ zrdatr32(buf, length)
 register char *buf;
 {
 	register int c;
-	register UNSL long crc;
+	register unsigned long crc;
 	register char *end;
 	register int d;
 
@@ -183,3 +185,4 @@ badpkt:
 	return ERROR;
 }
 
+/* End of zmr.c */

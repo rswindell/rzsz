@@ -13,7 +13,9 @@ nothing:
 	@echo "make any necessary hacks for oddball or merged SYSV/BSD systems,"
 	@echo "then type 'make SYSTEM' where SYSTEM is one of:"
 	@echo
-	@echo "	sysvr4	SYSTEM 5.4 Unix"
+	@echo "	posix	POSIX compliant systems"
+	@echo "	odt	SCO Open Desktop"
+	@echo "	sysvr4	SYSTEM 5.4 Unix, SCO Open Desktop"
 	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2)"
 	@echo "	sysv	SYSTEM 3/5 Unix"
 	@echo "	xenix	Xenix"
@@ -22,12 +24,14 @@ nothing:
 	@echo "	tandy	Tandy 6000 Xenix"
 	@echo "	dnix	DIAB Dnix 5.2"
 	@echo "	dnix5r3	DIAB Dnix 5.3"
+	@echo "	amiga	3000UX running SVR4"
+	@echo "	POSIX	POSIX compliant systems (SCO Open Desktop, strict)"
 	@echo
 	@echo "	doc	Format the man pages with nroff"
 	@echo
 
 usenet:doc
-	shar -s "...!reed!omen!caf" -c -a -n rzsz -o /tmp/rzsz -l52 \
+	shar -c -a -n rzsz -o /tmp/rzsz -l64 \
 	  README Makefile zmodem.h zm.c rz.c rbsb.c \
 	 crc.c crctab.c minirb.c mailer.rz zmr.c *.doc gz sz.c *.t 
 
@@ -45,15 +49,10 @@ unix:
 dos:
 	todos $(ARCFILES)
 
-arc:doc
-	rm -f /tmp/rzsz.arc
-	arc aq /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
-	 mailer.rz crctab.c rbsb.c \
-	 zmr.c crc.c *.doc gz *.t minirb.c
-	chmod og-w /tmp/rzsz.arc
-	mv /tmp/rzsz.arc /u/t/yam
+doc:rz.doc sz.doc crc.doc minirb.doc
 
-doc:rz.doc sz.doc crc.doc
+minirb.doc:minirb.1
+	nroff -man minirb.1 | col  >minirb.doc
 
 rz.doc:rz.1
 	nroff -man rz.1 | col  >rz.doc
@@ -65,14 +64,14 @@ crc.doc:crc.1
 	nroff -man crc.1 | col  >crc.doc
 
 zoo: doc
-	rm -f /tmp/rzsz.zoo
+	-rm -f /tmp/rzsz.zoo
 	zoo ah /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c *.doc \
 	 zmr.c crc.c gz *.t minirb.c
 	touch /tmp/rzsz.zoo
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /u/t/yam
-	rm -f rzsz.zip
+	-rm -f rzsz.zip
 	zip rzsz readme mailer.rz makefile zmodem.h zm.c sz.c rz.c
 	zip rzsz crctab.c rbsb.c *.doc
 	zip rzsz zmr.c crc.c gz *.t minirb.c
@@ -89,133 +88,203 @@ tags:
 .PRECIOUS:rz sz
 
 xenix:
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DMD rz.c -o rz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -DUSG -DMD rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
 
 x386:
-	$(CC) $(CFLAGS) $(OFLAG) -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	$(CC) $(CFLAGS) $(OFLAG) -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
 
 sysv:
-	$(CC) $(CFLAGS) $(OFLAG) -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN sz.c -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
 
 sysvr3:
-	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN sz.c -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
 
 sysvr4:
-	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 sz.c -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG sz.c -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
 
 odt:
-	cc -Za -n -DMD=2 rz.c -o rz
+	cc -strict -W2 -n -DUSG -DMD=2 rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
-	cc -Za -n -DSV -DTXBSIZE=32768 sz.c -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	cc -strict -W2 -n -DUSG -DREADCHECK sz.c -lx -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
+posix:
+	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX -DMD=2 rz.c -o rz
+	size rz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX sz.c -o sz
+	size sz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
+POSIX:
+	@echo "Well, stricter, as in *safer sex* ..."
+	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX -DMD=2 rz.c -o rz
+	size rz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX sz.c -o sz
+	size sz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
 
 bsd:
 	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 -Dstrchr=index -DV7 rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DV7 -DTXBSIZE=32768 -DNFGVMIN sz.c -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DV7 -DNFGVMIN sz.c -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
 
 tandy:
-	$(CC) $(CFLAGS) $(OFLAGS) -n -DMD -DT6K sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAGS) -n -DUSG -DMD -DT6K sz.c -lx -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
-	$(CC) $(CFLAGS) $(OFLAGS) -n -DMD -DT6K rz.c -lx -o rz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+	$(CC) $(CFLAGS) $(OFLAGS) -n -DUSG -DMD -DT6K rz.c -lx -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
 
 dnix:
-	$(CC) $(CFLAGS) $(OFLAG) -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN -DREADCHECK sz.c -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
 
 dnix5r3:
-	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
 	size rz
-	-ln rz rb
-	-ln rz rx
-	-ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -o sz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN -DREADCHECK sz.c -o sz
 	size sz
-	-ln sz sb
-	-ln sz sx
-	-ln sz zcommand
-	-ln sz zcommandi
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
+
+amiga:
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DNFGVMIN -g rz.c -o rz
+	size rz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN -g sz.c -o sz
+	size sz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
 
 
 sz: nothing

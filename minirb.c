@@ -1,15 +1,4 @@
-/*
- * minirb.c By Chuck Forsberg Omen Technology INC
- *        "The High Reliability Communications Software"
- *
- * A bootstrap program for Unix to receive files from computers running
- *  YMODEM Batch (Professional-YAM, PowerCom, ZCOMM, etc.).
- *
- *  Minirb uses system(3) to call stty, avoiding system dependent code.
- *   program strips CR and CPMEOF (^Z) characters (see putsec()).
- *  Please refer to rz.c for comments, etc.
- */
-char * Version = "minirb 2.00 05-25-87";
+char * Version = "minirb 3.00 05-02-93";
 
 #include <stdio.h>
 #include <signal.h>
@@ -26,7 +15,7 @@ char * Version = "minirb 2.00 05-25-87";
 #define ACK 6
 #define NAK 025
 #define TIMEOUT (-2)
-#define RETRYMAX 9
+#define RETRYMAX 15
 #define WCEOT (-10)
 
 FILE *fout;
@@ -37,17 +26,15 @@ char linbuf[1024];
 int Lleft=0;
 jmp_buf tohere;
 
-alrm() { longjmp(tohere, -1); }
-
-bibi(n) {
- canit(); mode(0);
- fprintf(stderr, "minirb: caught signal %d; exiting", n);
- exit(128+n);
-}
-
-mode(n) {
+void mode(n) {
  if (n) system("stty raw -echo");
  else system("stty echo -raw");
+}
+
+void alrm(c) { longjmp(tohere, -1); }
+
+void bibi(n) {
+ mode(0); fprintf(stderr, "minirb: caught signal %d; exiting", n); exit(128+n);
 }
 
 main() {
@@ -58,30 +45,24 @@ main() {
   signal(SIGINT, bibi); signal(SIGKILL, bibi);
  }
  printf("minirb: Now send file(s) with \042sb file ...\042 command\r\n");
-
- if (wcreceive()==ERROR)
-  canit();
- mode(0); exit(0);
+ wcreceive(); mode(0); exit(0);
 }
 
 wcreceive() {
  for (;;) {
   if (wcrxpn(secbuf) == ERROR) break;
-  if (secbuf[0]==0) return OK;
+  if (secbuf[0]==0) return;
   if (procheader(secbuf)==ERROR || wcrx()==ERROR) break;
  }
- canit(); return ERROR;
 }
-
 
 wcrxpn(rpn) char *rpn; {
  register c;
 
- purgeline();
 et_tu:
  sendline(NAK); Lleft=0;
- while ((c = wcgetsec(rpn, 100)) != 0) {
-  if (c == WCEOT) { sendline(ACK); Lleft=0; readline(1); goto et_tu; }
+ while ((c = wcgetsec(rpn)) != 0) {
+  if (c == WCEOT) { sendline(ACK); Lleft=0; rdln(2); goto et_tu; }
   return ERROR;
  }
  sendline(ACK); return OK;
@@ -93,7 +74,7 @@ wcrx() {
  sectnum=0; sendchar=NAK;
  for (;;) {
   sendline(sendchar); Lleft=0;
-  sectcurr=wcgetsec(secbuf, 50);
+  sectcurr=wcgetsec(secbuf);
   if (sectcurr==(sectnum+1 & 0377)) {
    sectnum++; cblklen = Bytesleft>Blklen ? Blklen:Bytesleft;
    putsec(secbuf, cblklen);
@@ -110,48 +91,43 @@ wcrx() {
  }
 }
 
-wcgetsec(rxbuf, maxtime) char *rxbuf; int maxtime; {
+wcgetsec(rxbuf) char *rxbuf; {
  register checksum, wcj, firstch; register char *p; int sectcurr, errors;
  for (errors=0; errors<RETRYMAX; errors++) {
-  if ((firstch=readline(maxtime))==STX) { Blklen=1024; goto get2; }
+  if ((firstch=rdln(5))==STX) { Blklen=1024; goto get2; }
   if (firstch==SOH) {
    Blklen=128;
 get2:
-   sectcurr=readline(1); checksum=0;
-   if ((sectcurr+(readline(1)))==0377) {
+   sectcurr=rdln(2); checksum=0;
+   if ((sectcurr+(rdln(2)))==0377) {
     for (p=rxbuf,wcj=Blklen; --wcj>=0; ) {
-     if ((firstch=readline(1)) < 0) goto bilge;
+     if ((firstch=rdln(2)) < 0) goto bilge;
      checksum += (*p++ = firstch);
     }
-    if ((firstch=readline(1)) < 0) goto bilge;
+    if ((firstch=rdln(2)) < 0) goto bilge;
     if (((checksum-firstch)&0377)==0) return sectcurr;
    }
   }
   else if (firstch==EOT) return WCEOT;
   else if (firstch==CAN) return ERROR;
 bilge:
-  while(readline(1)!=TIMEOUT)
+  while(rdln(2)!=TIMEOUT)
    ;
-  maxtime=40; sendline(NAK); Lleft=0;
+  sendline(NAK); Lleft=0;
  }
- canit(); return ERROR;
+ return ERROR;
 }
 
-readline(timeout) int timeout; {
- register n; static char *cdq;
+rdln(timeout) int timeout; {
+ static char *cdq;
 
  if (--Lleft >= 0) return (*cdq++ & 0377);
- n = timeout/10;
- if (n < 2) n = 3;
  if (setjmp(tohere)) { Lleft = 0; return TIMEOUT; }
- signal(SIGALRM, alrm); alarm(n);
+ signal(SIGALRM, alrm); alarm(timeout);
  Lleft=read(0, cdq=linbuf, 1024); alarm(0);
  if (Lleft < 1) return TIMEOUT;
  --Lleft; return (*cdq++ & 0377);
 }
-
-purgeline() { Lleft = 0; lseek(0, 0L, 2); }
-
 
 procheader(name) char *name; {
  register char *p;
@@ -163,13 +139,8 @@ procheader(name) char *name; {
 }
 
 putsec(p, n) char *p; int n;
-{ for (; --n>=0; ++p) if (*p != 015 && *p != 032) putc(*p, fout); }
+{ for (; --n>=0; ++p) putc(*p, fout); }
 
 sendline(c) { char d; d = c; write(1, &d, 1); }
 
-char canistr[] = { 24,24,24,24,24,24,24,24,0 };
-
-canit() { printf(canistr); Lleft=0; }
-
-/* END of minirb.c */
-
+/* End of minirb.c */

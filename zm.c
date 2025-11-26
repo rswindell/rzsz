@@ -2,7 +2,6 @@
  *   Z M . C
  *    Copyright 1991 Omen Technology Inc All Rights Reserved
  *    ZMODEM protocol primitives
- *    05-24-89  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -11,7 +10,7 @@
  *	zsdata(buf, len, frameend) send data
  *	zrdata(buf, len) receive data
  *	stohdr(pos) store position data in Txhdr
- *	long rclhdr(hdr) recover position offset from header
+ *	unsigned long rclhdr(hdr) recover position offset from header
  * 
  *
  *	This version implements numerous enhancements including ZMODEM
@@ -19,13 +18,15 @@
  *	features were not funded by the original Telenet development
  *	contract.
  * 
- * This software may be freely used for non commercial and
- * educational (didactic only) purposes.  This software may also
- * be freely used to support file transfer operations to or from
- * licensed Omen Technology products.  Any programs which use
- * part or all of this software must be provided in source form
- * with this notice intact except by written permission from Omen
- * Technology Incorporated.
+ *  This software may be freely used for educational (didactic
+ *  only) purposes.  This software may also be freely used to
+ *  support file transfer operations to or from licensed Omen
+ *  Technology products.  Use with other commercial or shareware
+ *  programs (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ *
+ *  Any programs which use part or all of this software must be
+ *  provided in source form with this notice intact except by
+ *  written permission from Omen Technology Incorporated.
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
@@ -37,7 +38,7 @@
  * legal costs necessary to enforce this license agreement.
  *
  *
- *		Omen Technology Inc		FAX: 503-621-3745
+ *		Omen Technology Inc
  *		Post Office Box 4681
  *		Portland OR 97208
  *
@@ -52,11 +53,6 @@
 int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 #endif
 
-#ifndef UNSL
-#define UNSL
-#endif
-
-
 /* Globals used by ZMODEM functions */
 int Rxframeind;		/* ZBIN ZBIN32, or ZHEX type of frame */
 int Rxtype;		/* Type of header received */
@@ -64,8 +60,8 @@ int Rxhlen;		/* Length of header received */
 int Rxcount;		/* Count of data bytes received */
 char Rxhdr[ZMAXHLEN];	/* Received header */
 char Txhdr[ZMAXHLEN];	/* Transmitted header */
-long Rxpos;		/* Received file position */
-long Txpos;		/* Transmitted file position */
+unsigned long Rxpos;		/* Received file position */
+unsigned long Txpos;		/* Transmitted file position */
 int Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
 int Crc32t;		/* Controls 32 bit CRC being sent */
 			/* 1 == CRC32,  2 == CRC32 + RLE */
@@ -163,7 +159,7 @@ zsbh32(len, hdr, type, flavour)
 register char *hdr;
 {
 	register int n;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	xsendline(flavour); 
 	if (Usevhdrs) 
@@ -258,7 +254,7 @@ zsda32(buf, length, frameend)
 register char *buf;
 {
 	register int c;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	crc = 0xFFFFFFFFL;
 	for (;--length >= 0; ++buf) {
@@ -349,7 +345,7 @@ zrdat32(buf, length)
 register char *buf;
 {
 	register int c;
-	register UNSL long crc;
+	register unsigned long crc;
 	register char *end;
 	register int d;
 
@@ -617,7 +613,7 @@ zrbhd32(hdr)
 register char *hdr;
 {
 	register int c, n;
-	register UNSL long crc;
+	register unsigned long crc;
 
 	if ((c = zdlread()) & ~0377)
 		return c;
@@ -887,7 +883,7 @@ noxrd7()
 
 /* Store long integer pos in Txhdr */
 stohdr(pos)
-long pos;
+unsigned long pos;
 {
 	Txhdr[ZP0] = pos;
 	Txhdr[ZP1] = pos>>8;
@@ -895,12 +891,12 @@ long pos;
 	Txhdr[ZP3] = pos>>24;
 }
 
-/* Recover a long integer from a header */
-long
+/* Recover a unsigned long integer from a header */
+unsigned long
 rclhdr(hdr)
 register char *hdr;
 {
-	register long l;
+	register unsigned long l;
 
 	l = (hdr[ZP3] & 0377);
 	l = (l << 8) | (hdr[ZP2] & 0377);

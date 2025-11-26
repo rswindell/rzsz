@@ -1,10 +1,10 @@
-#define VERSION "3.17 10-30-91"
+#define VERSION "3.24 5-5-93"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  *
  * rz.c By Chuck Forsberg
- *    Copyright 1991 Omen Technology Inc All Rights Reserved
+ *    Copyright 1993 Omen Technology Inc All Rights Reserved
  *
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
@@ -16,25 +16,28 @@
  *	features were not funded by the original Telenet development
  *	contract.
  * 
- * This software may be freely used for non commercial and
- * educational (didactic only) purposes.  This software may also
- * be freely used to support file transfer operations to or from
- * licensed Omen Technology products.  Any programs which use
- * part or all of this software must be provided in source form
- * with this notice intact except by written permission from Omen
- * Technology Incorporated.
+ *  This software may be freely used for educational (didactic
+ *  only) purposes.  This software may also be freely used to
+ *  support file transfer operations to or from licensed Omen
+ *  Technology products.  Use with other commercial or shareware
+ *  programs (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ *
+ *  Any programs which use part or all of this software must be
+ *  provided in source form with this notice intact except by
+ *  written permission from Omen Technology Incorporated.
+ *
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
  * products requires a per port license payment of $20.00 US per
- * port (less in quantity).  Use of this code by inclusion,
- * decompilation, reverse engineering or any other means
+ * port (less in quantity, see mailer.rz).  Use of this code by
+ * inclusion, decompilation, reverse engineering or any other means
  * constitutes agreement to these conditions and acceptance of
  * liability to license the materials and payment of reasonable
  * legal costs necessary to enforce this license agreement.
  *
  *
- *		Omen Technology Inc		FAX: 503-621-3745
+ *		Omen Technology Inc
  *		Post Office Box 4681
  *		Portland OR 97208
  *
@@ -43,9 +46,6 @@
  *	DAMAGES OF ANY KIND.
  *
  *
- *
- * Iff the program is invoked by rzCOMMAND, output is piped to 
- * "COMMAND filename"  (Unix only)
  *
  *  Alarm signal handling changed to work with 4.2 BSD 7-15-84 CAF 
  *
@@ -60,15 +60,16 @@
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 
+char *Copyrrz = "Copyright 1993 Omen Technology Inc All Rights Reserved";
 
 
 #define LOGFILE "/tmp/rzlog"
+#define LOGFILE2 "rzlog"
 #include <stdio.h>
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
 extern int errno;
-FILE *popen();
 
 #define OK 0
 #define FALSE 0
@@ -78,7 +79,6 @@ FILE *popen();
 /*
  * Max value for HOWMANY is 255.
  *   A larger value reduces system overhead but may evoke kernel bugs.
- *   133 corresponds to an XMODEM/CRC sector
  */
 #ifndef HOWMANY
 #define HOWMANY 96
@@ -107,8 +107,10 @@ FILE *popen();
 
 int Zmodem=0;		/* ZMODEM protocol requested */
 int Nozmodem = 0;	/* If invoked as "rb" */
-unsigned Baudrate = 2400;
-unsigned Effbaud = 2400;
+unsigned Baudrate = 9600;
+unsigned Effbaud = 9600;
+
+
 #include "rbsb.c"	/* most of the system dependent stuff here */
 #include "crctab.c"
 char endmsg[90] = {0};	/* Possible message to display on exit */
@@ -120,13 +122,13 @@ FILE *fout;
  * Routine to calculate the free bytes on the current file system
  *  ~0 means many free bytes (unknown)
  */
-long getfree()
+unsigned long getfree()
 {
 	return(~0L);	/* many free bytes ... */
 }
 
 int Lastrx;
-long rxbytes;
+unsigned long rxbytes;
 int Crcflg;
 int Firstsec;
 int Eofseen;		/* indicates cpm eof (^Z) has been received */
@@ -134,16 +136,15 @@ int errors;
 int Restricted=0;	/* restricted; no /.. or ../ in filenames */
 
 #define DEFBYTL 2000000000L	/* default rx file size */
-long Bytesleft;		/* number of bytes of incoming file left */
+unsigned long Bytesleft;	/* number of bytes of incoming file left */
 long Modtime;		/* Unix style mod time for incoming file */
 int Filemode;		/* Unix style mode for incoming file */
-long Totalleft;
-long Filesleft;
+unsigned long Totalleft;
+unsigned long Filesleft;
 char Pathname[PATHLEN];
 char *Progname;		/* the name by which we were called */
 
 int Batch=0;
-int Topipe=0;
 int Thisbinary;		/* current file is to be received in bin mode */
 int Rxbinary=FALSE;	/* receive all files in bin mode */
 int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
@@ -166,14 +167,28 @@ char ztrans;		/* ZMODEM file transport request */
 int Zctlesc;		/* Encode control characters */
 int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 
-#include "zm.c"
+/*
+ * Log an error
+ */
+/*VARARGS1*/
+void
+zperr(s,p,u)
+char *s, *p, *u;
+{
+	if (Verbose <= 0)
+		return;
+	fprintf(stderr, "Retry %d: ", errors);
+	fprintf(stderr, s, p, u);
+	fprintf(stderr, "\n");
+}
 
+#include "zm.c"
 #include "zmr.c"
 
 int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
 
-
 /* called by signal interrupt or terminate to clean things up */
+void
 bibi(n)
 {
 	if (Zmodem)
@@ -246,10 +261,11 @@ char *argv[];
 	if (Batch && npats)
 		usage();
 	if (Verbose) {
-		if (freopen(LOGFILE, "a", stderr)==NULL) {
-			printf("Can't open log file %s\n",LOGFILE);
-			exit(2);
-		}
+		if (freopen(LOGFILE, "a", stderr)==NULL)
+			if (freopen(LOGFILE2, "a", stderr)==NULL) {
+				printf("Can't open log file!");
+				exit(2);
+			}
 		setbuf(stderr, NULL);
 		fprintf(stderr, "argv[0]=%s Progname=%s\n", virgin, Progname);
 	}
@@ -273,7 +289,17 @@ char *argv[];
 		printf("  %s: %s\r\n", Progname, endmsg);
 	printf("%s %s finished.\r\n", Progname, VERSION);
 	fflush(stdout);
-	exit(exitcode != 0);
+	if(exitcode)
+		exit(1);
+#ifndef REGISTERED
+	/* Removing or disabling this code without registering is theft */
+	if (!Usevhdrs)  {
+		printf( "\n\n\nPlease read the License Agreement in rz.doc\n");
+		fflush(stdout);
+		sleep(10);
+	}
+#endif
+	exit(0);
 }
 
 
@@ -289,12 +315,12 @@ usage()
 	fprintf(stderr,"or	rc [-av] file	(XMODEM-CRC)\n");
 	fprintf(stderr,"or	rx [-av] file	(XMODEM)\n\n");
 	fprintf(stderr,
-	"\nSee rz.doc for option descriptions and licensing information.\n\n");
-	fprintf(stderr,
 "Supports incoming ZMODEM binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
 	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
 clobber (-y), match+clobber (-Y), compression (-Z), and append (-+).\n\n");
-	fprintf(stderr,"\tCopyright 1991 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"Copyright 1993 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,
+	"See rz.doc for option descriptions and licensing information.\n\n");
 	exit(2);
 }
 
@@ -345,9 +371,6 @@ char **argp;
 	return OK;
 fubar:
 	canit();
-	if (Topipe && fout) {
-		pclose(fout);  return ERROR;
-	}
 	Modtime = 1;
 	if (fout)
 		fclose(fout);
@@ -373,19 +396,19 @@ char *rpn;	/* receive a pathname */
 
 et_tu:
 	Firstsec=TRUE;  Eofseen=FALSE;
-	sendline(Crcflg?WANTCRC:NAK);
+	sendline(Crcflg?WANTCRC:NAK);  flushmo();
 	Lleft=0;	/* Do read next time ... */
 	while ((c = wcgetsec(rpn, 100)) != 0) {
 		if (c == WCEOT) {
 			zperr( "Pathname fetch returned %d", c);
-			sendline(ACK);
+			sendline(ACK);  flushmo();
 			Lleft=0;	/* Do read next time ... */
 			readline(1);
 			goto et_tu;
 		}
 		return ERROR;
 	}
-	sendline(ACK);
+	sendline(ACK);  flushmo();
 	return OK;
 }
 
@@ -406,9 +429,9 @@ wcrx()
 
 	for (;;) {
 		sendline(sendchar);	/* send it now, we're ready! */
+		flushmo();
 		Lleft=0;	/* Do read next time ... */
 		sectcurr=wcgetsec(secbuf, (sectnum&0177)?50:130);
-		report(sectcurr);
 		if (sectcurr==(sectnum+1 &0377)) {
 			sectnum++;
 			cblklen = Bytesleft>Blklen ? Blklen:Bytesleft;
@@ -425,7 +448,7 @@ wcrx()
 		else if (sectcurr==WCEOT) {
 			if (closeit())
 				return ERROR;
-			sendline(ACK);
+			sendline(ACK); flushmo();
 			Lleft=0;	/* Do read next time ... */
 			return OK;
 		}
@@ -524,10 +547,10 @@ humbug:
 		while(readline(1)!=TIMEOUT)
 			;
 		if (Firstsec) {
-			sendline(Crcflg?WANTCRC:NAK);
+			sendline(Crcflg?WANTCRC:NAK);  flushmo();
 			Lleft=0;	/* Do read next time ... */
 		} else {
-			maxtime=40; sendline(NAK);
+			maxtime=40; sendline(NAK);  flushmo();
 			Lleft=0;	/* Do read next time ... */
 		}
 	}
@@ -568,6 +591,9 @@ char *name;
 		openmode = "a";
 
 	Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
+
+	if (!name || !*name)
+		return OK;
 
 	p = name + 1 + strlen(name);
 	if (*p) {	/* file coming from Unix or DOS system */
@@ -804,30 +830,9 @@ register char *s,*t;
 	return NULL;
 }
 
-/*
- * Log an error
- */
-/*VARARGS1*/
-zperr(s,p,u)
-char *s, *p, *u;
-{
-	if (Verbose <= 0)
-		return;
-	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s, p, u);
-	fprintf(stderr, "\n");
-}
-
-report(sct)
-int sct;
-{
-	if (Verbose>1)
-		fprintf(stderr,"%03d%c",sct,sct%10? ' ' : '\r');
-}
 
 /*
  * If called as [-][dir/../]vrzCOMMAND set Verbose to 1
- * If called as [-][dir/../]rzCOMMAND set the pipe flag
  * If called as rb use YMODEM protocol
  */
 chkinvok(s)
@@ -851,10 +856,6 @@ char *s;
 		Crcflg = TRUE;
 	if (s[0]=='r' && s[1]=='b')
 		Batch = Nozmodem = TRUE;
-	if (s[2] && s[0]=='r' && s[1]=='b')
-		Topipe = 1;
-	if (s[2] && s[0]=='r' && s[1]=='z')
-		Topipe = 1;
 }
 
 /*
@@ -878,6 +879,34 @@ char *name;
 		}
 	}
 }
+/*
+ * Ack a ZFIN packet, let byegones be byegones
+ */
+void
+ackbibi()
+{
+	register n;
+
+	vfile("ackbibi:");
+	Readnum = 1;
+	stohdr(0L);
+	for (n=3; --n>=0; ) {
+		purgeline();
+		zshhdr(4,ZFIN, Txhdr);
+		switch (readline(100)) {
+		case 'O':
+			readline(1);	/* Discard 2nd 'O' */
+			vfile("ackbibi complete");
+			return;
+		case RCDO:
+			return;
+		case TIMEOUT:
+		default:
+			break;
+		}
+	}
+}
+
 
 /*
  * Initialize for Zmodem receive attempt, try to activate Zmodem sender
@@ -894,7 +923,7 @@ tryz()
 		return 0;
 
 
-	for (n=Zmodem?15:5; --n>=0; ) {
+	for (n=15; --n>=0; ) {
 		/* Set buffer length (0) and capability flags */
 #ifdef SEGMENTS
 		stohdr(SEGMENTS*1024L);
@@ -932,7 +961,6 @@ again:
 				Usevhdrs = TRUE;
 			tryzhdrtype = ZRINIT;
 			c = zrdata(secbuf, 1024);
-			mode(3);
 			if (c == GOTCRCW)
 				return ZFILE;
 			zshhdr(4,ZNAK, Txhdr);
@@ -1171,8 +1199,8 @@ moredata:
 #endif
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
-				zshhdr(4,ZACK, Txhdr);
 				sendline(XON);
+				zshhdr(4,ZACK, Txhdr);
 				goto nxthdr;
 			case GOTCRCQ:
 				n = 20;
@@ -1216,12 +1244,6 @@ closeit()
 {
 	time_t time();
 
-	if (Topipe) {
-		if (pclose(fout)) {
-			return ERROR;
-		}
-		return OK;
-	}
 	if (fclose(fout)==ERROR) {
 		fprintf(stderr, "file close ERROR\n");
 		return ERROR;
@@ -1231,36 +1253,15 @@ closeit()
 		timep[1] = Modtime;
 		utime(Pathname, timep);
 	}
-	if ((Filemode&S_IFMT) == S_IFREG)
-		chmod(Pathname, (07777 & Filemode));
+	if (
+#ifdef POSIX
+	S_ISREG(Filemode)
+#else
+	(Filemode&S_IFMT) == S_IFREG
+#endif
+	)
+		chmod(Pathname, (unsigned short)(07777 & Filemode));
 	return OK;
-}
-
-/*
- * Ack a ZFIN packet, let byegones be byegones
- */
-ackbibi()
-{
-	register n;
-
-	vfile("ackbibi:");
-	Readnum = 1;
-	stohdr(0L);
-	for (n=3; --n>=0; ) {
-		purgeline();
-		zshhdr(4,ZFIN, Txhdr);
-		switch (readline(100)) {
-		case 'O':
-			readline(1);	/* Discard 2nd 'O' */
-			vfile("ackbibi complete");
-			return;
-		case RCDO:
-			return;
-		case TIMEOUT:
-		default:
-			break;
-		}
-	}
 }
 
 
@@ -1285,4 +1286,5 @@ register char *s;
 	mode(0);
 	execl("/bin/sh", "sh", "-c", s);
 }
+
 /* End of rz.c */

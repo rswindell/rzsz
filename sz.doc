@@ -10,25 +10,31 @@
 	  zcommand, zcommandi -	Send COmmands with ZMODEM
 
      SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
-	  sz [-++++aaaabbbbddddeeeeffffkkkkLLLLllllNNNNnnnnooooppppTTTTttttuuuuvvvvyyyyYYYYZZZZ] _f_i_l_e ...
+	  sz [-++++aaaabbbbddddeeeeffffkkkkLLLLllllNNNNnnnnooooppppttttuuuuvvvvyyyyYYYYZZZZ] _f_i_l_e ...
 	  sb [-ddddffffkkkkttttuuuuvvvv] _f_i_l_e ...
 	  sx [-kkkkttttuuuuvvvv] _f_i_l_e
 	  zcommand [-oooottttvvvv] CCCCOOOOMMMMMMMMAAAANNNNDDDD
 	  zcommandi [-oooottttvvvv] CCCCOOOOMMMMMMMMAAAANNNNDDDD
-	  sz -TT
+	  sz -T
+
+
+     LLLLIIIICCCCEEEENNNNSSSSEEEE AAAAGGGGRRRREEEEEEEEMMMMEEEENNNNTTTT
+	  This is a copyrighted	shareware program.  Commercial use of
+	  this program is subject to licensing conditions detailed in
+	  the rz.c source code.	 "Commercial Use" includes use of this
+	  program to send files	to any commercial or shareware program
+	  not published	by Omen	Technology INC.
+
+	  Registration information is provided in the file mailer.rz.
+
+	  Use of this program constitutes agreement to the License
+	  Agreement.
 
      DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
 	  SSSSzzzz (send ZMODEM) uses	the ZMODEM, YMODEM or XMODEM error
 	  correcting protocol to send one or more files	over a dial-in
 	  serial port to a variety of programs running under PC-DOS,
 	  CP/M,	Unix, VMS, and other operating systems.
-
-	  This is a copyrighted	shareware program.  Commercial use of
-	  this program is subject to licensing conditions detailed in
-	  the rz.c source code.	 "Commercial Use" includes use of this
-	  program to send files	to commercial and/or shareware
-	  programs not published by Omen Technology INC.
-
 
 	  This program is not designed to be called from _c_u(_1) _t_i_p(_1),
 	  or other communications programs.  Unix flavors of Omen
@@ -37,7 +43,6 @@
 	  supports dial-out applications with telephone	directory, a
 	  powerful script language with	learn function,	high quality
 	  multiple protocol support, and UUCP port arbitration.
-
 
 	  SSSSzzzz sends one or more files with ZMODEM protocol.
 
@@ -52,15 +57,10 @@
 
 	  Advanced file	management features include AutoDownload
 	  (Automatic file Download initiated without user
-	  intervention), Display of individual and total file lengths
-	  and transmission time	estimates, Crash Recovery, selective
-	  file transfers, and preservation of exact file date and
-	  length.
 
 
 
-
-     Page 1					    (printed 10/30/91)
+     Page 1					      (printed 5/2/93)
 
 
 
@@ -70,6 +70,11 @@
      SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
 
 
+
+	  intervention), Display of individual and total file lengths
+	  and transmission time	estimates, Crash Recovery, selective
+	  file transfers, and preservation of exact file date and
+	  length.
 
 	  The ----yyyy option	instructs the receiver to open the file	for
 	  writing unconditionally.  The	----aaaa option causes the receiver
@@ -114,19 +119,14 @@
 	  correctly received the command, before it is executed.
 
 
-	  The sixth form (sz -TT) attempts to output all 256 code
-	  combinations to the terminal.	 In you	are having difficulty
-	  sending files, this command lets you see which character
-	  codes	are being eaten	by the operating system.
+	  The sixth form (sz -T) outputs all 256 code combinations to
+	  the terminal.	 The hex value of the character, a space, and
+	  the raw character are	sent, 8	per line.  In you are having
+	  difficulty sending files, this command lets you see which
 
 
 
-	  The meanings of the available	options	are:
-
-
-
-
-     Page 2					    (printed 10/30/91)
+     Page 2					      (printed 5/2/93)
 
 
 
@@ -137,6 +137,23 @@
 
 
 
+	  character codes are being eaten by the operating system or
+	  network.  The	terminal program must be set to	display	all
+	  256 codes in a distinct form.	 Check that each code is sent,
+	  and that the 8th bit on codes	0x80 to	0xFF is	set.
+
+	  Sz -T	then allows the	caller to input	characters which are
+	  echoed in hex.  You should check that	all control characters
+	  can be input this way.
+
+
+
+	  The meanings of the available	options	are:
+
+	  2222    Use two stop bits instead of one.  This option is
+	       available on some Unix systems.	This slows
+	       transmission slightly and may be	helpful	in preventing
+	       flow control problems in	some applications.
 	  ++++    Instruct	the receiver to	append transmitted data	to an
 	       existing	file (ZMODEM only).
 	  aaaa    Instruct	the ZMODEM receiver to convert text file
@@ -172,6 +189,20 @@
 	       exist.  Overwrite destination file if source file is
 	       newer than the destination file.
 	  NNNN    (ZMODEM)	Send each file if destination file does	not
+
+
+
+     Page 3					      (printed 5/2/93)
+
+
+
+
+
+
+     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
+
+
+
 	       exist.  Overwrite destination file if source file is
 	       newer or	longer than the	destination file.
 	  oooo    (ZMODEM)	Disable	automatic selection of 32 bit CRC.
@@ -189,20 +220,6 @@
 	  wwww NNNN  Limit the transmit window size to N bytes (ZMODEM).
 	  vvvv    Verbose causes a	list of	file names to be appended to
 	       /tmp/szlog .  More v's generate more output.
-
-
-
-     Page 3					    (printed 10/30/91)
-
-
-
-
-
-
-     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
-
-
-
 	  yyyy    Instruct	a ZMODEM receiving program to overwrite	any
 	       existing	file with the same name.
 	  YYYY    Instruct	a ZMODEM receiving program to overwrite	any
@@ -238,6 +255,20 @@
 	      zcommand "c:;cd /yam/dist"
 	      sz -ya $(YD)/*.me
 	      sz -yb y*.exe
+
+
+
+     Page 4					      (printed 5/2/93)
+
+
+
+
+
+
+     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
+
+
+
 	      zcommand "cd /yam"
 	      zcommandi	"!insms"
 	  This Makefile	fragment uses zzzzccccoooommmmmmmmaaaannnndddd to issue	commands to
@@ -255,20 +286,6 @@
 	  % ssssxxxx ffffoooooooo....cccc
 	  EEEESSSSCCCC
 	  rrrrxxxx ffffoooooooo....cccc
-
-
-
-     Page 4					    (printed 10/30/91)
-
-
-
-
-
-
-     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
-
-
-
 	  The above three commands transfer a single file from Unix to
 	  a PC and Crosstalk.  This combination	is much	slower and
 	  less reliable	than ZMODEM.
@@ -304,27 +321,10 @@
 	  interrupting the sender, and the MMMMyyyyaaaattttttttnnnn string in sssszzzz....cccc must
 	  be modified.
 
-	  After	5 packets, sssszzzz stops the	"transfer" and prints the
-	  total	number of characters "sent" (Tcount).  The difference
-	  between Tcount and 5120 represents the number	of characters
-	  stored in various buffers when the Attn sequence is
-	  generated.
-
-     NNNNOOOOTTTTEEEESSSS
-	  When using TrailBlazer or other buffered modems at high
-	  speed, particular attention must be paid to flow control.
-	  The modem and	Unix must agree	on the flow control method.
-	  Sz on	USG (SYS III/V)	systems	uses XON/XOFF flow control.
-	  If flow control cannot be properly set up, Try a "-w 2048"
-	  option to enforce protocol level flow	control.  Experiment
-	  with different window	sizes for best results.
-
-	  Telebit modems must not be set to "spoof" UUCP, XMODEM, or
-	  KERMIT.  Setting one of these	spoofing modes interferes with
 
 
 
-     Page 5					    (printed 10/30/91)
+     Page 5					      (printed 5/2/93)
 
 
 
@@ -335,7 +335,39 @@
 
 
 
-	  other	protoocls.
+	  After	5 packets, sssszzzz stops the	"transfer" and prints the
+	  total	number of characters "sent" (Tcount).  The difference
+	  between Tcount and 5120 represents the number	of characters
+	  stored in various buffers when the Attn sequence is
+	  generated.
+
+     NNNNOOOOTTTTEEEESSSS
+	  We have received numerous reports of terminal	servers
+	  interfering with protocol file transfers.  Sometimes special
+	  terminal server commands correct the problem.	 Some typical
+	  commands are "terminal download" and "terminal no esc", but
+	  there	is no standard set of commands suitable	for all
+	  terminal servers.  Sometimes the terminal server software is
+	  defective and	must be	upgraded.
+
+	  Escaping all control characters (-e option) option sometimes
+	  helps	get past brain damaged terminal	servers.  Restricting
+	  the window size (-l or -w option) sometimes helps.  These
+	  hacks	slow transfers,	better to fix the terminal server.
+
+	  Particular attention must be paid to flow control.  The
+	  modem	and Unix must agree on the flow	control	method.	 Sz on
+	  USG (SYS III/V) systems use XON/XOFF flow control.  Some
+	  terminal servers do not provide working flow control.	 If
+	  flow control cannot be properly set up, Try a	"-w 1024"
+	  option (given	to the sending program)	to enforce protocol
+	  level	flow control.  Experiment with different window	sizes
+	  for best results.
+
+	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
+	  YMODEM, or KERMIT.  Setting one of these spoofing modes
+	  interferes with other	protoocls.  Telebit's YMODEM spoofing
+	  interferes with YMODEM transfers.
 
 	  If a program that does not properly implement	the specified
 	  file transfer	protocol causes	_s_b to "hang" the port after a
@@ -355,6 +387,20 @@
 	  beginning of the transfer to prune the file to the correct
 	  length; this may cause problems with source files that grow
 	  during the course of the transfer.  This problem does	not
+
+
+
+     Page 6					      (printed 5/2/93)
+
+
+
+
+
+
+     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
+
+
+
 	  pertain to ZMODEM transfers, which preserve the exact	file
 	  length unconditionally.
 
@@ -390,7 +436,27 @@
 
 
 
-     Page 6					    (printed 10/30/91)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 7					      (printed 5/2/93)
 
 
 

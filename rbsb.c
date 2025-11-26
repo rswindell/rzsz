@@ -1,16 +1,11 @@
 /*
- *
- *  Rev 10-30-91
- *  This file contains Unix specific code for setting terminal modes,
- *  very little is specific to ZMODEM or YMODEM per se (that code is in
- *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
- *  are also in this file, a fast table driven macro version
- *
  *	V7/BSD HACKERS:  SEE NOTES UNDER mode(2) !!!
  *
  *   This file is #included so the main file can set parameters such as HOWMANY.
  *   See the main files (rz.c/sz.c) for compile instructions.
  */
+
+char *Copyr = "Copyright 1993 Omen Technology Inc All Rights Reserved";
 
 #ifdef V7
 #include <sys/types.h>
@@ -18,17 +13,10 @@
 #define STAT
 #include <sgtty.h>
 #define OS "V7/BSD"
-#define ROPMODE "r"
 #ifdef LLITOUT
 long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
 long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #include <strings.h>
-#endif
-#endif
-
-#ifndef OS
-#ifndef USG
-#define USG
 #endif
 #endif
 
@@ -38,10 +26,26 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #define STAT
 #include <termio.h>
 #define OS "SYS III/V"
-#define ROPMODE "r"
 #define MODE2OK
 #include <string.h>
 #endif
+
+#ifdef POSIX
+#define USG
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#define STAT
+#include <termios.h>
+#define OS "POSIX"
+#include <string.h>
+#ifndef READCHECK
+#ifndef FIONREAD
+#define SV
+#endif
+#endif
+#endif
+
 
 #ifdef T6K
 #include <sys/ioctl.h>		/* JPRadley: for the Tandy 6000 */
@@ -76,22 +80,6 @@ int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
 #endif
 int Verbose=0;
 
-
-struct {
-	unsigned baudr;
-	int speedcode;
-} speeds[] = {
-	110,	B110,
-	300,	B300,
-	600,	B600,
-	1200,	B1200,
-	2400,	B2400,
-	4800,	B4800,
-	9600,	B9600,
-	19200,	EXTA,
-	38400,	EXTB,
-	0,
-};
 
 int Twostop;		/* Use two stop bits */
 
@@ -134,7 +122,7 @@ rdchk(f)
 	static char bchecked;
 
 	savestat = fcntl(f, F_GETFL) ;
-	fcntl(f, F_SETFL, savestat | O_NDELAY) ;
+	fcntl(f, F_SETFL, savestat | O_NONBLOCK) ;
 	lf = read(f, &bchecked, 1) ;
 	fcntl(f, F_SETFL, savestat) ;
 	checked = bchecked & 0377;	/* force unsigned byte */
@@ -145,6 +133,34 @@ rdchk(f)
 #endif
 
 
+struct {
+	unsigned baudr;
+	int speedcode;
+} speeds[] = {
+	110,	B110,
+#ifdef B150
+	150,	B150,
+#endif
+	300,	B300,
+	600,	B600,
+	1200,	B1200,
+	2400,	B2400,
+	4800,	B4800,
+	9600,	B9600,
+#ifdef B19200
+	19200,	B19200,
+#endif
+#ifdef EXTA
+	19200,	EXTA,
+#endif
+#ifdef B38400
+	38400,	B38400,
+#endif
+#ifdef EXTB
+	38400,	EXTB,
+#endif
+	0,	0
+};
 static unsigned
 getspeed(code)
 {
@@ -153,13 +169,20 @@ getspeed(code)
 	for (n=0; speeds[n].baudr; ++n)
 		if (speeds[n].speedcode == code)
 			return speeds[n].baudr;
-	return 38400;	/* Assume fifo if ioctl failed */
+	if (code > 49)
+		return ((unsigned)code);
+	return 1;	/* Assume fifo if ioctl failed */
 }
 
 
 
+
 #ifdef ICANON
+#ifdef POSIX
+struct termios oldtty, tty;
+#else
 struct termio oldtty, tty;
+#endif
 #else
 struct sgttyb oldtty, tty;
 struct tchars oldtch, tch;
@@ -180,15 +203,20 @@ mode(n)
 	switch(n) {
 #ifdef USG
 	case 2:		/* Un-raw mode used by sz, sb when -g detected */
+#ifdef POSIX
+		if(!did0)
+			(void) tcgetattr(Tty, &oldtty);
+#else
 		if(!did0)
 			(void) ioctl(Tty, TCGETA, &oldtty);
+#endif
 		tty = oldtty;
 
 		tty.c_iflag = BRKINT|IXON;
 
 		tty.c_oflag = 0;	/* Transparent output */
 
-		tty.c_cflag &= ~(PARENB|HUPCL);		/* Disable parity */
+		tty.c_cflag &= ~(PARENB|CSIZE);		/* Disable parity */
 		tty.c_cflag |= (CREAD|CS8);	/* Set character size = 8 */
 		if (Twostop)
 			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
@@ -209,23 +237,31 @@ mode(n)
 #endif
 		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
 
+#ifdef POSIX
+		(void) tcsetattr(Tty, TCSADRAIN, &tty);
+#else
 		(void) ioctl(Tty, TCSETAW, &tty);
+#endif
 		did0 = TRUE;
 		return OK;
 	case 1:
 	case 3:
+#ifdef POSIX
+		if(!did0)
+			(void) tcgetattr(Tty, &oldtty);
+#else
 		if(!did0)
 			(void) ioctl(Tty, TCGETA, &oldtty);
+#endif
 		tty = oldtty;
 
-		tty.c_iflag = n==3 ? (IGNBRK|IXOFF) : IGNBRK;
+		tty.c_iflag = n==3 ? (IXON|IXOFF) : IXOFF;
 
-		 /* No echo, crlf mapping, INTR, QUIT, delays, no erase/kill */
-		tty.c_lflag &= ~(ECHO | ICANON | ISIG);
+		tty.c_lflag = 0;
 
-		tty.c_oflag = 0;	/* Transparent output */
+		tty.c_oflag = 0;
 
-		tty.c_cflag &= ~PARENB;	/* Same baud rate, disable parity */
+		tty.c_cflag &= ~(CSIZE|PARENB);	/* disable parity */
 		tty.c_cflag |= CS8;	/* Set character size = 8 */
 		if (Twostop)
 			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
@@ -235,9 +271,18 @@ mode(n)
 		tty.c_cc[VMIN] = HOWMANY; /* This many chars satisfies reads */
 #endif
 		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
+#ifdef POSIX
+		(void) tcsetattr(Tty, TCSADRAIN, &tty);
+#else
 		(void) ioctl(Tty, TCSETAW, &tty);
+#endif
 		did0 = TRUE;
+#ifdef POSIX
+		Effbaud = Baudrate = getspeed(cfgetospeed(&tty));
+#else
 		Effbaud = Baudrate = getspeed(tty.c_cflag & CBAUD);
+#endif
+		vfile("Baudrate = %u\n", Baudrate);
 		return OK;
 #endif
 #ifdef V7
@@ -270,8 +315,9 @@ mode(n)
 		ioctl(Tty, TIOCSETC, &tch);
 #ifdef LLITOUT
 		ioctl(Tty, TIOCLBIS, &Locbit);
-#endif
+#else
 		bibi(99);	/* un-raw doesn't work w/o lit out */
+#endif
 		did0 = TRUE;
 		return OK;
 	case 1:
@@ -296,10 +342,17 @@ mode(n)
 		if(!did0)
 			return ERROR;
 #ifdef USG
+#ifdef POSIX
+		(void) tcdrain(Tty);	/* Wait for output to drain */
+		(void) tcflush(Tty, TCIFLUSH);	/* Flush input queue */
+		(void) tcsetattr(Tty, TCSADRAIN, &oldtty);	/* Restore */
+		(void) tcflow(Tty, TCOON);	/* Restart output */
+#else
 		(void) ioctl(Tty, TCSBRK, 1);	/* Wait for output to drain */
 		(void) ioctl(Tty, TCFLSH, 1);	/* Flush input queue */
 		(void) ioctl(Tty, TCSETAW, &oldtty);	/* Restore modes */
 		(void) ioctl(Tty, TCXONC,1);	/* Restart output */
+#endif
 #endif
 #ifdef V7
 		ioctl(Tty, TIOCSETP, &oldtty);
@@ -329,7 +382,11 @@ sendbrk()
 #endif
 #ifdef USG
 #define CANBREAK
+#ifdef POSIX
+	tcsendbreak(Tty, 200);
+#else
 	ioctl(Tty, TCSBRK, 0);
+#endif
 #endif
 }
 
@@ -341,7 +398,9 @@ inittty()
 		perror("/dev/tty");  exit(2);
 	}
 	Ttystream = fdopen(Tty, "w");
+/*
 	setbuf(Ttystream, xXbuf);		
+*/
 }
 
 flushmoc()
@@ -359,7 +418,8 @@ flushmo()
  *
  * timeout is in tenths of seconds
  */
-alrm()
+void
+alrm(c)
 {
 	longjmp(tohere, -1);
 }
@@ -377,7 +437,7 @@ int timeout;
 	}
 	n = timeout/10;
 	if (n < 2)
-		n = 3;
+		n = 2;
 	if (Verbose > 5)
 		fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
 		  n, Readnum);
@@ -400,10 +460,13 @@ int timeout;
 	}
 	if (Lleft < 1)
 		return TIMEOUT;
-	--Lleft;
 	if (Verbose > 8) {
-		fprintf(stderr, "%02x ", *cdq&0377);
+		for (n = Lleft; --n >= 0; ) {
+			fprintf(stderr, "%02x ", *cdq&0377);
+		}
+		fprintf(stderr, "\n");
 	}
+	--Lleft;
 	return (*cdq++ & 0377);
 }
 
@@ -416,7 +479,11 @@ purgeline()
 {
 	Lleft = 0;
 #ifdef USG
+#ifdef POSIX
+	tcflush(Tty, 0);
+#else
 	ioctl(Tty, TCFLSH, 0);
+#endif
 #else
 	lseek(Tty, 0L, 2);
 #endif
@@ -467,6 +534,5 @@ long a, b, c, d;
 		fprintf(stderr, "\n");
 	}
 }
-
 
 /* End of rbsb.c */

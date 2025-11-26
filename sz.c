@@ -1,39 +1,11 @@
-#define VERSION "3.18 12-07-91"
+#define VERSION "3.23 5-03-93"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
-
-<-xtx-*> cc -Osal -DTXBSIZE=32768  -DSV sz.c -lx -o $B/sz; size $B/sz
-
- ****************************************************************************
+/*
+ **************************************************************************
  *
  * sz.c By Chuck Forsberg,  Omen Technology INC
- *
- ****************************************************************************
- *
- * Typical Unix/Xenix/Clone compiles:
- *
- *	cc -O sz.c -o sz		USG (SYS III/V) Unix
- *	cc -O -DSV sz.c -o sz		Sys V Release 2 with non-blocking input
- *					Define to allow reverse channel checking
- *	cc -O -DV7  sz.c -o sz		Unix Version 7, 2.8 - 4.3 BSD
- *
- *	cc -O -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz	Classic Xenix
- *
- *	ln sz sb			**** All versions ****
- *	ln sz sx			**** All versions ****
- *
- ****************************************************************************
- ****************************************************************************
- *
- *
- * A program for Unix to send files and commands to computers running
- *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting Y/XMODEM.
- *    Copyright 1991 Omen Technology Inc All Rights Reserved
- *
- *  Sz uses buffered I/O to greatly reduce CPU time compared to UMODEM.
- *
- *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
+ *    Copyright 1993 Omen Technology Inc All Rights Reserved
  *
  * 
  *	This version implements numerous enhancements including ZMODEM
@@ -41,37 +13,44 @@
  *	features were not funded by the original Telenet development
  *	contract.
  * 
- * This software may be freely used for non commercial and
- * educational (didactic only) purposes.  This software may also
- * be freely used to support file transfer operations to or from
- * licensed Omen Technology products.  Any programs which use
- * part or all of this software must be provided in source form
- * with this notice intact except by written permission from Omen
- * Technology Incorporated.
+ *  This software may be freely used for educational (didactic
+ *  only) purposes.  This software may also be freely used to
+ *  support file transfer operations to or from licensed Omen
+ *  Technology products.  Use with other commercial or shareware
+ *  programs (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
+ *
+ *  Any programs which use part or all of this software must be
+ *  provided in source form with this notice intact except by
+ *  written permission from Omen Technology Incorporated.
+ *
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
  * products requires a per port license payment of $20.00 US per
- * port (less in quantity).  Use of this code by inclusion,
- * decompilation, reverse engineering or any other means
+ * port (less in quantity, see mailer.rz).  Use of this code by
+ * inclusion, decompilation, reverse engineering or any other means
  * constitutes agreement to these conditions and acceptance of
  * liability to license the materials and payment of reasonable
  * legal costs necessary to enforce this license agreement.
  *
  *
- *		Omen Technology Inc		FAX: 503-621-3745
+ *		Omen Technology Inc
  *		Post Office Box 4681
  *		Portland OR 97208
  *
  *	This code is made available in the hope it will be useful,
  *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
  *	DAMAGES OF ANY KIND.
+ *
+ *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  */
 
+char *Copyrsz = "Copyright 1993 Omen Technology Inc All Rights Reserved";
 
 char *substr(), *getenv();
 
 #define LOGFILE "/tmp/szlog"
+#define LOGFILE2 "szlog"
 #include <stdio.h>
 #include <signal.h>
 #include <ctype.h>
@@ -108,12 +87,12 @@ extern int errno;
 
 #define HOWMANY 2
 STATIC int Zmodem=0;		/* ZMODEM protocol requested by receiver */
-unsigned Baudrate=4800;		/* Default, set by first mode() call */
-STATIC unsigned Effbaud = 4800;
+unsigned Baudrate = 9600;		/* Default, set by first mode() call */
+STATIC unsigned Effbaud = 9600;
 STATIC unsigned Txwindow;	/* Control the size of the transmitted window */
 STATIC unsigned Txwspac;	/* Spacing between zcrcq requests */
 STATIC unsigned Txwcnt;	/* Counter used to space ack requests */
-STATIC long Lrxpos;		/* Receiver's last reported offset */
+STATIC unsigned long Lrxpos;	/* Receiver's last reported offset */
 STATIC int errors;
 char endmsg[80] = {0};	/* Possible message to display on exit */
 
@@ -122,7 +101,7 @@ char endmsg[80] = {0};	/* Possible message to display on exit */
 #include "crctab.c"
 
 STATIC int Filesleft;
-STATIC long Totalleft;
+STATIC unsigned long Totalleft;
 
 /*
  * Attention string to be executed by receiver to interrupt streaming data
@@ -139,14 +118,7 @@ STATIC char Myattn[] = { 03, 0336, 0 };
 
 FILE *in;
 
-#ifdef BADSEEK
-STATIC int Canseek = 0;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
-#ifndef TXBSIZE
-#define TXBSIZE 16384		/* Must be power of two, < MAXINT */
-#endif
-#else
 STATIC int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
-#endif
 
 #ifdef TXBSIZE
 #define TXBMASK (TXBSIZE-1)
@@ -155,7 +127,7 @@ STATIC char *txbuf = Txb;		/* Pointer to current file segment */
 #else
 STATIC char txbuf[1024];
 #endif
-STATIC long vpos = 0;			/* Number of bytes read from file */
+STATIC unsigned long vpos = 0;		/* Number of bytes read from file */
 
 STATIC char Lastrx;
 STATIC char Crcflg;
@@ -176,7 +148,7 @@ STATIC unsigned Rxbuflen=16384;	/* Receiver's max buffer length */
 STATIC int Tframlen = 0;	/* Override for tx frame length */
 STATIC int blkopt=0;		/* Override value for zmodem blklen */
 STATIC int Rxflags = 0;
-STATIC long bytcnt;
+STATIC unsigned long bytcnt;
 STATIC int Wantfcs32 = TRUE;	/* want to send 32 bit FCS */
 STATIC char Lzconv;	/* Local ZMODEM file conversion request */
 STATIC char Lzmanag;	/* Local ZMODEM file management request */
@@ -191,42 +163,15 @@ STATIC int Test;		/* 1= Force receiver to send Attn, etc with qbf. */
 			/* 2= Character transparency test */
 STATIC char *qbf=
  "The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
-STATIC long Lastsync;		/* Last offset to which we got a ZRPOS */
-STATIC int Beenhereb4;		/* How many times we've been ZRPOS'd same place */
+STATIC unsigned long Lastsync;	/* Last offset to which we got a ZRPOS */
+STATIC int Beenhereb4;		/* How many times we've been ZRPOS'd here */
 
 STATIC jmp_buf tohere;		/* For the interrupt on RX timeout */
 STATIC jmp_buf intrjmp;	/* For the interrupt on RX CAN */
 
-#ifdef XARGSFILE
-char *
-mystrsave(s)
-char *s;
-{
-	register char *p;
-	char *malloc();
-
-	if (p = malloc(strlen(s)+1) ) {
-		strcpy(p, s); return p;
-	}
-	fprintf(stderr, "No memory for mystrsave!\n");
-	exit(1);
-}
-
-/* Remove (presumably) terminating CR and/or LF from string */
-uncrlf(s)
-register char *s;
-{
-	for ( ; *s; ++s)
-		switch (*s) {
-		case '\r':
-		case '\n':
-			*s = 0;  return;
-		}
-}
-#endif
-
 
 /* called by signal interrupt or terminate to clean things up */
+void
 bibi(n)
 {
 	canit(); fflush(stdout); mode(0);
@@ -237,8 +182,10 @@ bibi(n)
 		fprintf(stderr, "mode(2) in rbsb.c not implemented!!\n");
 	exit(3);
 }
+
 /* Called when ZMODEM gets an interrupt (^X) */
-onintr()
+void
+onintr(c)
 {
 	signal(SIGINT, SIG_IGN);
 	longjmp(intrjmp, -1);
@@ -248,14 +195,24 @@ STATIC int Zctlesc;	/* Encode control characters */
 STATIC int Nozmodem = 0;	/* If invoked as "sb" */
 STATIC char *Progname = "sz";
 STATIC int Zrwindow = 1400;	/* RX window size (controls garbage count) */
+
+/*
+ * Log an error
+ */
+/*VARARGS1*/
+void
+zperr(s,p,u)
+char *s, *p, *u;
+{
+	if (Verbose <= 0)
+		return;
+	fprintf(stderr, "Retry %d: ", errors);
+	fprintf(stderr, s, p, u);
+	fprintf(stderr, "\n");
+}
+
 #include "zm.c"
-
 #include "zmr.c"
-
-#ifdef XARGSFILE
-#define XARGSMAX 256
-char *xargv[XARGSMAX+1];
-#endif
 
 main(argc, argv)
 char *argv[];
@@ -349,11 +306,8 @@ char *argv[];
 						usage();
 					break;
 				case 'T':
-					if (++Test > 1) {
-						chartest(1); chartest(2);
-						mode(0);  exit(0);
-					}
-					break;
+					chartest(1); chartest(2);
+					mode(0);  exit(0);
 				case 'u':
 					++Unlinkafter; break;
 				case 'v':
@@ -400,33 +354,16 @@ char *argv[];
 	if (npats < 1 && !Command && !Test) 
 		usage();
 	if (Verbose) {
-		if (freopen(LOGFILE, "a", stderr)==NULL) {
-			printf("Can't open log file %s\n",LOGFILE);
-			exit(2);
-		}
+		if (freopen(LOGFILE, "a", stderr)==NULL)
+			if (freopen(LOGFILE2, "a", stderr)==NULL) {
+				printf("Can't open log file!");
+				exit(2);
+			}
 		setbuf(stderr, NULL);
 	}
 	vfile("%s %s for %s\n", Progname, VERSION, OS);
 
-#ifdef XARGSFILE
-	vfile("npats=%d *patts=%s", npats, *patts);
-	if (npats == 1 && !strcmp(XARGSFILE, *patts)) {
-		in = fopen(XARGSFILE, "r");
-		if (!in) {
-			printf(stderr, "Can't open / control file!\n");
-			exit(2);
-		}
-		for (npats=0,argv=patts=xargv; npats<XARGSMAX; ++npats,++argv) {
-			if (fgets(txbuf, 1024, in) <= 0)
-				break;
-			uncrlf(txbuf);
-			*argv = mystrsave(txbuf);
-		}
-		fclose(in);
-	}
-#endif
-
-	mode(1);
+	mode(3);
 
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
@@ -465,16 +402,44 @@ char *argv[];
 		Exitcode=1;
 		canit();
 	}
-	if (endmsg[0])
+	if (endmsg[0]) {
 		printf("  %s: %s\r\n", Progname, endmsg);
+		if (Verbose)
+			fprintf(stderr, "%s\r\n", endmsg);
+	}
 	printf("%s %s finished.\r\n", Progname, VERSION);
 	fflush(stdout);
 	mode(0);
-	if(errcnt || Exitcode) {
+	if(errcnt || Exitcode)
 		exit(1);
+
+#ifndef REGISTERED
+	/* Removing or disabling this code without registering is theft */
+	if (!Usevhdrs)  {
+		printf("\n\n\nPlease read the License Agreement in sz.doc\n");
+		fflush(stdout);
+		sleep(10);
 	}
+#endif
 	exit(0);
 	/*NOTREACHED*/
+}
+
+/* Say "bibi" to the receiver, try to do it cleanly */
+void
+saybibi()
+{
+	for (;;) {
+		stohdr(0L);		/* CAF Was zsbhdr - minor change */
+		zshhdr(4, ZFIN, Txhdr);	/*  to make debugging easier */
+		switch (zgethdr(Rxhdr, 0)) {
+		case ZFIN:
+			sendline('O'); sendline('O'); flushmo();
+		case ZCAN:
+		case TIMEOUT:
+			return;
+		}
+	}
 }
 
 wcsend(argc, argp)
@@ -538,7 +503,7 @@ char *oname;
 		}
 	}
 
-	in=fopen(oname, ROPMODE);
+	in=fopen(oname, "r");
 
 	if (in==NULL) {
 		++errcnt;
@@ -546,10 +511,15 @@ char *oname;
 	}
 	BEofseen = Eofseen = 0;  vpos = 0;
 
-	/* Check for directory or block special files */
+	/* Check for directory */
 	fstat(fileno(in), &f);
+#ifdef POSIX
+	if (S_ISDIR(f.st_mode))
+#else
 	c = f.st_mode & S_IFMT;
-	if (c == S_IFDIR || c == S_IFBLK) {
+	if (c == S_IFDIR || c == S_IFBLK)
+#endif
+	{
 		fclose(in);
 		return OK;
 	}
@@ -687,11 +657,11 @@ getnak()
 
 
 wctx(flen)
-long flen;
+unsigned long flen;
 {
 	register int thisblklen;
 	register int sectnum, attempts, firstch;
-	long charssent;
+	unsigned long charssent;
 
 	charssent = 0;  firstsec=TRUE;  thisblklen = blklen;
 	vfile("wctx:file length=%ld", flen);
@@ -862,9 +832,9 @@ zfilbuf()
 /* Replacement for brain damaged fseek function.  Returns 0==success */
 fooseek(fptr, pos, whence)
 FILE *fptr;
-long pos;
+unsigned long pos;
 {
-	long m, n;
+	unsigned long m, n;
 
 	vfile("fooseek: pos =%lu vpos=%lu Canseek=%d", pos, vpos, Canseek);
 	/* Seek offset < current buffer */
@@ -923,20 +893,6 @@ long pos;
 
 
 /*
- * Log an error
- */
-/*VARARGS1*/
-zperr(s,p,u)
-char *s, *p, *u;
-{
-	if (Verbose <= 0)
-		return;
-	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s, p, u);
-	fprintf(stderr, "\n");
-}
-
-/*
  * substr(string, token) searches for token in string s
  * returns pointer to token within string if found, NULL otherwise
  */
@@ -965,7 +921,6 @@ char *usinfo[] = {
 	"\t	zcommandi [-2Cev] COMMAND",
 	"\t	sb [-2adfkuv] [-] file ...",
 	"\t	sx [-2akuv] [-] file",
-	"\nSee sz.doc for option descriptions and licensing information.",
 	""
 };
 
@@ -973,12 +928,14 @@ usage()
 {
 	char **pp;
 
-	for (pp=usinfo; **pp; ++pp)
-		fprintf(stderr, "%s\n", *pp);
 	fprintf(stderr, "\n%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
 	 Progname, VERSION, OS);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
-	fprintf(stderr,"\tCopyright 1991 Omen Technology INC All Rights Reserved\n");
+	for (pp=usinfo; **pp; ++pp)
+		fprintf(stderr, "%s\n", *pp);
+	fprintf(stderr,"\nCopyright 1993 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,
+	 "See sz.doc for option descriptions and licensing information.\n\n");
 	exit(3);
 }
 
@@ -1032,12 +989,6 @@ getzrxinit()
 				Rxbuflen = Tframlen;
 			vfile("Rxbuflen=%d", Rxbuflen);
 
-			/* If using a pipe for testing set lower buf len */
-			fstat(0, &f);
-			if ((f.st_mode & S_IFMT) != S_IFCHR) {
-				Rxbuflen = 1024;
-			}
-
 
 			/*
 			 * If input is not a regular file, force ACK's to
@@ -1045,7 +996,13 @@ getzrxinit()
 			 */
 			if ( !Command) {
 				fstat(fileno(in), &f);
-				if ((f.st_mode & S_IFMT) != S_IFREG) {
+				if (
+#ifdef POSIX
+				    !S_ISREG(f.st_mode)
+#else
+				    (f.st_mode & S_IFMT) != S_IFREG
+#endif
+				    ) {
 					Canseek = -1;
 #ifdef TXBSIZE
 					Txwindow = TXBSIZE - 1024;
@@ -1131,7 +1088,7 @@ zsendfile(buf, blen)
 char *buf;
 {
 	register c;
-	register UNSL long crc;
+	register unsigned long crc;
 	long lastcrcrq = -1;
 	char *p;
 
@@ -1221,15 +1178,15 @@ gotack:
 		case ZCAN:
 			fclose(in);
 			return ERROR;
+		case ZRINIT:
+			fclose(in);
+			return ZSKIP;
 		case ZSKIP:
 			fclose(in);
 			return c;
 		case ZACK:
 		case ZRPOS:
 			break;
-		case ZRINIT:
-			fclose(in);
-			return OK;
 		}
 #ifdef READCHECK
 		/*
@@ -1283,9 +1240,6 @@ gotack:
 					{
 					case CAN:
 					case ZPAD:
-#ifdef TCFLSH
-						ioctl(0, TCFLSH, 1);
-#endif
 						goto waitack;
 					case XOFF:	/* Wait for XON */
 					case XOFF|0200:
@@ -1345,9 +1299,6 @@ gotack:
 				c = getinsync(1);
 				if (c == ZACK)
 					break;
-#ifdef TCFLSH
-				ioctl(0, TCFLSH, 1);
-#endif
 				/* zcrce - dinna wanna starta ping-pong game */
 				zsdata(txbuf, 0, ZCRCE);
 				goto gotack;
@@ -1366,9 +1317,6 @@ gotack:
 					zsdata(txbuf, 0, e = ZCRCQ);
 				c = getinsync(1);
 				if (c != ZACK) {
-#ifdef TCFLSH
-					ioctl(0, TCFLSH, 1);
-#endif
 					zsdata(txbuf, 0, ZCRCE);
 					goto gotack;
 				}
@@ -1378,11 +1326,21 @@ gotack:
 	} while (!Eofseen);
 	signal(SIGINT, SIG_IGN);
 
+	if (Lrxpos != Txpos)
+		n = Unlinkafter | Txwindow;
+	else
+		n = 0;
 	for (;;) {
 		stohdr(Txpos);
-		zsbhdr(4, ZEOF, Txhdr);
+		if (n) {
+			zsbhdr(4, ZDATA, Txhdr);
+			zsdata(txbuf, 0, ZCRCW);
+		} else
+			zsbhdr(4, ZEOF, Txhdr);
 		switch (getinsync(0)) {
 		case ZACK:
+			n = 0;  continue;
+		case ZNAK:
 			continue;
 		case ZRPOS:
 			goto somemore;
@@ -1395,6 +1353,7 @@ gotack:
 			return c;
 		default:
 			sprintf(endmsg, "Got %d trying to send end of file", c);
+		case ERROR:
 			fclose(in);
 			return ERROR;
 		}
@@ -1422,13 +1381,19 @@ getinsync(flag)
 			sprintf(endmsg, "Got %s sending data", frametypes[c+FTOFFSET]);
 			return ERROR;
 		case ZRPOS:
+			if (Rxpos > bytcnt) {
+				sprintf(endmsg, "Nonstandard Protocol");
+				return ZRPOS;
+			}
 			/* ************************************* */
 			/*  If sending to a buffered modem, you  */
 			/*   might send a break at this point to */
 			/*   dump the modem's buffer.		 */
 			clearerr(in);	/* In case file EOF seen */
-			if (fseek(in, Rxpos, 0))
+			if (fseek(in, Rxpos, 0)) {
+				sprintf(endmsg, "Bad Seek");
 				return ERROR;
+			}
 			Eofseen = 0;
 			bytcnt = Lrxpos = Txpos = Rxpos;
 			if (Lastsync == Rxpos) {
@@ -1460,22 +1425,6 @@ getinsync(flag)
 	}
 }
 
-
-/* Say "bibi" to the receiver, try to do it cleanly */
-saybibi()
-{
-	for (;;) {
-		stohdr(0L);		/* CAF Was zsbhdr - minor change */
-		zshhdr(4, ZFIN, Txhdr);	/*  to make debugging easier */
-		switch (zgethdr(Rxhdr, 0)) {
-		case ZFIN:
-			sendline('O'); sendline('O'); flushmo();
-		case ZCAN:
-		case TIMEOUT:
-			return;
-		}
-	}
-}
 
 /* Send command and related info */
 zsendcmd(buf, blen)
@@ -1572,10 +1521,7 @@ register char **argv;
 			fflush(stderr);
 		}
 		if (access(*argv, 04) >= 0 && stat(*argv, &f) >= 0) {
-			c = f.st_mode & S_IFMT;
-			if (c != S_IFDIR && c != S_IFBLK) {
-				++Filesleft;  Totalleft += f.st_size;
-			}
+			++Filesleft;  Totalleft += f.st_size;
 		}
 		if (Verbose>2)
 			fprintf(stderr, " %ld", f.st_size);
