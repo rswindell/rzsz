@@ -39,6 +39,7 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #include <termios.h>
 #define OS "POSIX"
 #include <string.h>
+#include <stdlib.h>
 #ifndef READCHECK
 #ifndef FIONREAD
 #define SV
@@ -122,7 +123,11 @@ rdchk(f)
 	static char bchecked;
 
 	savestat = fcntl(f, F_GETFL) ;
+#ifdef O_NDELAY
+	fcntl(f, F_SETFL, savestat | O_NDELAY) ;
+#else
 	fcntl(f, F_SETFL, savestat | O_NONBLOCK) ;
+#endif
 	lf = read(f, &bchecked, 1) ;
 	fcntl(f, F_SETFL, savestat) ;
 	checked = bchecked & 0377;	/* force unsigned byte */

@@ -1,4 +1,4 @@
-#define VERSION "3.24 5-16-93"
+#define VERSION "3.25 6-13-93"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -47,7 +47,7 @@
 
 char *Copyrsz = "Copyright 1993 Omen Technology Inc All Rights Reserved";
 
-char *substr(), *getenv();
+char *substr();
 
 #define LOGFILE "/tmp/szlog"
 #define LOGFILE2 "szlog"

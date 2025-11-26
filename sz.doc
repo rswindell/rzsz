@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 5/16/93)
+     Page 1					     (printed 6/25/93)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 5/16/93)
+     Page 2					     (printed 6/25/93)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					     (printed 5/16/93)
+     Page 3					     (printed 6/25/93)
 
 
 
@@ -258,7 +258,7 @@
 
 
 
-     Page 4					     (printed 5/16/93)
+     Page 4					     (printed 6/25/93)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					     (printed 5/16/93)
+     Page 5					     (printed 6/25/93)
 
 
 
@@ -390,7 +390,7 @@
 
 
 
-     Page 6					     (printed 5/16/93)
+     Page 6					     (printed 6/25/93)
 
 
 
@@ -414,6 +414,15 @@
 	  a ZMODEM command to echo a suitable complaint; perhaps it
 	  should check for the presence	of at least one	accessible
 	  file before getting hot and bothered.
+
+	  Unix Professional-YAM	provides higher	performance and	other
+	  features not supported by _s_z.	Please contact Omen Technology
+	  Inc for product information.
+
+	  Omen Technology INC
+	  Post Office Box 4681
+	  Portland OR 97208
+
 
      BBBBUUUUGGGGSSSS
 	  On at	least one BSD system, sz would abend it	got within a
@@ -447,16 +456,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-     Page 7					     (printed 5/16/93)
+     Page 7					     (printed 6/25/93)
 
 
 

@@ -1,4 +1,4 @@
-#define VERSION "3.24 5-5-93"
+#define VERSION "3.25 6-13-93"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -204,7 +204,6 @@ char *argv[];
 	register char *cp;
 	register npats;
 	char *virgin, **patts;
-	char *getenv();
 	int exitcode = 0;
 
 	Rxtimeout = 100;
@@ -692,7 +691,6 @@ register char *pathname;
 	register char *p;		/* Points into path */
 	int madeone = 0;		/* Did we do anything yet? */
 	int save_errno = errno;		/* Remember caller's errno */
-	char *strchr();
 
 	if (errno != ENOENT)
 		return 0;		/* Not our problem */

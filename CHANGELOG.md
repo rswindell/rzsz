@@ -1,5 +1,10 @@
 # Changelog
 
+## [1993-06-13] RZ 3.25 / SZ 3.25
+
+  - Code updates to support other build environments (e.g. w/stdlib.h)
+  - No apparent functional change.
+
 ## [1993-05-16] RZ 3.24 / SZ 3.24
 
 This release included this `README` update:
