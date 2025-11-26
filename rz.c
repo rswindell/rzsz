@@ -1,4 +1,4 @@
-#define VERSION "3.42 03-19-96"
+#define VERSION "3.44 09-16-96"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -215,6 +215,8 @@ char *argv[];
 
 	Rxtimeout = 100;
 	setbuf(stderr, NULL);
+	if (((cp = getenv("RESTRICTED")) != 0)  &&  *cp == '1')
+		Restricted=TRUE;
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 
@@ -301,23 +303,24 @@ char *argv[];
 		exitcode=1;
 		canit();
 	}
-	mode(0);
 	if (exitcode && !Zmodem)	/* bellow again with all thy might. */
 		canit();
 	if (endmsg[0])
 		fprintf(stderr, "  %s: %s\r\n", Progname, endmsg);
 	fprintf(stderr, "%s %s finished.\r\n", Progname, VERSION);
 	fflush(stderr);
-	if(exitcode)
-		exit(1);
 #ifndef REGISTERED
 	/* Removing or disabling this code without registering is theft */
-	if (!Usevhdrs)  {
-		fprintf(stderr, "\n\n\nPlease read the License Agreement in rz.doc\n");
+	if (!Usevhdrs) {
+		fprintf(stderr, "\n\n\n**** UNREGISTERED COPY *****\r\n");
+		fprintf(stderr, "Please read the License Agreement in rz.doc\r\n");
 		fflush(stderr);
 		sleep(10);
 	}
 #endif
+	mode(0);
+	if(exitcode)
+		exit(1);
 	exit(0);
 	/* NOTREACHED */
 }
@@ -327,9 +330,6 @@ usage()
 {
 	fprintf(stderr,
 	"Receive Files and Commands with ZMODEM/YMODEM/XMODEM Protocol\n\n");
-	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
-	  Progname, VERSION, OS);
-	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
 	fprintf(stderr,"Usage:	rz [-v]   [-wN] [-tT]	(ZMODEM)\n");
 	fprintf(stderr,"or	rb [-avy] [-tT]		(YMODEM)\n");
 	fprintf(stderr,"or	rc [-avy] [-tT] file	(XMODEM-CRC)\n");
@@ -339,6 +339,9 @@ usage()
 	compression (-Z), binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
 	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
 	clobber (-y), match+clobber (-Y),  and append (-+).\n\n");
+	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
+	  Progname, VERSION, OS);
+	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
 	fprintf(stderr,"Copyright (c) 1996 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	"See rz.doc for option descriptions and licensing information.\n\n");
@@ -346,6 +349,10 @@ usage()
 	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
 	fprintf(stderr,
 	"\nTechnical support hotline: 900-555-7836 (1-900-555-RTFM) $4.69/min.\n\n");
+#ifndef REGISTERED
+	fprintf(stderr, "\n\n\n      **** UNREGISTERED COPY *****\r\n");
+	fprintf(stderr, "Please read the License Agreement in rz.doc\r\n");
+#endif
 	exit(2);
 }
 
@@ -377,7 +384,7 @@ char **argp;
 					goto fubar;
 				if (secbuf[0]==0)
 					return OK;
-				if (procheader(secbuf) == ERROR)
+				if (procheader(secbuf))
 					goto fubar;
 				if (wcrx()==ERROR)
 					goto fubar;
@@ -423,18 +430,18 @@ et_tu:
 	Firstsec=TRUE;  Eofseen=FALSE;
 	sendline(Crcflg?WANTCRC:NAK);  flushmo();
 	Lleft=0;	/* Do read next time ... */
-	while ((c = wcgetsec(rpn, 100)) != 0) {
-		if (c == WCEOT) {
-			zperr( "Pathname fetch returned %d", c);
-			sendline(ACK);  flushmo();
-			Lleft=0;	/* Do read next time ... */
-			readline(1);
-			goto et_tu;
-		}
+	switch (c = wcgetsec(rpn, 100)) {
+	case WCEOT:
+		zperr( "Pathname fetch returned %d", c);
+		sendline(ACK);  flushmo();
+		Lleft=0;	/* Do read next time ... */
+		readline(1);
+		goto et_tu;
+	case 0:
+		sendline(ACK);  flushmo(); return OK;
+	default:
 		return ERROR;
 	}
-	sendline(ACK);  flushmo();
-	return OK;
 }
 
 /*
@@ -587,6 +594,8 @@ humbug:
 
 /*
  * Process incoming file information header
+ *  Returns 0 for success, other codes for errors
+ *  or skip conditions.
  */
 procheader(name)
 char *name;
@@ -618,7 +627,7 @@ char *name;
 	Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
 
 	if (!name || !*name)
-		return OK;
+		return 0;
 
 	p = name + 1 + strlen(name);
 	if (*p) {	/* file coming from Unix or DOS system */
@@ -1007,6 +1016,13 @@ again:
 			zshhdr(4,ZACK, Txhdr);
 			goto again;
 		case ZCOMMAND:
+#ifdef REGISTERED
+			/* Enabling this code without registering is theft */
+			if (Restricted) {
+				sprintf(endmsg, "ZCOMMAND Restricted.");
+				return ERROR;
+			}
+#endif
 			cmdzack1flg = Rxhdr[ZF0];
 			if (zrdata(secbuf, 1024) == GOTCRCW) {
 				void exec2();

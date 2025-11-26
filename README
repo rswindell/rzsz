@@ -52,7 +52,7 @@ but lack recent enhancements and bug fixes.
 
 The Man pages are formatted for those without Unix nroff.  For
 best results, use less(1) (available on comp.sources.misc) as
-your manual page reader.  Troff sources for the rz/sz man pages
+your manual page reader.  The troff sources for the rz/sz man pages
 are included with copies of Unix Professional-YAM.
 
 Please check our web page www.omen.com for the latest information.
@@ -62,6 +62,8 @@ directory.  This account has the latest and greatest selection
 of OMEN files available for FTP.  The files in this direcotryy
 are uploaded with ZMODEM directly from the Omen home system,
 preserving modification dates and file contents.
+
+Aug 2 1996: The paranoid can now disable command uploads: see rz.doc
 
 Mar 19 1996: Rz can now write its output to standard output
 (see rz.doc).

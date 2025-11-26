@@ -52,7 +52,7 @@
 	  this program we recommend its	use with GSZ, Professional-YAM
 	  or ZCOMM.
 
-	  This program is intended to interface	with terminal
+	  This program is intended to act as a server for terminal
 	  programs, not	to act as one.	This program is	not designed
 	  to be	called from _c_u(_1), _t_i_p(_1), or other communications
 	  programs.  Unix flavors of Omen Technology's Professional-
@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 3/19/96)
+     Page 1					      (printed 8/2/96)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 3/19/96)
+     Page 2					      (printed 8/2/96)
 
 
 
@@ -141,10 +141,13 @@
 	  /tmp/rzlog.
 	  EXAMPLE: ln rz vrz; rz=vrz; export rz
 
-	  If the SHELL environment variable includes _r_s_h or _r_k_s_h
-	  (restricted shell), _r_z will not accept absolute pathnames or
-	  references to	a parent directory, will not modify an
-	  existing file, and removes any files received	in error.
+	  If the RESTRICTED shell environment variable is set to 1, or
+	  if the SHELL environment variable includes _r_s_h or _r_k_s_h
+	  (restricted shell), registered copies	of _r_z will not accept
+	  command uploads, absolute pathnames, references to a parent
+	  directory, will not modify an	existing file, and removes any
+	  files	received in error.
+	  EXAMPLE: RESTRICTED=1	rz
 
 
 	  The meanings of the available	options	are:
@@ -188,11 +191,8 @@
 	  terminated by	a caught interrupt.
 
 
-     SSSSEEEEEEEE AAAALLLLSSSSOOOO
 
-
-
-     PPPPaaaaggggeeee 3333					     ((((pppprrrriiiinnnntttteeeedddd 3333////11119999////99996666))))
+     Page 3					      (printed 8/2/96)
 
 
 
@@ -203,6 +203,7 @@
 
 
 
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
 	  Professional-YAM, ZCOMM, DSZ,	crc(omen), sz(omen),
 	  usq(omen), undos(omen)
 
@@ -235,6 +236,14 @@
 	  until	they adequately	support	high performance file
 	  transfers.
 
+	  The telnet protcol used by the _t_e_l_n_e_t	program	and terminal
+	  servers uses 0xFF (377 octal)	for special control functions.
+	  The 0xFF character may cause problems	if it appears in the
+	  data stream, especially uploading at high speeds.  With
+	  ZCOMM	or Professional-YAM the	0xFF character can be
+	  protected by giving the command:
+	  set zmtxesc ?
+
 	  Escaping control characters with ZMODEM (sz -e) may help if
 	  the transfer gets stuck in the same place on every attempt.
 	  Professional-YAM and ZCOMM allow selection of	which control
@@ -246,19 +255,10 @@
 	  more help.
 
 	  Flow control between the server and modem is often
-	  defective.  This rarely causes a problem in interactive
-	  applications whose short bursts (a screenfull	at most) fit
-	  within the available memory buffers.	Streaming protocols
-	  such as YMODEM-g, long packet	SuperKermit, and ZMODEM	can
-	  overload the available buffering.  Some terminal servers
-	  support commands to enable hardware flow control such	as
-	  "TERM	FLOWCONTROL HARDWARE IN	OUT"; this assumes the modem
-	  attached to the server is properly configured.
 
 
 
-
-     Page 4					     (printed 3/19/96)
+     Page 4					      (printed 8/2/96)
 
 
 
@@ -268,6 +268,15 @@
      RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
 
 
+
+	  defective.  This rarely causes a problem in interactive
+	  applications whose short bursts (a screenfull	at most) fit
+	  within the available memory buffers.	Streaming protocols
+	  such as YMODEM-g, long packet	SuperKermit, and ZMODEM	can
+	  overload the available buffering.  Some terminal servers
+	  support commands to enable hardware flow control such	as
+	  "TERM	FLOWCONTROL HARDWARE IN	OUT"; this assumes the modem
+	  attached to the server is properly configured.
 
 	  If the terminal server is too	brain damaged to support flow
 	  control, ZMODEM lets you fake	it by setting a	window size.
@@ -312,19 +321,10 @@
 	  free ZMODEM transfers	do not generate	keyboard activity
 	  (this	is why ZMODEM is so efficient).	 Restricting the
 	  window size with
-	       sz -w16384 file...
-	  option generates terminal input at regular intervals even
-	  when no error	correction is needed.  If problems persist,
-	  try setting a	packet length.
-	       sz -l1024 file...
-	  (The default ZMODEM packet length is the file	length.)
-
-     NNNNOOOOTTTTEEEESSSS
-	  ZMODEM's support of XOFF/XON flow control allows proper
 
 
 
-     Page 5					     (printed 3/19/96)
+     Page 5					      (printed 8/2/96)
 
 
 
@@ -335,6 +335,15 @@
 
 
 
+	       sz -w16384 file...
+	  option generates terminal input at regular intervals even
+	  when no error	correction is needed.  If problems persist,
+	  try setting a	packet length.
+	       sz -l1024 file...
+	  (The default ZMODEM packet length is the file	length.)
+
+     NNNNOOOOTTTTEEEESSSS
+	  ZMODEM's support of XOFF/XON flow control allows proper
 	  operation in many environments that do not support XMODEM
 	  uploads.  Unfortunately, not all Unix	versions support input
 	  flow control.	 The TTY input buffering on some systems may
@@ -379,18 +388,9 @@
 	  interferes with other	protocols.  Telebit's YMODEM spoofing
 	  interferes with YMODEM transfers.
 
-	  32 bit CRC code courtesy Gary	S. Brown.  Directory creation
-	  code from John Gilmore's PD TAR program.
-
-     NNNNEEEETTTTWWWWOOOORRRRKKKK NNNNOOOOTTTTEEEESSSS
-	  Escaping all control characters (sz -e) may help if the
-	  transfer gets	stuck in the same place	on every attempt.
-	  Professional-YAM and ZCOMM allow selection of	which control
-	  characters need to be	escaped.
 
 
-
-     Page 6					     (printed 3/19/96)
+     Page 6					      (printed 8/2/96)
 
 
 
@@ -400,6 +400,15 @@
      RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
 
 
+
+	  32 bit CRC code courtesy Gary	S. Brown.  Directory creation
+	  code from John Gilmore's PD TAR program.
+
+     NNNNEEEETTTTWWWWOOOORRRRKKKK NNNNOOOOTTTTEEEESSSS
+	  Escaping all control characters (sz -e) may help if the
+	  transfer gets	stuck in the same place	on every attempt.
+	  Professional-YAM and ZCOMM allow selection of	which control
+	  characters need to be	escaped.
 
 	  In extreme cases 7-bit transmission may be required (see
 	  Professional-YAM/ZCOMM manual).  7-bit transmission requires
@@ -447,16 +456,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-     Page 7					     (printed 3/19/96)
+     Page 7					      (printed 8/2/96)
 
 
 

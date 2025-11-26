@@ -53,14 +53,14 @@
 	  this program we recommend its	use with GSZ, Professional-YAM
 	  or ZCOMM.
 
-	  This program is intended to interface	with terminal
+	  This program is intended to act as a server for terminal
 	  programs, not	to act as one.	This program is	not designed
 	  to be	called from _c_u(_1) _t_i_p(_1), or other communications
 	  programs.  Unix flavors of Omen Technology's Professional-
 
 
 
-     Page 1					     (printed 3/19/96)
+     Page 1					     (printed 6/28/96)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 3/19/96)
+     Page 2					     (printed 6/28/96)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					     (printed 3/19/96)
+     Page 3					     (printed 6/28/96)
 
 
 
@@ -258,7 +258,7 @@
 
 
 
-     Page 4					     (printed 3/19/96)
+     Page 4					     (printed 6/28/96)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					     (printed 3/19/96)
+     Page 5					     (printed 6/28/96)
 
 
 
@@ -386,11 +386,11 @@
 	  until	they adequately	support	high performance file
 	  transfers.
 
-	  Escaping control characters with ZMODEM (sz -e) may help if
+	  The telnet protcol used by the _t_e_l_n_e_t	program	and terminal
 
 
 
-     Page 6					     (printed 3/19/96)
+     Page 6					     (printed 6/28/96)
 
 
 
@@ -401,6 +401,14 @@
 
 
 
+	  servers uses 0xFF (377 octal)	for special control functions.
+	  The 0xFF character may cause problems	if it appears in the
+	  data stream, especially uploading at high speeds.  With
+	  ZCOMM	or Professional-YAM the	0xFF character can be
+	  protected by giving the command:
+	  set zmtxesc ?
+
+	  Escaping control characters with ZMODEM (sz -e) may help if
 	  the transfer gets stuck in the same place on every attempt.
 	  Professional-YAM and ZCOMM allow selection of	which control
 	  characters need to be	escaped.  In extreme cases 7-bit
@@ -445,18 +453,10 @@
 	  Sometimes the	terminal server	software is defective and must
 	  be corrected.	 Please	contact	the network's vendor for
 	  corrective procedures.  An alternative is to install direct
-	  serial ports for users desiring to upload files.
-
-	  We have also encountered problems when networking software
-	  fails	to pass	data after a large amount of data has been
-	  sent to the host.  This has happened on a PPP	internet
-	  connection which prevented uploads of	large amounts of data
-	  via either FTP or a ZMODEM upload (via TELNET).  The PPP
-	  connection grinds to a standstill and	not even PING works.
 
 
 
-     Page 7					     (printed 3/19/96)
+     Page 7					     (printed 6/28/96)
 
 
 
@@ -467,6 +467,14 @@
 
 
 
+	  serial ports for users desiring to upload files.
+
+	  We have also encountered problems when networking software
+	  fails	to pass	data after a large amount of data has been
+	  sent to the host.  This has happened on a PPP	internet
+	  connection which prevented uploads of	large amounts of data
+	  via either FTP or a ZMODEM upload (via TELNET).  The PPP
+	  connection grinds to a standstill and	not even PING works.
 	  The same ZMODEM/TELNET combination easily uploaded ten times
 	  as much to a nearby machine connected	by Ethernet.
 
@@ -511,18 +519,10 @@
 
 	  Many programs	claiming to support YMODEM only	support	XMODEM
 	  with 1k blocks, and they often don't get that	quite right.
-	  XMODEM transfers add up to 127 garbage bytes per file.
-	  XMODEM-1k and	YMODEM-1k transfers use	128 byte blocks	to
-	  avoid	extra padding.
-
-	  YMODEM programs use the file length transmitted at the
-	  beginning of the transfer to prune the file to the correct
-	  length; this may cause problems with source files that grow
-	  during the course of the transfer.  This problem does	not
 
 
 
-     Page 8					     (printed 3/19/96)
+     Page 8					     (printed 6/28/96)
 
 
 
@@ -533,6 +533,14 @@
 
 
 
+	  XMODEM transfers add up to 127 garbage bytes per file.
+	  XMODEM-1k and	YMODEM-1k transfers use	128 byte blocks	to
+	  avoid	extra padding.
+
+	  YMODEM programs use the file length transmitted at the
+	  beginning of the transfer to prune the file to the correct
+	  length; this may cause problems with source files that grow
+	  during the course of the transfer.  This problem does	not
 	  pertain to ZMODEM transfers, which preserve the exact	file
 	  length unconditionally.
 
@@ -580,15 +588,7 @@
 
 
 
-
-
-
-
-
-
-
-
-     Page 9					     (printed 3/19/96)
+     Page 9					     (printed 6/28/96)
 
 
 

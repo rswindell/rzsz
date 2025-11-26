@@ -1,5 +1,12 @@
 # Changelog
 
+## [1996-09-16] RZ 3.44 / SZ 3.40
+
+This release included this `README` update:
+```
+Aug 2 1996: The paranoid can now disable command uploads: see rz.doc
+```
+
 ## [1996-03-19] RZ 3.42 / SZ 3.40
 
 This release included this `README` update:

@@ -16,7 +16,7 @@ nothing:
 	@echo "	posix	POSIX compliant systems"
 	@echo "	aix	AIX systems"
 	@echo "	next	NeXtstep v3.x (POSIX)"
-	@echo "	odt	SCO Open Desktop (strict)"
+	@echo "	odt	SCO Open Desktop"
 	@echo "	everest	SCO Open Desktop (elf, strict)"
 	@echo "	sysvr4	SYSTEM 5.4 Unix"
 	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2), COHERENT 4.2"
@@ -88,7 +88,7 @@ zoo: doc
 	zip rzsz zmr.c crc.c gz *.t minirb.c
 	mv rzsz.zip /u/t/yam
 
-tag: doc 
+tag: doc  xenix
 	-rm -f /tmp/rzsz
 	tar cvf /tmp/rzsz COPYING README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c *.doc \
@@ -109,7 +109,7 @@ tags:
 xenix:
 	/usr/ods30/bin/cc \
 	-I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
-	$(CFLAGS) $(OFLAG) -s -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	-M2l $(CFLAGS) $(OFLAG) -s -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz; file sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -118,7 +118,7 @@ xenix:
 	ln sz zcommandi
 	/usr/ods30/bin/cc \
 	 -I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
-	$(CFLAGS) $(OFLAG) -s -DUSG -DMD rz.c -o rz
+	-M2l $(CFLAGS) $(OFLAG) -s -DUSG -DMD rz.c -o rz
 	size rz; file rz
 	-rm -f rb rx rc
 	ln rz rb
@@ -201,13 +201,13 @@ sysvr4:
 	ln sz zcommandi
 
 odt:
-	cc -O -strict -W2 -n -DUSG -DMD=2 rz.c -o rz
+	cc -O -n -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	cc -O -strict -W2 -n -DUSG -DREADCHECK sz.c -lx -o sz
+	cc -O -n -DUSG -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -247,13 +247,13 @@ posix:
 
 POSIX:
 	@echo "Well, stricter, as in *safer sex* ..."
-	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX -DMD=2 -DCOMPL rz.c -o rz
+	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX -DMD=2 -DCOMPL rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -posix -W2 -DPOSIX -DCOMPL sz.c -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX -DCOMPL sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -339,13 +339,9 @@ amiga:
 	ln sz zcommandi
 
 aix:
+	@echo "As of July 26 1996, ..."
+	@echo "IBM sez if you have the very latest PTFs, 'make posix' will work."
 	@echo ""
-	@echo "BAD NEWS.  We get more problem reports concerning AIX systems"
-	@echo "than all others put together, but no support from IBM."
-	@echo "Perhaps a newer version of AIX will be closer to Unix."
-	@echo ""
-	@echo "Omen Technology would appreciate working with IBM"
-	@echo "to resolve these incompatibilities."
 
 next:
 	LIBS=-lposix
