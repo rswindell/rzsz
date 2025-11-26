@@ -15,11 +15,10 @@ don't know how true that is.
   jik (9/3/89)
 ```
 
-The archive also included an interesting text file, [zmodem.rtc](https://vert.synchro.net/files/main/text/zmodem.rtc),
+The archive also included an [interesting text file](https://vert.synchro.net/files/main/text/zmodem_rtc.txt)
 which contained an edited transcript of the special GEnie IBM RoundTable Real
 Time Conference held June 15, 1986 to discuss micro communication protocols,
-especially Xmodem, Ymodem, and Zmodem.  Chuck Forsberg ... was the guest of
-honor.
+especially Xmodem, Ymodem, and Zmodem.  Chuck Forsberg was the guest of honor.
 
   - Long source lines are now unwrapped again
 
