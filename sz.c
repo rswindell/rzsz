@@ -1,4 +1,4 @@
-#define VERSION "3.36 04-23-94"
+#define VERSION "3.37 05-15-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -152,6 +152,7 @@ STATIC int Unlinkafter=0;	/* Unlink file after it is sent */
 STATIC int Dottoslash=0;	/* Change foo.bar.baz to foo/bar/baz */
 STATIC int firstsec;
 STATIC int errcnt=0;		/* number of files unreadable */
+STATIC int Skipbitch=0;
 STATIC int blklen=128;		/* length of transmitted records */
 STATIC int Optiong;		/* Let it rip no wait for sector ACK's */
 STATIC int Eofseen;		/* EOF seen on input set by zfilbuf */
@@ -335,6 +336,8 @@ char *argv[];
 					 || (!blkopt && Txwspac < 1024))
 						blkopt = Txwspac;
 					break;
+				case 'x':
+					Skipbitch = 1;  break;
 				case 'Y':
 					Lskipnocor = TRUE;
 					/* **** FALLL THROUGH TO **** */
@@ -928,7 +931,7 @@ register char *s,*t;
 
 char *usinfo[] = {
 	"Send Files and Commands with ZMODEM/YMODEM/XMODEM Protocol\n",
-	"Usage:	sz [-+abcdefgklLnNuvwyYZ] [-] file ...",
+	"Usage:	sz [-+abcdefgklLnNuvwxyYZ] [-] file ...",
 	"\t	zcommand [-egv] COMMAND",
 	"\t	zcommandi [-egv] COMMAND",
 	"\t	sb [-adfkuv] [-] file ...",
@@ -1159,6 +1162,8 @@ again:
 			goto again;
 		case ZFERR:
 		case ZSKIP:
+			if (Skipbitch)
+				++errcnt;
 			sprintf(endmsg, "File skipped by receiver request");
 			fclose(in); return c;
 		case ZRPOS:
@@ -1201,6 +1206,8 @@ gotack:
 			fclose(in);
 			return ZSKIP;
 		case ZSKIP:
+			if (Skipbitch)
+				++errcnt;
 			fclose(in);
 			return c;
 		case ZACK:
@@ -1357,6 +1364,8 @@ egotack:
 			fclose(in);
 			return OK;
 		case ZSKIP:
+			if (Skipbitch)
+				++errcnt;
 			fclose(in);
 			sprintf(endmsg, "File skipped by receiver request");
 			return c;
@@ -1424,6 +1433,8 @@ getinsync(flag)
 		case ZRINIT:
 			return c;
 		case ZSKIP:
+			if (Skipbitch)
+				++errcnt;
 			sprintf(endmsg, "File skipped by receiver request");
 			return c;
 		case ERROR:

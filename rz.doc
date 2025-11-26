@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 3/30/94)
+     Page 1					     (printed 5/18/94)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 3/30/94)
+     Page 2					     (printed 5/18/94)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					     (printed 3/30/94)
+     Page 3					     (printed 5/18/94)
 
 
 
@@ -235,30 +235,30 @@
 	  attached to the server is properly configured.
 
 	  If the terminal server is too	brain damaged to support flow
-	  control, you can fake	it with	ZMODEM.	 Try "sz -
-	  w1024	file..." to enable software flow control. Experiment
-	  with different values	to find	the best throughput.
+	  control, you can fake	it with	ZMODEM.	 Try
+	       sz -w1024 file...
+	  to enable software flow control. Experiment with different
+	  values to find the best throughput.
 
 	  Terminal servers are designed	to accept keyboard input from
 	  human	operators.  They may lose data when a program sends
 	  data to the host faster than humans type.  Some servers
 	  allow	larger input buffers to	support	file uploads.  If you
 	  can upload short files (less than 100	bytes) but not longer
-	  files, try "sz -w1024	file..." with your uploading program.
-	  (Not all programs support this option; use ZCOMM or
-	  Professional-YAM.)
+	  files, try
+	       sz -w1024 file...
+	  with your uploading program.	(Not all programs support this
+	  option; use ZCOMM or Professional-YAM.)
 
 	  When both flow control and character transparency are
-	  problems, use	"sz -ew1024 file..." as	a starting point.
-
-	  Sometimes the	terminal server	software is defective and must
-	  be upgraded.	Please contact the network's vendor for
-	  corrective procedures.  An alternative is to install direct
-	  serial ports for users desiring to upload files.
+	  problems, use
+	       sz -ew1024 file...
+	  as a starting	point.
 
 
 
-     Page 4					     (printed 3/30/94)
+
+     Page 4					     (printed 5/18/94)
 
 
 
@@ -269,14 +269,19 @@
 
 
 
+	  Sometimes the	terminal server	software is defective and must
+	  be upgraded.	Please contact the network's vendor for
+	  corrective procedures.  An alternative is to install direct
+	  serial ports for users desiring to upload files.
+
 	  Some systems enforce a timeout which disconnects a user
 	  after	several	minutes	of no keyboarding.  This can cause
 	  problems in long, error free ZMODEM transfers.  Restricting
 	  the window size with a "-w8192" option provides terminal
 	  input	at regular intervals even when no error	correction is
-	  needed.  If problems persist,	try setting a packet length
-	  (sz -l1024).
-
+	  needed.  If problems persist,	try setting a packet length.
+	       sz -l1024 file...
+	  (The default ZMODEM packet length is the file	length.)
 
      NNNNOOOOTTTTEEEESSSS
 	  ZMODEM's support of XOFF/XON flow control allows proper
@@ -316,15 +321,10 @@
 	  successful, especially if the	personality of the system
 	  appears altered.
 
-	  The Unix "ulimit" parameter must be set high enough to
-	  permit large file transfers to Unix.
-
-	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
-	  YMODEM, or KERMIT.  Setting one of these spoofing modes
 
 
 
-     Page 5					     (printed 3/30/94)
+     Page 5					     (printed 5/18/94)
 
 
 
@@ -335,6 +335,11 @@
 
 
 
+	  The Unix "ulimit" parameter must be set high enough to
+	  permit large file transfers to Unix.
+
+	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
+	  YMODEM, or KERMIT.  Setting one of these spoofing modes
 	  interferes with other	protocols.  Telebit's YMODEM spoofing
 	  interferes with YMODEM transfers.
 
@@ -382,6 +387,20 @@
      FFFFIIIILLLLEEEESSSS
 	  rz.c,	crctab.c, rbsb.c, zm.c,	zmr.c, zmodem.h, rz.1
 
+
+
+
+     Page 6					     (printed 5/18/94)
+
+
+
+
+
+
+     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
+
+
+
 	  /tmp/rzlog stores debugging output generated with -vv	option
 
 
@@ -390,7 +409,54 @@
 
 
 
-     Page 6					     (printed 3/30/94)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 7					     (printed 5/18/94)
 
 
 

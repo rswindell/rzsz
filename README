@@ -46,6 +46,14 @@ best results, use less(1) (available on comp.sources.misc) as
 your manual page reader.  Sources for the man pages are provided
 with copies of Unix Professional-YAM.
 
+
+FTP access is now available at ftp.cs.pdx.edu pub/zmodem
+directory.  This account has the latest and greatest selection
+of OMEN files available for FTP.  The files in this direcotryy
+are uploaded with ZMODEM directly from the Omen home system,
+preserving modification dates and file contents.
+
+
 Apr 23 1994: Added -DOLD compiler flag for antique SYSV
 compilers without a standard /usr/include/stdlib.h header file.
 This causes rbsb.c to define char *getenv() etc. instead of
@@ -70,24 +78,10 @@ Jan 2 1992: Documentation on the sz -T command has been
 improved.  Please use this command and Professional-YAM to
 diagnose file transfer problems before calling for support.
 
-Oct 30 1991: Changed shar programs to aid net.digestion.
-Rs and sz now use the same version number.
-
-Oct 4 1991:  Fixed bug in rz crash recovery.
-
-Sep 1991: Major hacking to work around SVR4 bug.  Append and
-crash recovery of shrinking files corrected.  Sz now supports
-rename.  Sz -c changed to zcommand, rx -c file changed to rc.
-
-Feb 1991: various corrections and simplifications.  Sz now
-stores critical error messages for post mortem display.
 
 VMS systems are now supported with native VMS versions in
 RZSZ.TLB.  The rz and sz in RZSZ.TLB support wild cards and
 VMS record types.
-
-May 1989: Corrections for undefined variable and multiply
-defined rdchk() on some systems.
 
 New for 1989: ZMODEM compression and other compatible
 extensions have been added to the rz and sz programs.
@@ -104,6 +98,9 @@ rz/sz, contact the author of the communications program you have
 purchased for support.  Some heavily marketed programs do not
 properly support the ZMODEM protocol.
 
-Chuck Forsberg WA7KGX          ...!tektronix!reed!omen!caf 
-Author of YMODEM, ZMODEM, Professional-YAM, ZCOMM, and GSZ
-  Omen Technology Inc    "The High Reliability Software"
+  Chuck Forsberg WA7KGX       caf@omen.COM      503-621-3406
+Author of YMODEM, ZMODEM, Professional-YAM, ZCOMM, GSZ and DSZ
+   Omen Technology Inc      "The High Reliability Software"
+TeleGodzilla BBS: 503-621-3746     FAX:-3735    CIS:70007,2304
+		FTP:   ftp.cs.pdx.edu   pub/zmodem
+     Genie:CAF  17505-V NW Sauvie IS RD Portland OR 97231

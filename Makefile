@@ -84,6 +84,14 @@ zoo: doc
 	zip rzsz zmr.c crc.c gz *.t minirb.c
 	mv rzsz.zip /u/t/yam
 
+taz: doc xenix crc
+	-rm -f /tmp/rzsz
+	tar cvf /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
+	 mailer.rz crctab.c rbsb.c *.doc \
+	 zmr.c crc.c gz *.t minirb.c rz sz crc
+	compress /tmp/rzsz
+	mv /tmp/rzsz.Z /u/t/yam/rzsz.taz
+
 tar:doc
 	tar cvf /tmp/rzsz.tar README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c \

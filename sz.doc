@@ -10,7 +10,7 @@
 	  zcommand, zcommandi -	Send Commands with ZMODEM
 
      SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
-	  sz [-++++aaaabbbbddddeeeeffffkkkkLLLLllllNNNNnnnnooooppppttttuuuuvvvvyyyyYYYYZZZZ] _f_i_l_e ...
+	  sz [-++++aaaabbbbddddeeeeffffkkkkLLLLllllNNNNnnnnooooppppttttuuuuvvvvxxxxyyyyYYYYZZZZ] _f_i_l_e ...
 	  sb [-ddddffffkkkkttttuuuuvvvv] _f_i_l_e ...
 	  sx [-kkkkttttuuuuvvvv] _f_i_l_e
 	  zcommand [-oooottttvvvv] CCCCOOOOMMMMMMMMAAAANNNNDDDD
@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 3/30/94)
+     Page 1					     (printed 5/18/94)
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					     (printed 3/30/94)
+     Page 2					     (printed 5/18/94)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					     (printed 3/30/94)
+     Page 3					     (printed 5/18/94)
 
 
 
@@ -233,6 +233,7 @@
 	  wwwwNNNN   Limit the transmit window size to N bytes (ZMODEM).
 	  vvvv    Verbose causes a	list of	file names to be appended to
 	       /tmp/szlog .  More v's generate more output.
+	  xxxx    Count skipped files as errors.
 	  yyyy    Instruct	a ZMODEM receiving program to overwrite	any
 	       existing	file with the same name.
 	  YYYY    Instruct	a ZMODEM receiving program to overwrite	any
@@ -248,17 +249,16 @@
 	  terminated by	a caught interrupt.
 
      EEEEXXXXAAAAMMMMPPPPLLLLEEEESSSS
-	  ZZZZMMMMOOOODDDDEEEEMMMM FFFFiiiilllleeee TTTTrrrraaaannnnssssffffeeeerrrr (Unix to	DSZ/ZCOMM/Professional-YAM)
-	  %%%% sssszzzz ----aaaa ****....cccc
-	  This single command transfers	all .c files in	the current
-	  Unix directory with conversion (----aaaa) to end of	line
-	  conventions appropriate to the receiving environment.	 With
-	  ZMODEM AutoDownload enabled, Professional-YAM	 and ZCOMM
-	  will automatically receive the files after performing	a
 
 
 
-     Page 4					     (printed 3/30/94)
+
+
+
+
+
+
+     Page 4					     (printed 5/18/94)
 
 
 
@@ -269,6 +269,13 @@
 
 
 
+	  ZZZZMMMMOOOODDDDEEEEMMMM FFFFiiiilllleeee TTTTrrrraaaannnnssssffffeeeerrrr (Unix to	DSZ/ZCOMM/Professional-YAM)
+	  %%%% sssszzzz ----aaaa ****....cccc
+	  This single command transfers	all .c files in	the current
+	  Unix directory with conversion (----aaaa) to end of	line
+	  conventions appropriate to the receiving environment.	 With
+	  ZMODEM AutoDownload enabled, Professional-YAM	 and ZCOMM
+	  will automatically receive the files after performing	a
 	  security check.
 
 	  %%%% sssszzzz ----YYYYaaaannnn ****....cccc	****....hhhh
@@ -315,16 +322,9 @@
 	  Compile time options required	for various operating systems
 	  are described	in the source file.
 
-     FFFFIIIILLLLEEEESSSS
-	  32 bit CRC code courtesy Gary	S. Brown.
-
-	  sz.c,	crctab.c, rbsb.c, zm.c,	zmr.c, zmodem.h	Unix source
-	  files
 
 
-
-
-     Page 5					     (printed 3/30/94)
+     Page 5					     (printed 5/18/94)
 
 
 
@@ -334,6 +334,12 @@
      SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
 
 
+
+     FFFFIIIILLLLEEEESSSS
+	  32 bit CRC code courtesy Gary	S. Brown.
+
+	  sz.c,	crctab.c, rbsb.c, zm.c,	zmr.c, zmodem.h	Unix source
+	  files
 
 	  /tmp/szlog stores debugging output (sz -vv)
 
@@ -382,15 +388,9 @@
 	  transmission may be required (see the	Professional-YAM/ZCOMM
 	  manual).
 
-	  If you encounter problems with control characters Please
-	  refer	to the sz -T command in	sz.doc for more	help.
-
-	  Flow control between the server and modem is often
-	  defective.  This rarely causes a problem in interactive
 
 
-
-     Page 6					     (printed 3/30/94)
+     Page 6					     (printed 5/18/94)
 
 
 
@@ -401,6 +401,11 @@
 
 
 
+	  If you encounter problems with control characters Please
+	  refer	to the sz -T command in	sz.doc for more	help.
+
+	  Flow control between the server and modem is often
+	  defective.  This rarely causes a problem in interactive
 	  applications whose short bursts (a screenfull	at most) fit
 	  within the available memory buffers.	Streaming protocols
 	  such as YMODEM-g, long packet	SuperKermit, and ZMODEM	can
@@ -410,21 +415,25 @@
 	  attached to the server is properly configured.
 
 	  If the terminal server is too	brain damaged to support flow
-	  control, you can fake	it with	ZMODEM.	 Try "sz -
-	  w1024	file..." to enable software flow control. Experiment
-	  with different values	to find	the best throughput.
+	  control, you can fake	it with	ZMODEM.	 Try
+	       sz -w1024 file...
+	  to enable software flow control. Experiment with different
+	  values to find the best throughput.
 
 	  Terminal servers are designed	to accept keyboard input from
 	  human	operators.  They may lose data when a program sends
 	  data to the host faster than humans type.  Some servers
 	  allow	larger input buffers to	support	file uploads.  If you
 	  can upload short files (less than 100	bytes) but not longer
-	  files, try "sz -w1024	file..." with your uploading program.
-	  (Not all programs support this option; use ZCOMM or
-	  Professional-YAM.)
+	  files, try
+	       sz -w1024 file...
+	  with your uploading program.	(Not all programs support this
+	  option; use ZCOMM or Professional-YAM.)
 
 	  When both flow control and character transparency are
-	  problems, use	"sz -ew1024 file..." as	a starting point.
+	  problems, use
+	       sz -ew1024 file...
+	  as a starting	point.
 
 	  Sometimes the	terminal server	software is defective and must
 	  be upgraded.	Please contact the network's vendor for
@@ -436,27 +445,18 @@
 	  problems in long, error free ZMODEM transfers.  Restricting
 	  the window size with a "-w8192" option provides terminal
 	  input	at regular intervals even when no error	correction is
-	  needed.  If problems persist,	try setting a packet length
-	  (sz -l1024).
-
+	  needed.  If problems persist,	try setting a packet length.
+	       sz -l1024 file...
+	  (The default ZMODEM packet length is the file	length.)
 
      NNNNOOOOTTTTEEEESSSS
 	  Particular attention must be paid to flow control.  The
 	  modem	and Unix must agree on the flow	control	method.	 Sz on
 	  USG (SYS III/V) systems use XON/XOFF flow control.  Some
-	  terminal servers do not provide working flow control.	 If
-	  flow control cannot be properly set up,
-	  Try a	"-w1024" option	(given to the sending program) to
-	  enforce protocol level flow control.	Experiment with
-	  different window sizes for best results.
-
-	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
-	  YMODEM, or KERMIT.  Setting one of these spoofing modes
-	  interferes with other	protocols.  Telebit's YMODEM spoofing
 
 
 
-     Page 7					     (printed 3/30/94)
+     Page 7					     (printed 5/18/94)
 
 
 
@@ -467,6 +467,15 @@
 
 
 
+	  terminal servers do not provide working flow control.	 If
+	  flow control cannot be properly set up,
+	  Try a	"-w1024" option	(given to the sending program) to
+	  enforce protocol level flow control.	Experiment with
+	  different window sizes for best results.
+
+	  Telebit modems must not be set to "spoof" UUCP, XMODEM,
+	  YMODEM, or KERMIT.  Setting one of these spoofing modes
+	  interferes with other	protocols.  Telebit's YMODEM spoofing
 	  interferes with YMODEM transfers.
 
 	  If a program that does not properly implement	the specified
@@ -511,6 +520,19 @@
 	  Portland OR 97208
 
 
+
+
+     Page 8					     (printed 5/18/94)
+
+
+
+
+
+
+     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
+
+
+
      BBBBUUUUGGGGSSSS
 	  On at	least one BSD system, sz would abend it	got within a
 	  few kilobytes	of the end of file.
@@ -522,7 +544,51 @@
 
 
 
-     Page 8					     (printed 3/30/94)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 9					     (printed 5/18/94)
 
 
 
