@@ -60,7 +60,7 @@ x386:
 	-ln sz sx
 
 sysv:
-	cc -O -DMD rz.c -o rz
+	cc -O -DMD -DONEREAD rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
@@ -80,7 +80,7 @@ sysvr3:
 	-ln sz sx
 
 bsd:
-	cc -DMD=2 -Dstrchr=index -DV7 -O rz.c -o rz
+	cc -DMD -Dstrchr=index -DV7 -DONEREAD -O rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx

@@ -20,6 +20,7 @@
 #ifdef LLITOUT
 long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
 long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
+#include <strings.h>
 #endif
 #endif
 
@@ -36,6 +37,7 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #include <sys/ioctl.h>
 #define OS "SYS III/V"
 #define MODE2OK
+#include <string.h>
 #endif
 
 #if HOWMANY  > 255
@@ -126,7 +128,7 @@ getspeed(code)
 	for (n=0; speeds[n].baudr; ++n)
 		if (speeds[n].speedcode == code)
 			return speeds[n].baudr;
-	return 0;
+	return 38400;	/* Assume fifo if ioctl failed */
 }
 
 
@@ -220,7 +222,8 @@ mode(n)
 	 *  NOTE: this should transmit all 8 bits and at the same time
 	 *   respond to XOFF/XON flow control.  If no FIONREAD or other
 	 *   READCHECK alternative, also must respond to INTRRUPT char
-	 *   This won't work with V7.  It should with LLITOUT, but sorry.
+	 *   This doesn't work with V7.  It should work with LLITOUT,
+	 *   but LLITOUT was broken on the machine I tried it on.
 	 */
 	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0) {
@@ -239,7 +242,7 @@ mode(n)
 		tch.t_intrc = Zmodem ? 03:030;	/* Interrupt char */
 #endif
 		tty.sg_flags |= (ODDP|EVENP|CBREAK);
-		tty.sg_flags &= ~(ALLDELAY|CRMOD|ECHO|LCASE);
+		tty.sg_flags &= ~(CRMOD|ECHO|LCASE);
 		ioctl(iofd, TIOCSETP, &tty);
 		ioctl(iofd, TIOCSETC, &tch);
 #ifdef LLITOUT

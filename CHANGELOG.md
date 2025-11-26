@@ -1,5 +1,10 @@
 # Changelog
 
+## [1988-03-29] RZ 1.31 / SZ 1.44
+
+  - getspeed() defaults to 38400 instead of 0
+  - Add `-y` (clobber existing file) option
+
 ## [1988-03-09] RZ 1.29 / SZ 1.44
 
 The original USENET announcement of this release by Chuck:

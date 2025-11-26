@@ -1,7 +1,7 @@
-#define VERSION "1.29 03-08-88"
+#define VERSION "1.31 03-29-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -M0 -Ox -K -i -DMD % -o rz; size rz;
+/*% cc -compat -M2 -Ox -K -i -DMD % -o rz; size rz;
 <-xtx-*> cc386 -Ox -DMD -DSEGMENTS=8 rz.c -o $B/rz;  size $B/rz
  *
  * rz.c By Chuck Forsberg
@@ -53,8 +53,8 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <ctype.h>
-#include <string.h>
 #include <errno.h>
+extern int errno;
 FILE *popen();
 
 #define OK 0
@@ -135,6 +135,7 @@ int MakeLCPathname=TRUE;	/* make received pathname lower case */
 int Verbose=0;
 int Quiet=0;		/* overrides logic that would otherwise set verbose */
 int Nflag = 0;		/* Don't really transfer files */
+int Rxclob=FALSE;	/* Clobber existing file */
 int Rxbinary=FALSE;	/* receive all files in bin mode */
 int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
@@ -240,6 +241,8 @@ char *argv[];
 					MakeLCPathname=FALSE; break;
 				case 'v':
 					++Verbose; break;
+				case 'y':
+					Rxclob=TRUE; break;
 				default:
 					usage();
 				}
@@ -292,8 +295,8 @@ char *argv[];
 usage()
 {
 	cucheck();
-	fprintf(stderr,"Usage:	rz [-1abeuv]		(ZMODEM Batch)\n");
-	fprintf(stderr,"or	rb [-1abuv]		(YMODEM Batch)\n");
+	fprintf(stderr,"Usage:	rz [-1abeuvy]		(ZMODEM)\n");
+	fprintf(stderr,"or	rb [-1abuvy]		(YMODEM)\n");
 	fprintf(stderr,"or	rx [-1abcv] file	(XMODEM or XMODEM-1k)\n");
 	fprintf(stderr,"	  -1 For cu(1): Use fd 1 for input\n");
 	fprintf(stderr,"	  -a ASCII transfer (strip CR)\n");
@@ -301,6 +304,7 @@ usage()
 	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
 	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
 	fprintf(stderr,"	  -v Verbose more v's give more info\n");
+	fprintf(stderr,"	  -y Yes, clobber existing file if any\n");
 	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
 	  Progname, VERSION, OS);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
@@ -657,8 +661,8 @@ char *name;
 		openmode = "a";
 
 #ifndef BIX
-	/* ZMPROT check for existing file */
-	if (zmanag == ZMPROT && (fout=fopen(name, "r"))) {
+	/* Check for existing file */
+	if (!Rxclob && (zmanag&ZMMASK) != ZMCLOB && (fout=fopen(name, "r"))) {
 		fclose(fout);  return ERROR;
 	}
 #endif
@@ -784,7 +788,6 @@ int dmode;
 {
 	int cpid, status;
 	struct stat statbuf;
-	extern int errno;
 
 	if (stat(dpath,&statbuf) == 0) {
 		errno = EEXIST;		/* Stat worked, so it already exists */

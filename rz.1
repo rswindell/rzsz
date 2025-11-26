@@ -1,14 +1,14 @@
 '\" Revision Level 
-'\" Last Delta     03-06-88
+'\" Last Delta     03-29-88
 .TH RZ 1 OMEN
 .SH NAME
 rx, rb, rz \- XMODEM, YMODEM, ZMODEM (Batch) file receive
 .SH SYNOPSIS
 .B rz
-.RB [\- "\ +1abepqtuv" ]
+.RB [\- "\ +1abepqtuvy" ]
 .br
 .B rb
-.RB [\- "\ +1abqtuv" ]
+.RB [\- "\ +1abqtuvy" ]
 .br
 .B rx
 .RB [\- "\ 1abceqtuv" ]
@@ -196,7 +196,7 @@ Output file data to /dev/null; for testing.
 .TP
 .B e
 Force sender to escape all control characters;
-normally XON, XOFF, DLE, CR- at -CR, and Ctrl-X are escaped.
+normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
 .B p
 (ZMODEM) Protect: skip file if destination file exists.
@@ -215,6 +215,9 @@ causes a list of file
 names to be appended to
 /tmp/rzlog .
 More v's generate more output.
+.TP
+.B y
+Yes, clobber any existing files with the same name.
 .PD
 .ne 6
 .SH EXAMPLES

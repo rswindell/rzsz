@@ -77,7 +77,7 @@ static char badcrc[] = "Bad CRC";
 zsbhdr(type, hdr)
 register char *hdr;
 {
-	register n;
+	register int n;
 	register unsigned short crc;
 
 	vfile("zsbhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
@@ -109,7 +109,7 @@ register char *hdr;
 zsbh32(hdr, type)
 register char *hdr;
 {
-	register n;
+	register int n;
 	register UNSL long crc;
 
 	xsendline(ZBIN32);  zsendline(type);
@@ -130,7 +130,7 @@ register char *hdr;
 zshhdr(type, hdr)
 register char *hdr;
 {
-	register n;
+	register int n;
 	register unsigned short crc;
 
 	vfile("zshhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
@@ -186,7 +186,7 @@ register char *buf;
 zsda32(buf, length, frameend)
 register char *buf;
 {
-	register c;
+	register int c;
 	register UNSL long crc;
 
 	crc = 0xFFFFFFFFL;
@@ -215,10 +215,10 @@ register char *buf;
 zrdata(buf, length)
 register char *buf;
 {
-	register c;
+	register int c;
 	register unsigned short crc;
 	register char *end;
-	register d;
+	register int d;
 
 	if (Rxframeind == ZBIN32)
 		return zrdat32(buf, length);
@@ -268,10 +268,10 @@ crcfoo:
 zrdat32(buf, length)
 register char *buf;
 {
-	register c;
+	register int c;
 	register UNSL long crc;
 	register char *end;
-	register d;
+	register int d;
 
 	crc = 0xFFFFFFFFL;  Rxcount = 0;  end = buf + length;
 	while (buf <= end) {
@@ -336,7 +336,7 @@ crcfoo:
 zgethdr(hdr, eflag)
 char *hdr;
 {
-	register c, n, cancount;
+	register int c, n, cancount;
 
 	n = Zrwindow + Baudrate;	/* Max bytes before start of frame */
 	Rxframeind = Rxtype = 0;
@@ -381,6 +381,9 @@ agn2:
 			bttyout(c);
 		else if (eflag > 1)
 			bttyout(c);
+#ifdef UNIX
+		fflush(stderr);
+#endif
 		goto startover;
 	case ZPAD|0200:		/* This is what we want. */
 	case ZPAD:		/* This is what we want. */
@@ -451,7 +454,7 @@ fifi:
 zrbhdr(hdr)
 register char *hdr;
 {
-	register c, n;
+	register int c, n;
 	register unsigned short crc;
 
 	if ((c = zdlread()) & ~0377)
@@ -488,7 +491,7 @@ register char *hdr;
 zrbhdr32(hdr)
 register char *hdr;
 {
-	register c, n;
+	register int c, n;
 	register UNSL long crc;
 
 	if ((c = zdlread()) & ~0377)
@@ -534,9 +537,9 @@ register char *hdr;
 zrhhdr(hdr)
 char *hdr;
 {
-	register c;
+	register int c;
 	register unsigned short crc;
-	register n;
+	register int n;
 
 	if ((c = zgethex()) < 0)
 		return c;
@@ -568,7 +571,7 @@ char *hdr;
 
 /* Send a byte as two hex digits */
 zputhex(c)
-register c;
+register int c;
 {
 	static char	digits[]	= "0123456789abcdef";
 
@@ -623,7 +626,7 @@ zsendline(c)
 /* Decode two lower case hex digits into an 8 bit byte value */
 zgethex()
 {
-	register c;
+	register int c;
 
 	c = zgeth1();
 	if (Verbose>8)
@@ -632,7 +635,7 @@ zgethex()
 }
 zgeth1()
 {
-	register c, n;
+	register int c, n;
 
 	if ((c = noxrd7()) < 0)
 		return c;
@@ -658,7 +661,7 @@ zgeth1()
  */
 zdlread()
 {
-	register c;
+	register int c;
 
 again:
 	/* Quick check for non control characters */
@@ -723,7 +726,7 @@ again2:
  */
 noxrd7()
 {
-	register c;
+	register int c;
 
 	for (;;) {
 		if ((c = readline(Rxtimeout)) < 0)

@@ -1,7 +1,8 @@
 #define VERSION "sz 1.44 03-03-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -M0 -Ox -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
+/*% cc -compat -M2 -Ox -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
+<-xtx-*> cc -Osal -K -i -DSV sz.c -lx -o $B/sz; size $B/sz
  *
  * sz.c By Chuck Forsberg
  *
