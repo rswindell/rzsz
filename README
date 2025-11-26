@@ -15,15 +15,19 @@ compile the programs for, and the command to do so (e.g.,
 
 The Makefile is self explanatory; just say "make".
 
+Unregistered users can use our support hotline: 900-737-7836 at
+$4.69 per minute.  Callers must be 18+ years of age.  Registered
+users can obtain free support for problems not involving
+terminal servers or third party ZMODEM software.
+
 Rz and sz work best with comm programs that properly support
 ZMODEM command and file AutoDownload (Pro-YAM and ZCOMM).
-They have also been tested with PIBTERM and COM-AND.
 
 The "GSZ" shareware program allows ZMODEM file transfers with
-traditional DOS comm programs.  GSZ provides a "mini term
-function" that supports ZMODEM AutoDownload.  GSZ (part of
-GSZ.ZIP) and ZCOMM (ZCOMMEXE.ZIP, ZCOMMDOC.ZIP, ZCOMMHLP.ZIP)
-are available on TeleGodzilla and other fine bulletin boards.
+DOS comm programs.  GSZ provides a "mini term function" that
+supports ZMODEM AutoDownload.  GSZ (part of GSZ.ZIP) and ZCOMM
+(ZCOMMEXE.ZIP, ZCOMMDOC.ZIP, ZCOMMHLP.ZIP) are available on
+TeleGodzilla and other fine bulletin boards.
 
 Rz ans Sz are Copyrighted shareware programs.  Commercial Use of
 these programs is subject to licensing conditions detailed in
@@ -34,12 +38,15 @@ program not published by Omen Technology INC.  Please print the
 registration.
 
 Previous versions of rz and sz (April 1988) are Public Domain,
-but lack the current enhancements and bug fixes.
+but lack recent enhancements and bug fixes.
 
 The Man pages are formatted for those without Unix nroff.  For
 best results, use less(1) (available on comp.sources.misc) as
 your manual page reader.  Sources for the man pages are provided
 with copies of Unix Professional-YAM.
+
+Jan 27 1994: Minor bugfixes and improvements, documentation
+improved.
 
 May 16 1993: More bugfixes, POSIX support.  Tested on SCO Unix,
 BSDI 1.0, and SunOS 4.1.2.  Code simplified to avoid certain

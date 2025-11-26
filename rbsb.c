@@ -5,7 +5,7 @@
  *   See the main files (rz.c/sz.c) for compile instructions.
  */
 
-char *Copyr = "Copyright 1993 Omen Technology Inc All Rights Reserved";
+char *Copyr = "Copyright 1994 Omen Technology Inc All Rights Reserved";
 
 #ifdef V7
 #include <sys/types.h>
@@ -28,6 +28,8 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #define OS "SYS III/V"
 #define MODE2OK
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #endif
 
 #ifdef POSIX
@@ -40,6 +42,7 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #define OS "POSIX"
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #ifndef READCHECK
 #ifndef FIONREAD
 #define SV
@@ -67,6 +70,7 @@ Howmany must be 255 or less
 #define sendline(c) putc(c & 0377, Ttystream)
 #define xsendline(c) putc(c, Ttystream)
 
+char *Nametty;
 FILE *Ttystream;
 int Tty;
 char linbuf[HOWMANY];
@@ -80,9 +84,6 @@ int Readnum = 1;	/* Number of bytes to ask for in read() from modem */
 int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
 #endif
 int Verbose=0;
-
-
-int Twostop;		/* Use two stop bits */
 
 
 /*
@@ -180,8 +181,6 @@ getspeed(code)
 }
 
 
-
-
 #ifdef ICANON
 #ifdef POSIX
 struct termios oldtty, tty;
@@ -223,8 +222,6 @@ mode(n)
 
 		tty.c_cflag &= ~(PARENB|CSIZE);		/* Disable parity */
 		tty.c_cflag |= (CREAD|CS8);	/* Set character size = 8 */
-		if (Twostop)
-			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
 
 
 #ifdef READCHECK
@@ -268,8 +265,6 @@ mode(n)
 
 		tty.c_cflag &= ~(CSIZE|PARENB);	/* disable parity */
 		tty.c_cflag |= CS8;	/* Set character size = 8 */
-		if (Twostop)
-			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
 #ifdef NFGVMIN
 		tty.c_cc[VMIN] = 1; /* This many chars satisfies reads */
 #else
@@ -398,14 +393,16 @@ sendbrk()
 /* Initialize tty device for serial file xfer */
 inittty()
 {
-	Tty = open("/dev/tty", 2);
-	if (Tty < 0) {
-		perror("/dev/tty");  exit(2);
+	if ((Nametty = ttyname(2)) && *Nametty) {
+		Tty = open(Nametty, 2);
+	} else {
+		Tty = open(Nametty = "/dev/tty", 2);
+	}
+
+	if (Tty <= 0) {
+		perror(Nametty);  exit(2);
 	}
 	Ttystream = fdopen(Tty, "w");
-/*
-	setbuf(Ttystream, xXbuf);		
-*/
 }
 
 flushmoc()

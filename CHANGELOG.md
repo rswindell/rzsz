@@ -1,9 +1,19 @@
 # Changelog
 
+## [1994-01-27] RZ 3.32 / SZ 3.32
+
+This release included this `README` update:
+```
+Jan 27 1994: Minor bugfixes and improvements, documentation improved.
+```
+  - Build support for Coherent (Unix clone) 4.2
+  - Build support for Intel C compiler
+  - SZ: Remove options -2 (two stop bits) and -C (command retries)
+
 ## [1993-06-13] RZ 3.25 / SZ 3.25
 
   - Code updates to support other build environments (e.g. w/stdlib.h)
-  - No apparent functional change.
+  - No apparent functional change
 
 ## [1993-05-16] RZ 3.24 / SZ 3.24
 

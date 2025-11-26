@@ -15,8 +15,9 @@ nothing:
 	@echo
 	@echo "	posix	POSIX compliant systems"
 	@echo "	odt	SCO Open Desktop"
+	@echo "	icc	SCO Open Desktop, Intel compiler"
 	@echo "	sysvr4	SYSTEM 5.4 Unix, SCO Open Desktop"
-	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2)"
+	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2), COHERENT 4.2"
 	@echo "	sysv	SYSTEM 3/5 Unix"
 	@echo "	xenix	Xenix"
 	@echo "	x386	386 Xenix"
@@ -35,13 +36,21 @@ usenet:doc
 	  README Makefile zmodem.h zm.c rz.c rbsb.c \
 	 crc.c crctab.c minirb.c mailer.rz zmr.c *.doc gz sz.c *.t 
 
+sshar:doc
+	shar -c -a -n rzsz -o /tmp/rzsz -l64 \
+	  README Makefile zmodem.h zm.c rz.c rbsb.c \
+	 crc.c crctab.c mailer.rz zmr.c *.1 gz sz.c
+
 shar:doc
 	shar -c README Makefile zmodem.h zm.c \
 	 zmr.c sz.c rz.c crctab.c \
-	 mailer.rz crc.c rbsb.c minirb.c *.doc gz *.t >/tmp/rzsz 
+	 mailer.rz crc.c rbsb.c minirb.c *.doc gz *.t >/tmp/rzsz.sh
+	 cp /tmp/rzsz.sh /u/t/yam
 
 unixforum: shar
+	rm -f /tmp/rzsz.sh.Z
 	compress /tmp/rzsz.sh
+	cp /tmp/rzsz.sh.Z /u/t/yam
 
 unix:
 	undos $(ARCFILES)
@@ -51,13 +60,16 @@ dos:
 
 doc:rz.doc sz.doc crc.doc minirb.doc
 
+clean:
+	rm -f *.o *.out sz sb sx zcommand zcommandi rz rb rx rc
+
 minirb.doc:minirb.1
 	nroff -man minirb.1 | col  >minirb.doc
 
-rz.doc:rz.1
+rz.doc:rz.1 servers.mi
 	nroff -man rz.1 | col  >rz.doc
 
-sz.doc:sz.1
+sz.doc:sz.1 servers.mi
 	nroff -man sz.1 | col  >sz.doc
 
 crc.doc:crc.1
@@ -80,7 +92,7 @@ zoo: doc
 tar:doc
 	tar cvf /tmp/rzsz.tar README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c \
-	 zmr.c crc.c *.1 *.doc gz *.t minirb.c
+	 zmr.c crc.c *.1 gz *.t minirb.c
 
 tags:
 	ctags sz.c rz.c zm.c zmr.c rbsb.c
@@ -170,6 +182,21 @@ odt:
 	ln rz rx
 	ln rz rc
 	cc -strict -W2 -n -DUSG -DREADCHECK sz.c -lx -o sz
+	size sz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
+icc:
+	icc -O -ip -mem -DUSG -DMD=2 rz.c -o rz
+	size rz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	icc -O -ip -mem -DUSG -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
