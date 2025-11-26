@@ -1,5 +1,27 @@
 # Changelog
 
+## [1996-03-19] RZ 3.42 / SZ 3.40
+
+This release included this `README` update:
+```
+Mar 19 1996: Rz can now write its output to standard output (see rz.doc).
+```
+
+The found archive file that contained this release included the new file
+`COPYING` (added in this commit) and an updated `FILE_ID.DIZ` file:
+```
+Unix RZ/SZ 3.40 X/Y/ZMODEM for Dial-IN
+Fast, reliable Unix/Xenix/Ultrix ZMODEM
+protocol file transfer programs.  ZMODEM
+features automatic command and file
+transfers, recovery from interrupted
+transfers (CRASH RECOVERY), file
+management, 32 bit CRC, compression,
+faster than Kermit or XMODEM.  Includes
+Pro-YAM/ZCOMM scripts to bootstrap
+upload source files to Unix.
+```
+
 ## [1995-04-21] RZ 3.41 / SZ 3.40
 
 This release included this `README` update:

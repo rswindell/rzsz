@@ -31,14 +31,16 @@
 	  Agreement.
 
      SSSSUUUUPPPPPPPPOOOORRRRTTTT
-	  Unregistered users may dial 900-737-7836 (900-737-RTFM) for
-	  technical assistance.	 There is a charge of $4.69 per	minute
-	  to use this support line.  Callers must be 18	years or
-	  older.
+	  Users	who have not purchased support may dial	900-555-7836
+	  (900-555-RTFM) for technical assistance.  There is a charge
+	  of $4.69 per minute to use this support line.	 Callers must
+	  be 18	years or older.
 
 	  Registered users encountering	problems using this program on
 	  standard serial ports	to transfer files with Professional-
 	  YAM or ZCOMM may call	the support number listed in the
+	  Professional-YAM/ZCOMM documentation.	 Solutions to nearly
+	  all file transfer problems are described in the
 	  Professional-YAM/ZCOMM documentation.
 
      DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
@@ -55,12 +57,10 @@
 	  programs, not	to act as one.	This program is	not designed
 	  to be	called from _c_u(_1) _t_i_p(_1), or other communications
 	  programs.  Unix flavors of Omen Technology's Professional-
-	  YAM communications software are available for	dial-out
-	  applications.	 Unix Professional-YAM supports	dial-out
 
 
 
-     Page 1					     (printed 4/21/95)
+     Page 1					     (printed 3/19/96)
 
 
 
@@ -71,6 +71,8 @@
 
 
 
+	  YAM communications software are available for	dial-out
+	  applications.	 Unix Professional-YAM supports	dial-out
 	  applications with telephone directory, a powerful script
 	  language with	learn function,	high quality multiple protocol
 	  support, and UUCP port arbitration.
@@ -121,12 +123,10 @@
 	  Iff sssszzzz is invoked with $SHELL	set and	iff that variable
 	  contains the string _r_s_h or _r_k_s_h (restricted shell), sssszzzz
 	  operates in restricted mode.	Restricted mode	restricts
-	  pathnames to the current directory and PUBDIR	(usually
-	  /usr/spool/uucppublic) and/or	subdirectories thereof.
 
 
 
-     Page 2					     (printed 4/21/95)
+     Page 2					     (printed 3/19/96)
 
 
 
@@ -135,6 +135,10 @@
 
      SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
 
+
+
+	  pathnames to the current directory and PUBDIR	(usually
+	  /usr/spool/uucppublic) and/or	subdirectories thereof.
 
 
 	  The fourth form sends	a single COMMAND to a ZMODEM receiver
@@ -185,14 +189,10 @@
 	  ffff    Send Full pathname.  Normally directory prefixes	are
 	       stripped	from the transmitted filename.
 	  gggg    Send ESC-[-?-3-4-l to start DSZ from Kermit.
-	  kkkk    (XMODEM/YMODEM) Send files using	1024 byte blocks
-	       rather than the default 128 byte	blocks.	 1024 byte
-	       packets speed file transfers at high bit	rates.
-	       (ZMODEM streams the data	for the	best possible
 
 
 
-     Page 3					     (printed 4/21/95)
+     Page 3					     (printed 3/19/96)
 
 
 
@@ -203,6 +203,10 @@
 
 
 
+	  kkkk    (XMODEM/YMODEM) Send files using	1024 byte blocks
+	       rather than the default 128 byte	blocks.	 1024 byte
+	       packets speed file transfers at high bit	rates.
+	       (ZMODEM streams the data	for the	best possible
 	       throughput.)
 	  LLLLNNNN   Use ZMODEM sub-packets of length	N.  A larger N (32 <=
 	       N <= 1024) gives	slightly higher	throughput, a smaller
@@ -254,11 +258,7 @@
 
 
 
-
-
-
-
-     Page 4					     (printed 4/21/95)
+     Page 4					     (printed 3/19/96)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					     (printed 4/21/95)
+     Page 5					     (printed 3/19/96)
 
 
 
@@ -390,7 +390,7 @@
 
 
 
-     Page 6					     (printed 4/21/95)
+     Page 6					     (printed 3/19/96)
 
 
 
@@ -456,7 +456,7 @@
 
 
 
-     Page 7					     (printed 4/21/95)
+     Page 7					     (printed 3/19/96)
 
 
 
@@ -522,7 +522,7 @@
 
 
 
-     Page 8					     (printed 4/21/95)
+     Page 8					     (printed 3/19/96)
 
 
 
@@ -552,9 +552,10 @@
 	  Inc for product information.
 
 	  Omen Technology INC
-	  503-621-3406
 	  Post Office Box 4681
 	  Portland OR 97208
+	  503-614-0430 (Sales)
+	  900-555-RTFM (Non-Customer Technical Support)
 
 
      BBBBUUUUGGGGSSSS
@@ -587,8 +588,7 @@
 
 
 
-
-     Page 9					     (printed 4/21/95)
+     Page 9					     (printed 3/19/96)
 
 
 

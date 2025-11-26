@@ -966,7 +966,7 @@ usage()
 	fprintf(stderr,
 	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
 	fprintf(stderr,
-	"\nTechnical support hotline: 900-737-7836 (1-900-737-RTFM) $4.69/min.\n\n");
+	"\nTechnical support hotline: 900-555-7836 (1-900-555-RTFM) $4.69/min.\n\n");
 	exit(3);
 }
 

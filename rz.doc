@@ -28,10 +28,10 @@
 	  Agreement.
 
      SSSSUUUUPPPPPPPPOOOORRRRTTTT
-	  Unregistered users may dial 900-737-7836 (900-737-RTFM) for
-	  technical assistance.	 There is a charge of $4.69 per	minute
-	  to use this support line.  Callers must be 18	years or
-	  older.
+	  Users	who have not purchased support may dial	900-555-7836
+	  (900-555-RTFM) for technical assistance.  There is a charge
+	  of $4.69 per minute to use this support line.	 Callers must
+	  be 18	years or older.
 
 	  Registered users encountering	problems using this program on
 	  standard serial ports	to transfer files with Professional-
@@ -60,7 +60,7 @@
 
 
 
-     Page 1					     (printed 4/21/95)
+     Page 1					     (printed 3/19/96)
 
 
 
@@ -79,10 +79,13 @@
 
 	  RRRRzzzz (Receive ZMODEM) receives one or more files with the
 	  ZMODEM protocol.  Pathnames are supplied by the sending
-	  program, and directories are made if necessary (and
-	  possible).  Normally,	the "rz" command is automatically
-	  issued by the	calling	ZMODEM program,	but defective ZMODEM
-	  implementations may require starting _r_z manually.
+	  program, and directories are created if necessary.  (See the
+	  example below.) if standard output is	not redirected to a
+	  file or pipe,	output is appended to a	file named "stdout".
+
+	  Normally, the	"rz" command is	automatically issued by	the
+	  calling ZMODEM program, but defective	ZMODEM implementations
+	  may require starting _r_z manually.
 
 	  RRRRbbbb receives file(s) with YMODEM, accepting either standard
 	  128 byte sectors or 1024 byte	sectors	(Pro-YAM/ZCOMM sb ----kkkk
@@ -121,12 +124,9 @@
 	  Unix shell.
 	  EXAMPLE: gz "-a C:*.c	D:*.h"
 
-	  If invoked with a leading ``v'', _r_z will report progress to
-	  /tmp/rzlog.
 
 
-
-     Page 2					     (printed 4/21/95)
+     Page 2					     (printed 3/19/96)
 
 
 
@@ -137,6 +137,8 @@
 
 
 
+	  If invoked with a leading ``v'', _r_z will report progress to
+	  /tmp/rzlog.
 	  EXAMPLE: ln rz vrz; rz=vrz; export rz
 
 	  If the SHELL environment variable includes _r_s_h or _r_k_s_h
@@ -167,6 +169,17 @@
 	  full relative	pathname (-f), for files that are newer	(-n)
 	  than their copies on the destination system.
 
+	  _r_z | _s_o_r_t >/_t_m_p/_s_o_r_t_e_d
+	  _s_z _O_N_A_M_E=- *._l_s_t
+	  The first command manually starts rrrrzzzz with output piped to
+	  the sort command.  The second	command	instructs
+	  Professional-YAM, ZCOMM, GSZ or DSZ to sene the files	using
+	  "-" as pathname, which instructs rrrrzzzz to output	the received
+	  data to its standard output.	The end	result is a single
+	  file containing all the lines	of the .lst files sorted
+	  alphabetically.
+
+
 
      DDDDIIIIAAAAGGGGNNNNOOOOSSSSTTTTIIIICCCCSSSS
 	  Exit status is as follows: 0 for successful transfers.  1 if
@@ -176,6 +189,20 @@
 
 
      SSSSEEEEEEEE AAAALLLLSSSSOOOO
+
+
+
+     PPPPaaaaggggeeee 3333					     ((((pppprrrriiiinnnntttteeeedddd 3333////11119999////99996666))))
+
+
+
+
+
+
+     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
+
+
+
 	  Professional-YAM, ZCOMM, DSZ,	crc(omen), sz(omen),
 	  usq(omen), undos(omen)
 
@@ -189,20 +216,6 @@
 	  transfers by "eating"	control	characters and/or losing data.
 
 	  Accessing a distant system using tttteeeellllnnnneeeetttt on a local Unix
-
-
-
-     Page 3					     (printed 4/21/95)
-
-
-
-
-
-
-     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
-
-
-
 	  system entails the same problems.  If	tttteeeellllnnnneeeetttt does not	work
 	  well,	try rrrrllllooooggggiiiinnnn with	the ----8888 option.	Set the	escape
 	  character to ^P (control P) which is protected by ZMODEM.
@@ -242,6 +255,20 @@
 	  "TERM	FLOWCONTROL HARDWARE IN	OUT"; this assumes the modem
 	  attached to the server is properly configured.
 
+
+
+
+     Page 4					     (printed 3/19/96)
+
+
+
+
+
+
+     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
+
+
+
 	  If the terminal server is too	brain damaged to support flow
 	  control, ZMODEM lets you fake	it by setting a	window size.
 	  Try
@@ -255,20 +282,6 @@
 	  allow	larger input buffers to	support	file uploads.  If you
 	  can upload short files (less than 100	bytes) but not longer
 	  files, try
-
-
-
-     Page 4					     (printed 4/21/95)
-
-
-
-
-
-
-     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
-
-
-
 	       sz -w1024 file...
 	  with your uploading program.	(Not all programs support this
 	  option; use ZCOMM or Professional-YAM.)
@@ -308,6 +321,20 @@
 
      NNNNOOOOTTTTEEEESSSS
 	  ZMODEM's support of XOFF/XON flow control allows proper
+
+
+
+     Page 5					     (printed 3/19/96)
+
+
+
+
+
+
+     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
+
+
+
 	  operation in many environments that do not support XMODEM
 	  uploads.  Unfortunately, not all Unix	versions support input
 	  flow control.	 The TTY input buffering on some systems may
@@ -321,19 +348,6 @@
 	  a value between 64 and 1024 to limit the burst length
 	  ("zmodem pl128").  Although this compromises ZMODEM's
 	  throughput, ZMODEM's superior	reliability remains intact.
-
-
-
-     Page 5					     (printed 4/21/95)
-
-
-
-
-
-
-     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
-
-
 
 	  If a program that does not properly implement	the specified
 	  file transfer	protocol causes	_r_z to "hang" the port after a
@@ -374,6 +388,19 @@
 	  Professional-YAM and ZCOMM allow selection of	which control
 	  characters need to be	escaped.
 
+
+
+     Page 6					     (printed 3/19/96)
+
+
+
+
+
+
+     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
+
+
+
 	  In extreme cases 7-bit transmission may be required (see
 	  Professional-YAM/ZCOMM manual).  7-bit transmission requires
 	  rz version 4.50 or higher.
@@ -388,19 +415,6 @@
 	  The ASCII option's CR/LF to NL translation merely deletes
 	  CR's;	undos(omen) performs a more intelligent	translation.
 
-
-
-     Page 6					     (printed 4/21/95)
-
-
-
-
-
-
-     RRRRZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 RRRRZZZZ((((1111))))
-
-
-
      ZZZZMMMMOOOODDDDEEEEMMMM CCCCAAAAPPPPAAAABBBBIIIILLLLIIIITTTTIIIIEEEESSSS
 	  _R_z supports ZMODEM command execution (zcommand), incoming
 	  ZMODEM binary	(-b), ASCII (-a), escape controls (-e),
@@ -414,9 +428,10 @@
 	  Inc for product information.
 
 	  Omen Technology INC
-	  503-621-3406
 	  Post Office Box 4681
 	  Portland OR 97208
+	  503-614-0430 (Sales)
+	  900-555-RTFM (Unregistered user Technical Support)
 
 
      FFFFIIIILLLLEEEESSSS
@@ -441,22 +456,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     Page 7					     (printed 4/21/95)
+     Page 7					     (printed 3/19/96)
 
 
 

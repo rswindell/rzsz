@@ -1,10 +1,10 @@
-#define VERSION "3.41 04-21-95"
+#define VERSION "3.42 03-19-96"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  *
  * rz.c By Chuck Forsberg
- *    Copyright 1995 Omen Technology Inc All Rights Reserved
+ *    Copyright 1996 Omen Technology Inc All Rights Reserved
  *
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
@@ -67,7 +67,7 @@
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 
-char *Copyrrz = "Copyright 1995 Omen Technology Inc All Rights Reserved";
+char *Copyrrz = "Copyright 1996 Omen Technology Inc All Rights Reserved";
 
 
 #define LOGFILE "/tmp/rzlog"
@@ -282,7 +282,7 @@ char *argv[];
 	if (Verbose) {
 		if (freopen(LOGFILE, "a", stderr)==NULL)
 			if (freopen(LOGFILE2, "a", stderr)==NULL) {
-				printf("Can't open log file!\n");
+				fprintf(stderr, "Can't open log file!\n");
 				exit(2);
 			}
 		setbuf(stderr, NULL);
@@ -305,16 +305,16 @@ char *argv[];
 	if (exitcode && !Zmodem)	/* bellow again with all thy might. */
 		canit();
 	if (endmsg[0])
-		printf("  %s: %s\r\n", Progname, endmsg);
-	printf("%s %s finished.\r\n", Progname, VERSION);
-	fflush(stdout);
+		fprintf(stderr, "  %s: %s\r\n", Progname, endmsg);
+	fprintf(stderr, "%s %s finished.\r\n", Progname, VERSION);
+	fflush(stderr);
 	if(exitcode)
 		exit(1);
 #ifndef REGISTERED
 	/* Removing or disabling this code without registering is theft */
 	if (!Usevhdrs)  {
-		printf( "\n\n\nPlease read the License Agreement in rz.doc\n");
-		fflush(stdout);
+		fprintf(stderr, "\n\n\nPlease read the License Agreement in rz.doc\n");
+		fflush(stderr);
 		sleep(10);
 	}
 #endif
@@ -339,13 +339,13 @@ usage()
 	compression (-Z), binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
 	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
 	clobber (-y), match+clobber (-Y),  and append (-+).\n\n");
-	fprintf(stderr,"Copyright (c) 1995 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"Copyright (c) 1996 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	"See rz.doc for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
 	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
 	fprintf(stderr,
-	"\nTechnical support hotline: 900-737-7836 (1-900-737-RTFM) $4.69/min.\n\n");
+	"\nTechnical support hotline: 900-555-7836 (1-900-555-RTFM) $4.69/min.\n\n");
 	exit(2);
 }
 
@@ -698,7 +698,12 @@ doopen:
 openit(name, openmode)
 char *name, *openmode;
 {
-	fout = fopen(name, openmode);
+	if (strcmp(name, "-"))
+		fout = fopen(name, openmode);
+	else if (isatty(1))
+		fout = fopen("stdout", "a");
+	else
+		fout = stdout;
 }
 
 #ifdef MD
@@ -1270,6 +1275,9 @@ closeit()
 {
 	time_t time();
 
+	if (fout == stdout) {
+		fflush(stdout);  fout = 0;  return OK;
+	}
 	if (fclose(fout)==ERROR) {
 		fprintf(stderr, "File close ERROR\n");
 		return ERROR;

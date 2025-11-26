@@ -1,10 +1,10 @@
 # Makefile for Unix/Xenix rz and sz programs
-# the makefile is not too well tested yet
+# Some targets may not be up to date
 CC=cc
 OFLAG= -O
 
 
-ARCFILES= README rbsb.c gz *.t minirb.c zmodem.h \
+ARCFILES= COPYING README rbsb.c gz *.t minirb.c zmodem.h \
 	zm.c zmr.c crctab.c sz.c rz.c mailer.rz crc.c
 
 nothing:
@@ -14,6 +14,7 @@ nothing:
 	@echo "then type 'make SYSTEM' where SYSTEM is one of:"
 	@echo
 	@echo "	posix	POSIX compliant systems"
+	@echo "	aix	AIX systems"
 	@echo "	next	NeXtstep v3.x (POSIX)"
 	@echo "	odt	SCO Open Desktop (strict)"
 	@echo "	everest	SCO Open Desktop (elf, strict)"
@@ -33,26 +34,28 @@ nothing:
 	@echo "	doc	Format the man pages with nroff"
 	@echo
 
+all:doc usenet unixforum sshar shar zoo
+
 usenet:doc
 	shar -c -a -n rzsz -o /tmp/rzsz -l64 \
-	  README Makefile zmodem.h zm.c rz.c rbsb.c \
+	  COPYING README Makefile zmodem.h zm.c rz.c rbsb.c \
 	 crc.c crctab.c minirb.c mailer.rz zmr.c *.doc gz sz.c *.t 
 
 sshar:doc
 	shar -c -a -n rzsz -o /tmp/rzsz -l64 \
-	  README Makefile zmodem.h zm.c rz.c rbsb.c \
-	 crc.c crctab.c mailer.rz zmr.c *.1 gz sz.c
+	  COPYING README Makefile zmodem.h zm.c rz.c rbsb.c \
+	 crc.c crctab.c mailer.rz zmr.c *.doc gz sz.c
 
 shar:doc
-	shar -c README Makefile zmodem.h zm.c \
+	shar -c COPYING README Makefile zmodem.h zm.c \
 	 zmr.c sz.c rz.c crctab.c \
 	 mailer.rz crc.c rbsb.c minirb.c *.doc gz *.t >/tmp/rzsz.sh
 	 cp /tmp/rzsz.sh /u/t/yam
 
 unixforum: shar
-	rm -f /tmp/rzsz.sh.Z
-	compress /tmp/rzsz.sh
-	cp /tmp/rzsz.sh.Z /u/t/yam
+	rm -f /tmp/rzsz.sh.gz
+	gzip -9 /tmp/rzsz.sh
+	cp /tmp/rzsz.sh.gz /u/t/yam
 
 doc:rz.doc sz.doc crc.doc minirb.doc
 
@@ -73,7 +76,7 @@ crc.doc:crc.1
 
 zoo: doc
 	-rm -f /tmp/rzsz.zoo
-	zoo ah /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
+	zoo ah /tmp/rzsz COPYING README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c *.doc \
 	 zmr.c crc.c gz *.t minirb.c
 	touch /tmp/rzsz.zoo
@@ -85,16 +88,16 @@ zoo: doc
 	zip rzsz zmr.c crc.c gz *.t minirb.c
 	mv rzsz.zip /u/t/yam
 
-tag: doc xenix crc
+tag: doc 
 	-rm -f /tmp/rzsz
-	tar cvf /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
+	tar cvf /tmp/rzsz COPYING README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c *.doc \
 	 zmr.c crc.c gz *.t minirb.c rz sz crc
 	gzip -9 /tmp/rzsz
 	mv /tmp/rzsz.gz /u/t/yam/rzsz.tag
 
 tar:doc
-	tar cvf /tmp/rzsz.tar README Makefile zmodem.h zm.c sz.c rz.c \
+	tar cvf /tmp/rzsz.tar COPYING README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c \
 	 zmr.c crc.c *.1 gz *.t minirb.c
 
@@ -104,15 +107,19 @@ tags:
 .PRECIOUS:rz sz
 
 xenix:
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -s -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
-	size sz
+	/usr/ods30/bin/cc \
+	-I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
+	$(CFLAGS) $(OFLAG) -s -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	size sz; file sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
 	ln sz sx
 	ln sz zcommand
 	ln sz zcommandi
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -K -i -s -DUSG -DMD rz.c -o rz
-	size rz
+	/usr/ods30/bin/cc \
+	 -I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
+	$(CFLAGS) $(OFLAG) -s -DUSG -DMD rz.c -o rz
+	size rz; file rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
@@ -330,6 +337,15 @@ amiga:
 	ln sz sx
 	ln sz zcommand
 	ln sz zcommandi
+
+aix:
+	@echo ""
+	@echo "BAD NEWS.  We get more problem reports concerning AIX systems"
+	@echo "than all others put together, but no support from IBM."
+	@echo "Perhaps a newer version of AIX will be closer to Unix."
+	@echo ""
+	@echo "Omen Technology would appreciate working with IBM"
+	@echo "to resolve these incompatibilities."
 
 next:
 	LIBS=-lposix
