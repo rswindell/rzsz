@@ -232,7 +232,8 @@ jmp_buf tohere;		/* For the interrupt on RX timeout */
 
 #include "zmr.c"
 
-int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
+int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to
+Last rx close */
 
 alrm()
 {

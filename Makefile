@@ -3,10 +3,17 @@
 CC=cc
 OFLAG=
 
+TLBFILES= zmodem.h zm.c zmr.c crctab.c sz.c rz.c \
+	 vmodem.h vvmodem.c vrzsz.c init.com crc.c
+
+ARCFILES= $(TLBFILES) README rbsb.c gz ptest.sh *.t minirb.c genie.c *.1
+
 nothing:
 	@echo
-	@echo "Please study the #ifdef's in crctab.c rbsb.c, rz.c and sz.c,"
-	@echo "then type 'make system' where system is one of:"
+	@echo "Please study the #ifdef's in crctab.c, rbsb.c, rz.c and sz.c,"
+	@echo "make any necessary hacks for oddball or merged SYSV/BSD systems,"
+	@echo "then type 'make SYSTEM' where SYSTEM is one of:"
+	@echo
 	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2)"
 	@echo "	sysv	SYSTEM 3/5 Unix"
 	@echo "	xenix	Xenix"
@@ -14,12 +21,12 @@ nothing:
 	@echo "	bsd	Berkeley 4.x BSD, Ultrix, V7"
 	@echo
 
-usenet:
+usenet:unix
 	shar -f /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c rbsb.c \
 	 init.com crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
 	 zmr.c *.1 gz ptest.sh *.t
 
-shar:
+shar:unix
 	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
 	 zmr.c init.com vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
 	 genie.c crc.c rbsb.c minirb.c *.1 gz ptest.sh *.t
@@ -27,18 +34,18 @@ shar:
 unixforum: shar
 	compress -b12 /tmp/rzsz.sh
 
+tlbcmd:
+	mktlb.sh README. $(TLBFILES)
+
 unix:
-	undos README zmodem.h zm.c sz.c rz.c \
-	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
-	 zmr.c genie.c init.com crc.c *.t 
+	undos $(ARCFILES)
 
 dos:
-	todos README zmodem.h zm.c sz.c rz.c \
-	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
-	 zmr.c genie.c init.com crc.c *.t 
+	todos $(ARCFILES)
+
 arc:
 	rm -f /tmp/rzsz.arc
-	arc a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
+	arc aq /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c \
 	 zmr.c genie.c init.com crc.c *.1 gz ptest.sh *.t minirb.c
 	chmod og-w /tmp/rzsz.arc
@@ -49,6 +56,7 @@ zoo:
 	zoo a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c *.1 \
 	 zmr.c genie.c init.com crc.c gz ptest.sh *.t minirb.c
+	touch /tmp/rzsz.zoo
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /t/yam
 
@@ -58,7 +66,8 @@ tags:
 .PRECIOUS:rz sz
 
 xenix:
-	$(CC) $(CFLAGS) $(OFLAG) -M0 -Ox -K -i -DTXBSIZE=16384 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -M0 -Ox -K -i -DTXBSIZE=16384
+	-DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx
@@ -72,7 +81,8 @@ x386:
 	size rz
 	-ln rz rb
 	-ln rz rx
-	$(CC) $(CFLAGS) $(OFLAG) -Ox -DTXBSIZE=32768 -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(OFLAG) -Ox -DTXBSIZE=32768 -DNFGVMIN
+	-DREADCHECK sz.c -lx -o sz
 	size sz
 	-ln sz sb
 	-ln sz sx

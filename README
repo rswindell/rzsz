@@ -1,3 +1,5 @@
+May 1989: Corrections for undefined variable and multiply defined rdchk().
+
 New for April 1989:  ZMODEM compression and other compatible extensions
 have been added to the rz and sz programs.  Please read the comments in
 the rz.c and sz.c source code for licensing information for commercial use.

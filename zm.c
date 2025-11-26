@@ -64,6 +64,7 @@ int Crc32r;		/* Indicates/controls 32 bit CRC being received */
 int Usevhdrs;		/* Use variable length headers */
 int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
 char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
+char *Altcan;		/* Alternate canit string */
 
 static lastsent;	/* Last char we sent */
 static Not8bit;		/* Seven bits seen on header */

@@ -1,7 +1,8 @@
-#define VERSION "sz 3.01 4-22-89"
+#define VERSION "sz 3.03 5-09-89"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
+/*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK
+sz.c -lx -o sz; size sz
 
 /*% cc -Zi -DXX -DNFGVMIN -DREADCHECK sz.c -lx -o xsz; size xsz
 <-xtx-*> cc -Osal -DTXBSIZE=32768  -DSV sz.c -lx -o $B/sz; size $B/sz
@@ -136,7 +137,7 @@ long Thisflen;
 #define sendline(c) putchar(c & 0377)
 #define xsendline(c) putchar(c)
 
-#else
+#else	/* GENIE */
 
 #define LOGFILE "/tmp/szlog"
 #define SS_NORMAL 0
@@ -251,7 +252,8 @@ STATIC char Crcflg;
 STATIC int Verbose=0;
 STATIC int Modem2=0;		/* XMODEM Protocol - don't send pathnames */
 STATIC int Restricted=0;	/* restricted; no /.. or ../ in filenames */
-STATIC int Quiet=0;		/* overrides logic that would otherwise set verbose */
+STATIC int Quiet=0;		/* overrides logic that would otherwise
+set verbose */
 STATIC int Ascii=0;		/* Add CR's for brain damaged programs */
 STATIC int Fullname=0;		/* transmit full pathname */
 STATIC int Unlinkafter=0;	/* Unlink file after it is sent */
@@ -447,7 +449,8 @@ char *argv[];
 					Lzmanag = ZMPROT;  break;
 				case 'r':
 					if (Lzconv == ZCRESUM)
-						Lzmanag = (Lzmanag & ZMMASK) | ZMCRC;
+						Lzmanag = (Lzmanag &
+ZMMASK) | ZMCRC;
 					Lzconv = ZCRESUM; break;
 				case 'q':
 					Quiet=TRUE; Verbose=0; break;
@@ -492,6 +495,7 @@ char *argv[];
 				case 'y':
 					Lzmanag = ZMCLOB; break;
 				case 'Z':
+				case 'z':
 					Lztrans = ZTRLE;  break;
 				default:
 					usage();
@@ -725,12 +729,14 @@ char *oname;
 	if (!Zmodem && wctx(1000000000L)==ERROR)
 		return ERROR;
 #endif
+
 #ifndef vax11c
 #ifndef GENIE
 	if (Unlinkafter)
 		unlink(oname);
 #endif
 #endif
+
 	return 0;
 }
 
@@ -753,8 +759,8 @@ char *name;
 	if (Modem2) {
 #ifdef STAT
 		if (*name && fstat(fileno(in), &f)!= -1) {
-			fprintf(stderr, "Sending %s, %ld blocks: ",
-			  name, f.st_size>>7);
+			fprintf(stderr, "Sending %s, %ld XMODEM blocks. ",
+			  name, (127+f.st_size)>>7);
 		}
 #endif
 		fprintf(stderr, "Give your local XMODEM receive command now.\r\n");
@@ -803,6 +809,7 @@ char *name;
 		vfile("%s open Binfile=%d size=%ld", name, Binfile,
 		  fdes.current_file_size * 1260);
 #endif
+
 #ifdef STAT
 #ifndef XX
 		if (fstat(fileno(in), &f)!= -1)
@@ -811,6 +818,7 @@ char *name;
 		Totalleft -= f.st_size;
 #endif
 #endif
+
 	}
 	if (--Filesleft <= 0)
 		Totalleft = 0;
@@ -905,10 +913,11 @@ long flen;
 	do {
 		purgeline();
 		sendline(EOT);
-		fflush(stdout);
+		flushmo();
 		++attempts;
 	}
-		while ((firstch=(readline(Rxtimeout)) != ACK) && attempts < RETRYMAX);
+		while ((firstch=(readline(Rxtimeout)) != ACK) &&
+attempts < RETRYMAX);
 	if (attempts == RETRYMAX) {
 		zperr("No ACK on EOT");
 		return ERROR;
@@ -952,6 +961,7 @@ int cseclen;	/* data length of this sector to send */
 		}
 		else
 			sendline(checksum);
+		flushmo();
 
 		if (Optiong) {
 			firstsec = FALSE; return OK;
@@ -1387,6 +1397,7 @@ getzrxinit()
 #ifdef MODE2OK
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */
 #endif
+
 #ifndef READCHECK
 #ifndef USG
 #ifndef GENIE
@@ -1398,6 +1409,7 @@ getzrxinit()
 #endif
 #endif
 #endif
+
 			/* Override to force shorter frame length */
 			if (Rxbuflen && (Rxbuflen>Tframlen) && (Tframlen>=32))
 				Rxbuflen = Tframlen;
@@ -1416,10 +1428,11 @@ getzrxinit()
 #endif
 #endif
 #endif
+
 #ifdef BADSEEK
-#ifdef GENIExx
+#ifdef GENIE
 			if (Txwindow == 0) {
-				Txwspac = (Txwindow = 8192)/4;
+				Txwspac = (Txwindow = 4096)/4;
 			}
 #else
 			if (Txwindow == 0)
@@ -1428,6 +1441,7 @@ getzrxinit()
 #endif
 			Canseek = 0;
 #endif
+
 			/*
 			 * If input is not a regular file, force ACK's to
 			 *  prevent running beyond the buffer limits
@@ -1446,6 +1460,7 @@ getzrxinit()
 				}
 			}
 #endif
+
 			/* Set initial subpacket length */
 			if (blklen < 1024) {	/* Command line override? */
 				if (Effbaud > 300)
@@ -1498,12 +1513,15 @@ sendzsinit()
 	errors = 0;
 	for (;;) {
 		stohdr(0L);
+#ifdef ALTCANOFF
+		Txhdr[ALTCOFF] = ALTCANOFF;
+#endif
 		if (Zctlesc) {
 			Txhdr[ZF0] |= TESCCTL; zshhdr(4, ZSINIT, Txhdr);
 		}
 		else
 			zsbhdr(4, ZSINIT, Txhdr);
-		zsdata(Myattn, 1+strlen(Myattn), ZCRCW);
+		zsdata(Myattn, ZATTNLEN, ZCRCW);
 		c = zgethdr(Rxhdr, 1);
 		switch (c) {
 		case ZCAN:
@@ -1558,7 +1576,8 @@ again:
 				crc = 0xFFFFFFFFL;
 				if (Canseek >= 0) {
 					fseek(in, 0L, 0);
-					while (((c = getc(in)) != EOF) && --lastcrcrq)
+					while (((c = getc(in)) != EOF)
+&& --lastcrcrq)
 						crc = UPDC32(c, crc);
 					crc = ~crc;
 					clearerr(in);	/* Clear possible EOF */
@@ -1576,7 +1595,10 @@ again:
 			 * lastyunc==bytcnt
 			 */
 #ifdef GENIE
-			/* Special case - turn on RLE unless archive, etc. */
+			/*
+			 *  Special case - turn on RLE if not archive, etc.
+			 *   otherwise turn off RLE unless cmd line specified
+			 */
 			if (Rxflags & CANRLE) {		/* RX can do it */
 				bytcnt = 0;
 				zfilbuf();
@@ -1589,6 +1611,8 @@ again:
 				 && strncmp(txbuf, "GIF", 3)
 				 && (txbuf[2] != 3))	/* .ZIP file */
 					Txfcs32 = 2;
+				else if ( !(Lztrans & ZTRLE))
+					Txfcs32 = 1;
 			}
 			/* GEnie binary can't seek to byte */
 			if (Binfile) {
@@ -1642,7 +1666,7 @@ gotack:
 		 *  rdchk(fd) returns non 0 if a character is available
 		 */
 		while (rdchk(0)) {
-#ifdef SV
+#ifdef EATSIT
 			switch (checked)
 #else
 			switch (readline(1))
@@ -1679,7 +1703,7 @@ gotack:
 				tcount += strlen(qbf);
 #ifdef READCHECK
 				while (rdchk(0)) {
-#ifdef SV
+#ifdef EATSIT
 					switch (checked)
 #else
 					switch (readline(1))
@@ -1738,7 +1762,7 @@ gotack:
 		 */
 		fflush(stdout);
 		while (rdchk(0)) {
-#ifdef SV
+#ifdef EATSIT
 			switch (checked)
 #else
 			switch (readline(1))

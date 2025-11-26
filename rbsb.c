@@ -1,6 +1,6 @@
 /*
  *
- *  Rev 3-18-89
+ *  Rev 5-09-89
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
@@ -87,6 +87,11 @@ struct {
 int Twostop;		/* Use two stop bits */
 
 
+/*
+ *  The following uses an external rdchk() routine if available,
+ *  otherwise defines the function for BSD or fakes it for SYSV.
+ */
+
 #ifndef READCHECK
 #ifdef FIONREAD
 #define READCHECK
@@ -100,7 +105,9 @@ rdchk(f)
 	ioctl(f, FIONREAD, &lf);
 	return ((int) lf);
 }
-#endif
+
+#else		/* FIONREAD */
+
 #ifdef SV
 #define READCHECK
 #include <fcntl.h>
@@ -108,7 +115,10 @@ rdchk(f)
 int checked = 0;
 /*
  * Nonblocking I/O is a bit different in System V, Release 2
+ *  Note: this rdchk vsn throws away a byte, OK for ZMODEM
+ *  sender because protocol design anticipates this problem.
  */
+#define EATSIT
 rdchk(f)
 {
 	int lf, savestat;
@@ -121,6 +131,7 @@ rdchk(f)
 	checked = bchecked & 0377;	/* force unsigned byte */
 	return(lf) ;
 }
+#endif
 #endif
 #endif
 
@@ -224,7 +235,7 @@ mode(n)
 	/*
 	 *  NOTE: this should transmit all 8 bits and at the same time
 	 *   respond to XOFF/XON flow control.  If no FIONREAD or other
-	 *   READCHECK alternative, also must respond to INTRRUPT char
+	 *   rdchk() alternative, also must respond to INTRRUPT char
 	 *   This doesn't work with V7.  It should work with LLITOUT,
 	 *   but LLITOUT was broken on the machine I tried it on.
 	 */

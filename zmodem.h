@@ -82,6 +82,7 @@
 
 /* Parameters for ZSINIT frame */
 #define ZATTNLEN 32	/* Max length of attention string */
+#define ALTCOFF ZF1	/* Offset to alternate canit string, 0 if not used */
 /* Bit Masks for ZSINIT flags byte ZF0 */
 #define TESCCTL 0100	/* Transmitter expects ctl chars to be escaped */
 #define TESC8   0200	/* Transmitter expects 8th bit to be escaped */
@@ -127,5 +128,6 @@ extern Crc32t;		/* Display flag indicating 32 bit CRC being sent */
 extern Crc32;		/* Display flag indicating 32 bit CRC being received */
 extern Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
 extern char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
+extern char *Altcan;	/* Alternate canit string */
 
 /* End of ZMODEM.H */

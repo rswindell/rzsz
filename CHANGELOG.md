@@ -1,5 +1,11 @@
 # Changelog
 
+## [1989-05-09] RZ 3.00 / SZ 3.03
+
+  - Corrections for undefined variable and multiply defined rdchk()
+  - Long source lines are now wrapped
+  - sz `-z` option treated the same as `-Z`
+  
 ## [1989-04-22] RZ 3.00 / SZ 3.01
 
 This release included this README update:
