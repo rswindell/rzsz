@@ -1,9 +1,8 @@
-#define VERSION "sz 3.07 2-02-90"
+#define VERSION "3.11 02-26-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
 
-/*% cc -Zi -DXX -DNFGVMIN -DREADCHECK sz.c -lx -o xsz; size xsz
 <-xtx-*> cc -Osal -DTXBSIZE=32768  -DSV sz.c -lx -o $B/sz; size $B/sz
 
  ****************************************************************************
@@ -25,19 +24,6 @@
  *	ln sz sx			**** All versions ****
  *
  ****************************************************************************
- *
- * Typical VMS compile and install sequence:
- *
- *		define LNK$LIBRARY   SYS$LIBRARY:VAXCRTL.OLB
- *		cc sz.c
- *		cc vvmodem.c
- *		link sz,vvmodem
- *	sz :== $disk$user2:[username.subdir]sz.exe
- *
- *  If you feel adventureous, remove the #define BADSEEK line
- *  immediately following the #ifdef vax11c line!  Some VMS
- *  systems know how to fseek, some don't.
- *
  ****************************************************************************
  *
  *
@@ -79,77 +65,12 @@
  *	This code is made available in the hope it will be useful,
  *	BUT WITHOUT ANY WARRANTY OF ANY KIND OR LIABILITY FOR ANY
  *	DAMAGES OF ANY KIND.
- *
- *
- *  2.1x hacks to avoid VMS fseek() bogosity, allow input from pipe
- *     -DBADSEEK -DTXBSIZE=32768  
- *  2.x has mods for VMS flavor
- *
- * 1.34 implements tx backchannel garbage count and ZCRCW after ZRPOS
- * in accordance with the 7-31-87 ZMODEM Protocol Description
  */
 
-#ifdef XX
-#define XARGSFILE "args"
-long Thisflen;
-#endif
 
 char *substr(), *getenv();
 
-#ifdef vax11c
-#define STATIC
-#define BADSEEK
-#define TXBSIZE 32768		/* Must be power of two, < MAXINT */
-#include <types.h>
-#include <stat.h>
-#define STAT
-#define LOGFILE "szlog.tmp"
-#include <stdio.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <ctype.h>
-#include <errno.h>
-#define OS "VMS"
-#define ROPMODE "r"
-#define READCHECK
-#define BUFWRITE
-extern int errno;
-#define SS_NORMAL SS$_NORMAL
-#define xsendline(c) sendline(c)
-
-#ifndef PROGNAME
-#define PROGNAME "sz"
-#endif
-
-
-#else	/* vax11c */
-
-#ifdef GENIE
-#define STATIC static
-#define LOGFILE "szlog"
-#define BADSEEK
-#define TXBSIZE 32768		/* Must be power of two, < MAXINT */
-#define OS "GEnie"
-#define SS_NORMAL 0
-#include <stdio.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <ctype.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <fildes.h>
-FILDES fdes;
-extern int errno;
-int Binfile;
-long Thisflen;
-
-#define sendline(c) putchar(c & 0377)
-#define xsendline(c) putchar(c)
-
-#else	/* GENIE */
-
 #define LOGFILE "/tmp/szlog"
-#define SS_NORMAL 0
 #include <stdio.h>
 #include <signal.h>
 #include <setjmp.h>
@@ -160,9 +81,6 @@ extern int errno;
 
 #define sendline(c) putchar(c & 0377)
 #define xsendline(c) putchar(c)
-
-#endif
-#endif
 
 #define PATHLEN 256
 #define OK 0
@@ -200,19 +118,9 @@ STATIC unsigned Txwspac;	/* Spacing between zcrcq requests */
 STATIC unsigned Txwcnt;	/* Counter used to space ack requests */
 STATIC long Lrxpos;		/* Receiver's last reported offset */
 STATIC int errors;
+char endmsg[80] = {0};	/* Possible message to display on exit */
 
-#ifdef vax11c
-#include "vrzsz.c"	/* most of the system dependent stuff here */
-#else
-#ifdef GENIE
-#include "genie.c"	/* most of the system dependent stuff here */
-#else
 #include "rbsb.c"	/* most of the system dependent stuff here */
-#ifdef XX
-#undef STAT
-#endif
-#endif
-#endif
 
 #include "crctab.c"
 
@@ -229,10 +137,6 @@ STATIC char Myattn[] = { 0 };
 #else
 #ifdef USG
 STATIC char Myattn[] = { 03, 0336, 0 };
-#else
-#ifndef GENIE
-STATIC char Myattn[] = { 0 };
-#endif
 #endif
 #endif
 
@@ -334,10 +238,8 @@ bibi(n)
 {
 	canit(); fflush(stdout); mode(0);
 	fprintf(stderr, "sz: caught signal %d; exiting\n", n);
-#ifndef GENIE
 	if (n == SIGQUIT)
 		abort();
-#endif
 	if (n == 99)
 		fprintf(stderr, "mode(2) in rbsb.c not implemented!!\n");
 	cucheck();
@@ -377,11 +279,7 @@ char *argv[];
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 	from_cu();
-#ifdef vax11c
-	chkinvok(PROGNAME);
-#else
 	chkinvok(argv[0]);
-#endif
 
 	Rxtimeout = 600;
 	npats=0;
@@ -472,13 +370,11 @@ char *argv[];
 				case 'T':
 					if (++Test > 1) {
 						chartest(1); chartest(2);
-						mode(0);  exit(SS_NORMAL);
+						mode(0);  exit(0);
 					}
 					break;
-#ifndef vax11c
 				case 'u':
 					++Unlinkafter; break;
-#endif
 				case 'v':
 					++Verbose; break;
 				case 'w':
@@ -551,15 +447,11 @@ char *argv[];
 
 	mode(1);
 
-#ifdef GENIE
-	signal(SIGINT, SIG_IGN);
-#else
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
 	} else {
 		signal(SIGINT, bibi); signal(SIGKILL, bibi);
 	}
-#endif
 #ifdef SIGQUIT
 	if ( !Fromcu)
 		signal(SIGQUIT, SIG_IGN);
@@ -593,14 +485,15 @@ char *argv[];
 		Exitcode=0200;
 		canit();
 	}
+	if (endmsg[0])
+		printf("\r\n%s", endmsg);
+	printf("\r\n%s %s finished.\r\n", Progname, VERSION);
 	fflush(stdout);
 	mode(0);
 	dm = ((errcnt != 0) | Exitcode);
-	if (dm) {
+	if (dm)
 		cucheck();
-		exit(dm);
-	}
-	exit(SS_NORMAL);
+	exit(dm);
 	/*NOTREACHED*/
 }
 
@@ -636,7 +529,7 @@ char *argp[];
 			Exitcode = 1; return OK;
 		}
 		canit();
-		fprintf(stderr,"\r\nCan't open any requested files.\r\n");
+		sprintf(endmsg, "Can't open any requested files");
 		return ERROR;
 	}
 	if (Zmodem)
@@ -651,61 +544,21 @@ char *oname;
 {
 	register c;
 	register char *p, *q;
-#ifdef STAT
 	struct stat f;
-#endif
 	char name[PATHLEN];
 
 	strcpy(name, oname);
 
-#ifdef XARGSFILE
-	/* Parse GEniename:REALname:length pathname syntax */
-	Thisflen = -1;
-	for (p = oname; *p; ++p) {
-		if (*p == ':') {
-			*p++ = 0;
-			q = p;
-			for (++p; *p; ++p) {
-				if (*p == ':') {
-					*p++ = 0;
-					Thisflen = atol(p);
-					break;
-				}
-			}
-			strcpy(name, q);
-			break;
-		}
-	}
-#endif
-
-#ifdef GENIE
-	_describe(oname,&fdes);		/* An undocumented goodie */
-	if (fdes.type_file == 1) {	/* Fortran Sequential Binary */
-		Binfile = 1;
-		in = fopen(oname,"rB");
-	}
-	else if (fdes.type_file == 0)  { /* Ascii */
-		Binfile = 0;
-		in = fopen(oname,"r");
-	}
-	else {				/* not a SL filetype */
-		fprintf(stderr, "\nUnknown file type %d\n",fdes.type_file);
-		++errcnt;
-		return OK;		/* pass over it, there may be others */
-	}
-#else
 	if (Restricted) {
 		/* restrict pathnames to current tree or uucppublic */
 		if ( substr(name, "../")
 		 || (name[0]== '/' && strncmp(name, PUBDIR, strlen(PUBDIR))) ) {
-			canit();
-			fprintf(stderr,"\r\nsz:\tSecurity Violation\r\n");
+			canit();  sprintf(endmsg,"Security Violation");
 			return ERROR;
 		}
 	}
 
 	in=fopen(oname, ROPMODE);
-#endif
 
 	if (in==NULL) {
 		++errcnt;
@@ -713,7 +566,6 @@ char *oname;
 	}
 	BEofseen = Eofseen = 0;  vpos = 0;
 
-#ifdef STAT
 	/* Check for directory or block special files */
 	fstat(fileno(in), &f);
 	c = f.st_mode & S_IFMT;
@@ -721,7 +573,6 @@ char *oname;
 		fclose(in);
 		return OK;
 	}
-#endif
 
 	++Filcnt;
 	switch (wctxpn(name)) {
@@ -730,20 +581,11 @@ char *oname;
 	case ZSKIP:
 		return OK;
 	}
-#ifdef STAT
 	if (!Zmodem && wctx(f.st_size)==ERROR)
 		return ERROR;
-#else
-	if (!Zmodem && wctx(1000000000L)==ERROR)
-		return ERROR;
-#endif
 
-#ifndef vax11c
-#ifndef GENIE
 	if (Unlinkafter)
 		unlink(oname);
-#endif
-#endif
 
 	return 0;
 }
@@ -760,17 +602,13 @@ char *name;
 {
 	register char *p, *q;
 	char name2[PATHLEN];
-#ifdef STAT
 	struct stat f;
-#endif
 
 	if (Modem2) {
-#ifdef STAT
 		if (*name && fstat(fileno(in), &f)!= -1) {
 			fprintf(stderr, "Sending %s, %ld XMODEM blocks. ",
 			  name, (127+f.st_size)>>7);
 		}
-#endif
 		fprintf(stderr, "Give your local XMODEM receive command now.\r\n");
 		fflush(stderr);
 		return OK;
@@ -804,36 +642,16 @@ char *name;
 	while (q < (txbuf + 1024))
 		*q++ = 0;
 	if (*name) {
-#ifdef XX
-		if (Thisflen >= 0) {
-			sprintf(p, "%u 0 0 0 %d %ld",
-			  Thisflen, Filesleft, Totalleft);
-			Totalleft -= Thisflen;
-		}
-#endif
-#ifdef GENIE
-		else
-			sprintf(p, "%d", fdes.current_file_size * 1260);
-		vfile("%s open Binfile=%d size=%ld", name, Binfile,
-		  fdes.current_file_size * 1260);
-#endif
-
-#ifdef STAT
-#ifndef XX
 		if (fstat(fileno(in), &f)!= -1)
 			sprintf(p, "%lu %lo %o 0 %d %ld", f.st_size, f.st_mtime,
 			  f.st_mode, Filesleft, Totalleft);
 		Totalleft -= f.st_size;
-#endif
-#endif
-
 	}
 	if (--Filesleft <= 0)
 		Totalleft = 0;
 	if (Totalleft < 0)
 		Totalleft = 0;
 
-#ifdef STAT
 	/* force 1k blocks if name won't fit in 128 byte block */
 	if (txbuf[125])
 		blklen=1024;
@@ -841,7 +659,6 @@ char *name;
 		txbuf[127] = (f.st_size + 127) >>7;
 		txbuf[126] = (f.st_size + 127) >>15;
 	}
-#endif
 	if (Zmodem)
 		return zsendfile(txbuf, 1+strlen(p)+(p-txbuf));
 	if (wcputsec(txbuf, 0, 128)==ERROR)
@@ -862,7 +679,7 @@ getnak()
 			Ascii = 0;	/* Receiver does the conversion */
 			return FALSE;
 		case TIMEOUT:
-			zperr("Timeout on pathname");
+			sprintf(endmsg, "Timeout waiting for ZRINIT");
 			return TRUE;
 		case WANTG:
 #ifdef MODE2OK
@@ -875,8 +692,10 @@ getnak()
 		case NAK:
 			return FALSE;
 		case CAN:
-			if ((firstch = readline(20)) == CAN && Lastrx == CAN)
+			if ((firstch = readline(20)) == CAN && Lastrx == CAN) {
+				sprintf(endmsg, "Got CAN waiting to send file");
 				return TRUE;
+			}
 		default:
 			break;
 		}
@@ -1059,17 +878,6 @@ zfilbuf()
 	/* We assume request is within buffer, or just beyond */
 	txbuf = Txb + (bytcnt & TXBMASK);
 	if (vpos <= bytcnt) {
-#ifdef GENIE
-		if (Binfile) {
-			long l, m;  char *p;
-
-			for (p=txbuf, n=0, l=blklen;  l;  l -= 128, p+= 128) {
-				n += m = fgetb(p, 128, in);
-				if (m == 0)
-					break;
-			}
-		} else
-#endif
 		n = fread(txbuf, 1, blklen, in);
 
 		vpos += n;
@@ -1098,9 +906,6 @@ FILE *fptr;
 long pos;
 {
 	long m, n;
-#ifdef GENIE
-	long l, k;  char *p;
-#endif
 
 	vfile("fooseek: pos =%lu vpos=%lu Canseek=%d", pos, vpos, Canseek);
 	/* Seek offset < current buffer */
@@ -1114,27 +919,11 @@ long pos;
 				return 1;
 		}
 		else if (Canseek == 0) {
-#ifdef GENIE
-			if (Binfile) {
-				if (fseekb(fptr, vpos = 0L, 0))
-					return 1;
-				} else
-#endif
 			if (fseek(fptr, vpos = 0L, 0))
 				return 1;
 		} else
 			return 1;
 		while (vpos < pos) {
-#ifdef GENIE
-			if (Binfile) {
-				for (p=Txb,n=0,l=TXBSIZE; l; l -= 128,p+= 128) {
-					n += (k = fgetb(p, 128, fptr));
-					vfile("bsk1: l=%d k=%d", l, k);
-					if (k == 0)
-						break;
-				}
-			} else
-#endif
 			n = fread(Txb, 1, TXBSIZE, fptr);
 			vpos += n;
 			vfile("n=%d vpos=%ld", n, vpos);
@@ -1155,16 +944,6 @@ long pos;
 			txbuf = Txb + (vpos & TXBMASK);
 			m = TXBSIZE - (vpos & TXBMASK);
 			vfile("m=%ld vpos=%ld", m,vpos);
-#ifdef GENIE
-			if (Binfile) {
-				for (p=txbuf,n=0,l=m; l; l -= 128,p+= 128) {
-					n += (k = fgetb(p, 128, fptr));
-					vfile("bsk2: l=%d k=%d n=%d", l, k, n);
-					if (k == 0)
-						break;
-				}
-			} else
-#endif
 				n = fread(txbuf, 1, m, fptr);
 			vfile("n=%ld vpos=%ld", n,vpos);
 			vpos += n;
@@ -1186,6 +965,7 @@ long pos;
 
 /* VARARGS1 */
 vfile(f, a, b, c, d)
+char *f;
 long a, b, c, d;
 {
 	if (Verbose > 2) {
@@ -1201,8 +981,6 @@ alrm()
 }
 
 
-#ifndef GENIE
-#ifndef vax11c
 /*
  * readline(timeout) reads character(s) from file descriptor 0
  * timeout is in tenths of seconds
@@ -1247,8 +1025,6 @@ purgeline()
 	lseek(0, 0L, 2);
 #endif
 }
-#endif
-#endif
 
 /* send cancel string to get the other end to shut up */
 canit()
@@ -1257,13 +1033,8 @@ canit()
 	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
 	};
 
-#ifdef vax11c
-	raw_wbuf(strlen(canistr), canistr);
-	purgeline();
-#else
 	printf(canistr);
 	fflush(stdout);
-#endif
 }
 
 
@@ -1304,17 +1075,6 @@ register char *s,*t;
 }
 
 char *babble[] = {
-#ifdef vax11c
-	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
-	"	(Y) = Option applies to YMODEM only",
-	"	(Z) = Option applies to ZMODEM only",
-	"Usage:	sz [-2+abdefkLlNnquvwYy] [-] file ...",
-	"	sz [-2Ceqv] -c COMMAND",
-	"	\\ Force next option letter to upper case",
-	"	sb [-2adfkquv] [-] file ...",
-	"	sx [-2akquv] [-] file",
-#endif
-#ifndef vax11c
 	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
 	"	(Y) = Option applies to YMODEM only",
 	"	(Z) = Option applies to ZMODEM only",
@@ -1322,7 +1082,6 @@ char *babble[] = {
 	"	sz [-2Ceqv] -c COMMAND",
 	"	sb [-2adfkquv] [-] file ...",
 	"	sx [-2akquv] [-] file",
-#endif
 #ifdef CSTOPB
 	"	2   Use 2 stop bits",
 #endif
@@ -1330,9 +1089,7 @@ char *babble[] = {
 	"	a   (ASCII) change NL to CR/LF",
 	"	b   Binary file transfer override",
 	"	c   send COMMAND (Z)",
-#ifndef vax11c
 	"	d   Change '.' to '/' in pathnames (Y/Z)",
-#endif
 	"	e   Escape all control characters (Z)",
 	"	f   send Full pathname (Y/Z)",
 	"	i   send COMMAND, ack Immediately (Z)",
@@ -1345,9 +1102,7 @@ char *babble[] = {
 	"	p   Protect existing destination file (Z)",
 	"	r   Resume/Recover interrupted file transfer (Z)",
 	"	q   Quiet (no progress reports)",
-#ifndef vax11c
 	"	u   Unlink (remove) file after transmission",
-#endif
 	"	v   Verbose - provide debugging information",
 	"	w N restrict Window to N bytes (Z)",
 	"	Y   Yes, overwrite existing file, skip if not present at rx (Z)",
@@ -1366,7 +1121,7 @@ usage()
 	 VERSION, OS);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
 	cucheck();
-	exit(SS_NORMAL);
+	exit(0);
 }
 
 /*
@@ -1375,9 +1130,7 @@ usage()
 getzrxinit()
 {
 	register n;
-#ifdef STAT
 	struct stat f;
-#endif
 
 	for (n=10; --n>=0; ) {
 		
@@ -1407,13 +1160,11 @@ getzrxinit()
 
 #ifndef READCHECK
 #ifndef USG
-#ifndef GENIE
 			/* Use 1024 byte frames if no sample/interrupt */
 			if (Rxbuflen < 32 || Rxbuflen > 1024) {
 				Rxbuflen = 1024;
 				vfile("Rxbuflen=%d", Rxbuflen);
 			}
-#endif
 #endif
 #endif
 
@@ -1424,36 +1175,17 @@ getzrxinit()
 				Rxbuflen = Tframlen;
 			vfile("Rxbuflen=%d", Rxbuflen);
 
-#ifndef GENIE
-#ifndef vax11c
-#ifdef STAT
 			/* If using a pipe for testing set lower buf len */
 			fstat(0, &f);
 			if ((f.st_mode & S_IFMT) != S_IFCHR) {
 				Rxbuflen = 1024;
 			}
-#endif
-#endif
-#endif
 
-#ifdef BADSEEK
-#ifdef GENIE
-			if (Txwindow == 0) {
-				Txwspac = (Txwindow = 4096)/4;
-			}
-#else
-			if (Txwindow == 0)
-				Txwindow = TXBSIZE - 1024;
-			Txwspac = TXBSIZE/4;
-#endif
-			Canseek = 0;
-#endif
 
 			/*
 			 * If input is not a regular file, force ACK's to
 			 *  prevent running beyond the buffer limits
 			 */
-#ifdef STAT
 			if ( !Command) {
 				fstat(fileno(in), &f);
 				if ((f.st_mode & S_IFMT) != S_IFREG) {
@@ -1466,7 +1198,6 @@ getzrxinit()
 #endif
 				}
 			}
-#endif
 
 			/* Set initial subpacket length */
 			if (blklen < 1024) {	/* Command line override? */
@@ -1481,11 +1212,6 @@ getzrxinit()
 				blklen = Rxbuflen;
 			if (blkopt && blklen > blkopt)
 				blklen = blkopt;
-#ifdef GENIE
-			blklen /= 128;  blklen *= 128;
-			if (blklen < 128)
-				blklen = 128;
-#endif
 			vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
 			vfile("Txwindow = %u Txwspac = %d", Txwindow, Txwspac);
 
@@ -1552,7 +1278,7 @@ char *buf;
 	long lastcrcrq = -1;
 	char *p;
 
-	for (;;) {
+	for (errors=0; ++errors<11;) {
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
 		Txhdr[ZF1] = Lzmanag;	/* file management request */
 		if (Lskipnocor)
@@ -1574,8 +1300,14 @@ again:
 		case TIMEOUT:
 		case ZABORT:
 		case ZFIN:
-		default:
+			sprintf(endmsg, "Got %s on pathname", frametypes[c+FTOFFSET]);
 			return ERROR;
+		default:
+			sprintf(endmsg, "Got %d frame type on pathname", c);
+			return ERROR;
+		case ERROR:
+		case ZNAK:
+			continue;
 		case ZCRC:
 			if (Rxpos != lastcrcrq) {
 				lastcrcrq = Rxpos;
@@ -1594,37 +1326,13 @@ again:
 			goto again;
 		case ZFERR:
 		case ZSKIP:
+			sprintf(endmsg, "File skipped by receiver request");
 			fclose(in); return c;
 		case ZRPOS:
 			/*
 			 * Suppress zcrcw request otherwise triggered by
 			 * lastyunc==bytcnt
 			 */
-#ifdef GENIE
-			/*
-			 *  Special case - turn on RLE if not archive, etc.
-			 *   otherwise turn off RLE unless cmd line specified
-			 */
-			if (Rxflags & CANRLE) {		/* RX can do it */
-				bytcnt = 0;
-				zfilbuf();
-				vfile("txbuf012: %x %x %x", txbuf[0], txbuf[1],
-				  txbuf[2]);
-				if ((txbuf[0] != 032)	/* .ARC file */
-				 && (txbuf[0] != 0x1f)	/* .Z file */
-				 && (txbuf[0] != 0x1c)	/* .LHZ file */
-				 && strncmp(txbuf, "ZOO", 3)
-				 && strncmp(txbuf, "GIF", 3)
-				 && (txbuf[2] != 3))	/* .ZIP file */
-					Txfcs32 = 2;
-				else if ( !(Lztrans & ZTRLE))
-					Txfcs32 = 1;
-			}
-			/* GEnie binary can't seek to byte */
-			if (Binfile) {
-				Rxpos &= ~127L;
-			}
-#endif
 			if (fseek(in, Rxpos, 0))
 				return ERROR;
 			Lastsync = (bytcnt = Txpos = Lrxpos = Rxpos) -1;
@@ -1662,6 +1370,7 @@ gotack:
 		case ZRPOS:
 			break;
 		case ZRINIT:
+			fclose(in);
 			return OK;
 		}
 #ifdef READCHECK
@@ -1735,7 +1444,7 @@ gotack:
 			printf("ERROR: Interrupts Not Caught\n");
 			exit(1);
 		}
-		exit(SS_NORMAL);
+		exit(0);
 	}
 
 	do {
@@ -1822,11 +1531,14 @@ gotack:
 		case ZRPOS:
 			goto somemore;
 		case ZRINIT:
+			fclose(in);
 			return OK;
 		case ZSKIP:
 			fclose(in);
+			sprintf(endmsg, "File skipped by receiver request");
 			return c;
 		default:
+			sprintf(endmsg, "Got %d trying to send end of file", c);
 			fclose(in);
 			return ERROR;
 		}
@@ -1851,6 +1563,7 @@ getinsync(flag)
 		case ZABORT:
 		case ZFIN:
 		case TIMEOUT:
+			sprintf(endmsg, "Got %s sending data", frametypes[c+FTOFFSET]);
 			return ERROR;
 		case ZRPOS:
 			/* ************************************* */
@@ -1862,13 +1575,15 @@ getinsync(flag)
 				return ERROR;
 			Eofseen = 0;
 			bytcnt = Lrxpos = Txpos = Rxpos;
-#ifndef GENIE
 			if (Lastsync == Rxpos) {
-				if (++Beenhereb4 > 4)
+				if (++Beenhereb4 > 12) {
+					sprintf(endmsg, "Can't send block");
+					return ERROR;
+				}
+				if (Beenhereb4 > 4)
 					if (blklen > 32)
 						blklen /= 2;
 			}
-#endif
 			Lastsync = Rxpos;
 			return c;
 		case ZACK:
@@ -1877,8 +1592,9 @@ getinsync(flag)
 				return ZACK;
 			continue;
 		case ZRINIT:
+			return c;
 		case ZSKIP:
-			fclose(in);
+			sprintf(endmsg, "File skipped by receiver request");
 			return c;
 		case ERROR:
 		default:
@@ -1919,11 +1635,7 @@ char *buf;
 	register c;
 	long cmdnum;
 
-#ifdef GENIE
-	cmdnum = 69;
-#else
 	cmdnum = getpid();
-#endif
 	errors = 0;
 	for (;;) {
 		stohdr(cmdnum);
@@ -1959,14 +1671,10 @@ listen:
 			saybibi();
 			return OK;
 		case ZRQINIT:
-#ifdef vax11c		/* YAMP :== Yet Another Missing Primitive */
-			return ERROR;
-#else
 			vfile("******** RZ *******");
 			system("rz");
 			vfile("******** SZ *******");
 			goto listen;
-#endif
 		}
 	}
 }
@@ -1997,7 +1705,6 @@ char *s;
 	}
 }
 
-#ifdef STAT
 countem(argc, argv)
 register char **argv;
 {
@@ -2023,46 +1730,6 @@ register char **argv;
 		fprintf(stderr, "\ncountem: Total %d %ld\n",
 		  Filesleft, Totalleft);
 }
-#else
-countem(argc, argv)
-register char **argv;
-{
-	register c;
-	register char *p;
-	long size;
-
-	for (Totalleft = 0, Filesleft = 0; --argc >=0; ++argv) {
-		size = -1;
-		if (Verbose>2) {
-			fprintf(stderr, "\nCountem: %03d %s ", argc, *argv);
-			fflush(stderr);
-		}
-		++Filesleft;  
-#ifdef XARGSFILE
-		/* Look for file length in third colon sep field */
-		for (p = *argv; *p; ++p) {
-			if (*p == ':') {
-				for (++p; *p; ++p) {
-					if (*p == ':') {
-						++p;
-						size = atol(p);
-						Totalleft += size;
-						break;
-					}
-				}
-			break;
-			}
-		}
-#endif
-
-		if (Verbose>2)
-			fprintf(stderr, " %ld", size);
-	}
-	if (Verbose>2)
-		fprintf(stderr, "\ncountem: Total %d %ld\n",
-		  Filesleft, Totalleft);
-}
-#endif
 
 chartest(m)
 {

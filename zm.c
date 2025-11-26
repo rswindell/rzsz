@@ -247,9 +247,10 @@ register char *buf;
 		crc = updcrc(0,updcrc(0,crc));
 		zsendline(crc>>8); zsendline(crc);
 	}
-	if (frameend == ZCRCW) {
-		xsendline(XON);  flushmo();
-	}
+	if (frameend == ZCRCW)
+		xsendline(XON);
+	if (frameend != ZCRCG)
+		flushmo();
 }
 
 zsda32(buf, length, frameend)

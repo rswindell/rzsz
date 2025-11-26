@@ -1,31 +1,9 @@
-#define VERSION "3.02 6-04-89"
+#define VERSION "3.05 03-20-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -compat -M2 -Ox -K -i -DMD % -o rz; size rz;
-<-xtx-*> cc386 -Ox -DMD rz.c -o $B/rz;  size $B/rz
+/*
  *
  * rz.c By Chuck Forsberg
- *
- *	cc -O rz.c -o rz		USG (3.0) Unix
- * 	cc -O -DV7  rz.c -o rz		Unix V7, BSD 2.8 - 4.3
- *
- *	ln rz rb;  ln rz rx			For either system
- *
- *	ln rz /usr/bin/rzrmail		For remote mail.  Make this the
- *					login shell. rzrmail then calls
- *					rmail(1) to deliver mail.
- *
- * To compile on VMS:
- *
- *	define LNK$LIBRARY   SYS$LIBRARY:VAXCRTL.OLB
- *	cc rz.c
- *	cc vvmodem.c
- *	link rz,vvmodem
- *	rz :== $disk:[username.subdir]rz.exe
- *      For high speed, try increasing the SYSGEN parameter TTY_TYPAHDSZ to 256.
- *
- *
- *  Unix is a trademark of Western Electric Company
  *
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
@@ -74,16 +52,11 @@
  *
  *  Alarm signal handling changed to work with 4.2 BSD 7-15-84 CAF 
  *
- *  BIX added 6-30-87 to support BIX(TM) upload protocol used by the
- *  Byte Information Exchange.
- *
  *  NFGVMIN Updated 2-18-87 CAF for Xenix systems where c_cc[VMIN]
  *  doesn't work properly (even though it compiles without error!),
  *
  *  SEGMENTS=n added 2-21-88 as a model for CP/M programs
  *    for CP/M-80 systems that cannot overlap modem and disk I/O.
- *
- *  VMS flavor hacks begin with rz version 2.00
  *
  *  -DMD may be added to compiler command line to compile in
  *    Directory-creating routines from Public Domain TAR by John Gilmore
@@ -93,29 +66,8 @@
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 
-#ifdef vax11c
-#include <types.h>
-#include <stat.h>
-#define LOGFILE "rzlog.tmp"
-#include <stdio.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <ctype.h>
-#include <errno.h>
-#define OS "VMS"
-#define BUFREAD
-extern int errno;
-#define SS_NORMAL SS$_NORMAL
-
-#ifndef PROGNAME
-#define PROGNAME "rz"
-#endif
 
 
-#else
-
-
-#define SS_NORMAL 0
 #define LOGFILE "/tmp/rzlog"
 #include <stdio.h>
 #include <signal.h>
@@ -124,7 +76,6 @@ extern int errno;
 #include <errno.h>
 extern int errno;
 FILE *popen();
-#endif
 
 #define OK 0
 #define FALSE 0
@@ -165,11 +116,7 @@ int Zmodem=0;		/* ZMODEM protocol requested */
 int Nozmodem = 0;	/* If invoked as "rb" */
 unsigned Baudrate = 2400;
 unsigned Effbaud = 2400;
-#ifdef vax11c
-#include "vrzsz.c"	/* most of the system dependent stuff here */
-#else
 #include "rbsb.c"	/* most of the system dependent stuff here */
-#endif
 #include "crctab.c"
 
 char *substr();
@@ -185,6 +132,7 @@ long getfree()
 }
 
 int Lastrx;
+long rxbytes;
 int Crcflg;
 int Firstsec;
 int Eofseen;		/* indicates cpm eof (^Z) has been received */
@@ -201,18 +149,14 @@ int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
 long Bytesleft;		/* number of bytes of incoming file left */
 long Modtime;		/* Unix style mod time for incoming file */
 int Filemode;		/* Unix style mode for incoming file */
+long Totalleft;
+long Filesleft;
 char Pathname[PATHLEN];
 char *Progname;		/* the name by which we were called */
 
 int Batch=0;
 int Topipe=0;
-int MakeLCPathname=TRUE;	/* make received pathname lower case */
 int Verbose=0;
-int Quiet=0;		/* overrides logic that would otherwise set verbose */
-int Nflag = 0;		/* Don't really transfer files */
-int Rxclob=FALSE;	/* Clobber existing file */
-int Rxbinary=FALSE;	/* receive all files in bin mode */
-int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
 int Blklen;		/* record length of received packets */
 
@@ -227,7 +171,6 @@ char secbuf[1025];
 char linbuf[HOWMANY];
 int Lleft=0;		/* number of characters in linbuf */
 time_t timep[2];
-char Lzmanag;		/* Local file management request */
 char zconv;		/* ZMODEM file conversion request */
 char zmanag;		/* ZMODEM file management request */
 char ztrans;		/* ZMODEM file transport request */
@@ -275,11 +218,7 @@ char *argv[];
 		Restricted=TRUE;
 
 	from_cu();
-#ifdef vax11c
-	chkinvok(virgin = PROGNAME);
-#else
 	chkinvok(virgin=argv[0]);	/* if called as [-]rzCOMMAND set flag */
-#endif
 	npats = 0;
 	while (--argc) {
 		cp = *++argv;
@@ -288,24 +227,10 @@ char *argv[];
 				switch(*cp) {
 				case '\\':
 					 cp[1] = toupper(cp[1]);  continue;
-				case '+':
-					Lzmanag = ZMAPND; break;
-				case 'a':
-					Rxascii=TRUE;  break;
-				case 'b':
-					Rxbinary=TRUE; break;
 				case 'c':
 					Crcflg=TRUE; break;
-#ifndef vax11c
-				case 'D':
-					Nflag = TRUE; break;
-#endif
 				case 'e':
 					Zctlesc = 1; break;
-				case 'p':
-					Lzmanag = ZMPROT;  break;
-				case 'q':
-					Quiet=TRUE; Verbose=0; break;
 				case 't':
 					if (--argc < 1) {
 						usage();
@@ -320,12 +245,8 @@ char *argv[];
 					}
 					Zrwindow = atoi(*++argv);
 					break;
-				case 'u':
-					MakeLCPathname=FALSE; break;
 				case 'v':
 					++Verbose; break;
-				case 'y':
-					Rxclob=TRUE; break;
 				default:
 					usage();
 				}
@@ -350,7 +271,7 @@ char *argv[];
 		setbuf(stderr, NULL);
 		fprintf(stderr, "argv[0]=%s Progname=%s\n", virgin, Progname);
 	}
-	if (Fromcu && !Quiet) {
+	if (Fromcu) {
 		if (Verbose == 0)
 			Verbose = 2;
 	}
@@ -372,34 +293,30 @@ char *argv[];
 		canit();
 	if (exitcode)
 		cucheck();
-	exit(exitcode ? exitcode:SS_NORMAL);
+	exit(exitcode ? exitcode:0);
 }
 
 
 usage()
 {
-	cucheck();
-	fprintf(stderr,"Usage:	rz [-abeuvy]		(ZMODEM)\n");
-	fprintf(stderr,"or	rb [-abuvy]		(YMODEM)\n");
-	fprintf(stderr,"or	rx [-abcv] file	(XMODEM or XMODEM-1k)\n");
-	fprintf(stderr,"	  -a ASCII transfer (strip CR)\n");
-	fprintf(stderr,"	  -b Binary transfer for all files\n");
-#ifndef vax11c
-	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
-#endif
-	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
-	fprintf(stderr,"	  -v Verbose more v's give more info\n");
-	fprintf(stderr,"	  -y Yes, clobber existing file if any\n");
 	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
 	  Progname, VERSION, OS);
-	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
-	exit(SS_NORMAL);
+	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
+	fprintf(stderr,"Usage:	rz [-ev]		(ZMODEM)\n");
+	fprintf(stderr,"or	rb [-v]			(YMODEM)\n");
+	fprintf(stderr,"or	rx [-cv] file	(XMODEM or XMODEM-1k)\n\n");
+	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
+	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
+	fprintf(stderr,"	  -v Verbose more v's give more info\n");
+	cucheck();
+	exit(1);
 }
 /*
  *  Debugging information output interface routine
  */
 /* VARARGS1 */
 vfile(f, a, b, c, d)
+char *f;
 long a, b, c, d;
 {
 	if (Verbose > 2) {
@@ -422,8 +339,7 @@ char **argp;
 
 	if (Batch || argc==0) {
 		Crcflg=1;
-		if ( !Quiet)
-			fprintf(stderr, rbmsg, Progname, Nozmodem?"sb":"sz");
+		fprintf(stderr, rbmsg, Progname, Nozmodem?"sb":"sz");
 		if (c=tryz()) {
 			if (c == ZCOMPL)
 				return OK;
@@ -457,20 +373,16 @@ char **argp;
 	return OK;
 fubar:
 	canit();
-#ifndef vax11c
 	if (Topipe && fout) {
 		pclose(fout);  return ERROR;
 	}
-#endif
 	Modtime = 1;
 	if (fout)
 		fclose(fout);
-#ifndef vax11c
 	if (Restricted) {
 		unlink(Pathname);
 		fprintf(stderr, "\r\nrz: %s removed.\r\n", Pathname);
 	}
-#endif
 	return ERROR;
 }
 
@@ -661,7 +573,6 @@ humbug:
 	return ERROR;
 }
 
-#ifndef vax11c
 /*
  * This version of readline is reasoably well suited for
  * reading many characters.
@@ -725,7 +636,6 @@ purgeline()
 	lseek(0, 0L, 2);
 #endif
 }
-#endif
 
 
 /*
@@ -735,50 +645,35 @@ procheader(name)
 char *name;
 {
 	register char *openmode, *p, **pp;
+	static dummy;
+	struct stat f;
 
 	/* set default parameters and overrides */
 	openmode = "w";
-	Thisbinary = (!Rxascii) || Rxbinary;
-	if (Lzmanag)
-		zmanag = Lzmanag;
 
 	/*
 	 *  Process ZMODEM remote file management requests
 	 */
-	if (!Rxbinary && zconv == ZCNL)	/* Remote ASCII override */
-		Thisbinary = 0;
-	if (zconv == ZCBIN)	/* Remote Binary override */
-		Thisbinary = TRUE;
-	else if (zmanag == ZMAPND)
+	Thisbinary = (zconv != ZCNL);	/* Remote ASCII override */
+	if (zmanag == ZMAPND)
 		openmode = "a";
-
-#ifndef BIX
-	/* Check for existing file */
-	if (!Rxclob && (zmanag&ZMMASK) != ZMCLOB && (fout=fopen(name, "r"))) {
-		fclose(fout);  return ERROR;
-	}
-#endif
 
 	Bytesleft = DEFBYTL; Filemode = 0; Modtime = 0L;
 
 	p = name + 1 + strlen(name);
 	if (*p) {	/* file coming from Unix or DOS system */
-		sscanf(p, "%ld%lo%o", &Bytesleft, &Modtime, &Filemode);
-#ifndef vax11c
+		sscanf(p, "%ld%lo%o%lo%d%ld%d%d",
+		  &Bytesleft, &Modtime, &Filemode,
+		  &dummy, &Filesleft, &Totalleft, &dummy, &dummy);
 		if (Filemode & UNIXFILE)
 			++Thisbinary;
-#endif
 		if (Verbose) {
 			fprintf(stderr,  "Incoming: %s %ld %lo %o\n",
 			  name, Bytesleft, Modtime, Filemode);
+			fprintf(stderr,  "YMODEM header: %s\n", p);
 		}
 	}
 
-#ifdef BIX
-	if ((fout=fopen("scratchpad", openmode)) == NULL)
-		return ERROR;
-	return OK;
-#else
 
 	else {		/* File coming from CP/M system */
 		for (p=name; *p; ++p)		/* change / to _ */
@@ -789,50 +684,58 @@ char *name;
 			*p = 0;
 	}
 
-#ifndef vax11c
-	if (!Zmodem && MakeLCPathname && !IsAnyLower(name)
-	  && !(Filemode&UNIXFILE))
-		uncaps(name);
-#endif
-	if (Topipe > 0) {
-		sprintf(Pathname, "%s %s", Progname+2, name);
-		if (Verbose)
-			fprintf(stderr,  "Topipe: %s %s\n",
-			  Pathname, Thisbinary?"BIN":"ASCII");
-#ifndef vax11c
-		if ((fout=popen(Pathname, "w")) == NULL)
-			return ERROR;
-#endif
-	} else {
-		strcpy(Pathname, name);
-		if (Verbose) {
-			fprintf(stderr,  "Receiving %s %s %s\n",
-			  name, Thisbinary?"BIN":"ASCII", openmode);
-		}
-		checkpath(name);
-		if (Nflag)
-			name = "/dev/null";
-#ifndef vax11c
-		if (name[0] == '!' || name[0] == '|') {
-			if ( !(fout = popen(name+1, "w"))) {
-				return ERROR;
+	strcpy(Pathname, name);
+	checkpath(name);
+
+	if (*name && stat(name, &f)!= -1) {
+		zmanag &= ZMMASK;
+		vfile("Current %s is %ld %lo", name, f.st_size, f.st_mtime);
+		if (Thisbinary && zconv==ZCRESUM) {
+			rxbytes = f.st_size & ~511;
+			openit(name, "r+");
+			if ( !fout)
+				return ZFERR;
+			if (Bytesleft < rxbytes)
+				rxbytes = 0;
+			if (fseek(fout, rxbytes, 0)) {
+				closeit();
+				return ZFERR;
 			}
-			Topipe = -1;  return(OK);
+			vfile("Crash recovery at %ld", rxbytes);
+			return 0;
 		}
-#endif
-#ifdef MD
-		fout = fopen(name, openmode);
-		if ( !fout)
-			if (make_dirs(name))
-				fout = fopen(name, openmode);
-#else
-		fout = fopen(name, openmode);
-#endif
-		if ( !fout)
-			return ERROR;
+		else if ((zmanag==ZMNEW) ||
+		  ((zmanag==ZMNEWL) && Bytesleft <= f.st_size) ) {
+			if ((f.st_mtime+1) >= Modtime)
+				goto skipfile;
+			goto doopen;
+		}
+		else if (zmanag==ZMPROT)
+			goto skipfile;
+		else if ((zmanag&ZMMASK) != ZMCLOB)
+			goto skipfile;
+		goto doopen;
+	} else if (zmanag & ZMSKNOLOC) {
+skipfile:
+		vfile("Skipping %s", name);
+		return ZSKIP;
 	}
-	return OK;
-#endif /* BIX */
+doopen:
+	openit(name, openmode);
+#ifdef MD
+	if ( !fout)
+		if (make_dirs(name))
+			openit(name, openmode);
+#endif
+	if ( !fout)
+		return ZFERR;
+	return 0;
+}
+
+openit(name, openmode)
+char *name, *openmode;
+{
+	fout = fopen(name, openmode);
 }
 
 #ifdef MD
@@ -967,7 +870,6 @@ register n;
 	return OK;
 }
 
-#ifndef vax11c
 /*
  *  Send a character to modem.  Small is beautiful.
  */
@@ -982,31 +884,7 @@ sendline(c)
 }
 
 flushmo() {}
-#endif
-
-
-
-
-
-/* make string s lower case */
-uncaps(s)
-register char *s;
-{
-	for ( ; *s; ++s)
-		if (isupper(*s))
-			*s = tolower(*s);
-}
-/*
- * IsAnyLower returns TRUE if string s has lower case letters.
- */
-IsAnyLower(s)
-register char *s;
-{
-	for ( ; *s; ++s)
-		if (islower(*s))
-			return TRUE;
-	return FALSE;
-}
+flushmoc() {}
 
 /*
  * substr(string, token) searches for token in string s
@@ -1051,14 +929,9 @@ canit()
 	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
 	};
 
-#ifdef vax11c
-	raw_wbuf(strlen(canistr), canistr);
-	purgeline();
-#else
 	printf(canistr);
 	Lleft=0;	/* Do read next time ... */
 	fflush(stdout);
-#endif
 }
 
 
@@ -1193,9 +1066,6 @@ again:
 			zshhdr(4,ZACK, Txhdr);
 			goto again;
 		case ZCOMMAND:
-#ifdef vax11c
-			return ERROR;
-#else
 			cmdzack1flg = Rxhdr[ZF0];
 			if (zrdata(secbuf, 1024) == GOTCRCW) {
 				if (cmdzack1flg & ZCACK1)
@@ -1213,7 +1083,6 @@ again:
 				return ZCOMPL;
 			}
 			zshhdr(4,ZNAK, Txhdr); goto again;
-#endif
 		case ZCOMPL:
 			goto again;
 		default:
@@ -1265,8 +1134,8 @@ rzfile()
 	long rxbytes;
 
 	Eofseen=FALSE;
-	if (procheader(secbuf) == ERROR) {
-		return (tryzhdrtype = ZSKIP);
+	if (c = procheader(secbuf)) {
+		return (tryzhdrtype = c);
 	}
 
 	n = 20; rxbytes = 0l;
@@ -1464,25 +1333,21 @@ closeit()
 {
 	time_t time();
 
-#ifndef vax11c
 	if (Topipe) {
 		if (pclose(fout)) {
 			return ERROR;
 		}
 		return OK;
 	}
-#endif
 	if (fclose(fout)==ERROR) {
 		fprintf(stderr, "file close ERROR\n");
 		return ERROR;
 	}
-#ifndef vax11c
 	if (Modtime) {
 		timep[0] = time(NULL);
 		timep[1] = Modtime;
 		utime(Pathname, timep);
 	}
-#endif
 	if ((Filemode&S_IFMT) == S_IFREG)
 		chmod(Pathname, (07777 & Filemode));
 	return OK;
@@ -1526,7 +1391,6 @@ bttyout(c)
 		putc(c, stderr);
 }
 
-#ifndef vax11c
 /*
  * Strip leading ! if present, do shell escape. 
  */
@@ -1548,5 +1412,4 @@ register char *s;
 	mode(0);
 	execl("/bin/sh", "sh", "-c", s);
 }
-#endif
 /* End of rz.c */

@@ -1,5 +1,20 @@
 # Changelog
 
+## [1991-03-20] RZ 3.05 / SZ 3.11
+
+This release included this `README` update:
+```
+Feb 1991: various corrections and simplifications.  Sz now
+stores critical error messages for post mortem display.
+```
+  - The Makefile seems to have reverted to its previous form
+  - Remove '-y' (clobber existing file) option
+  - Remove several conversion on receive options
+  - SZ version string no longer starts with "sz"
+  - vax11c, GENIE and other ifdef/ifndef hacks removed
+  - Handle receive of ZNAK
+  - Better diagnostic output
+
 ## [1990-02-02] RZ 3.02 / SZ 3.07
 
   - Major Makefile overhaul

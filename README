@@ -1,32 +1,23 @@
+Feb 1991: various corrections and simplifications.  Sz now
+stores critical error messages for post mortem display.
+
+Man pages are formatted for those without Unix nroff.
+
+VMS systems are now supported with native VMS versions in
+RZSZ.TLB.  The rz and sz in RZSZ.TLB support wild cards and
+VMS record types.
+
 May 1989: Corrections for undefined variable and multiply
 defined rdchk() on some systems.
 
-New for April 1989: ZMODEM compression and other compatible
-extensions have been added to the rz and sz programs.  Please
-read the comments in the rz.c and sz.c source code for
-licensing information for commercial use.
+New for 1989: ZMODEM compression and other compatible
+extensions have been added to the rz and sz programs.
+Please read the comments in the rz.c and sz.c source code
+for licensing information.
 
 Previous versions of rz and sz (April 1988) remain Public Domain.
 
-New for April 1988: VMS C flavors of rz and sz especially for
-tired frog stompers.  The following performance log entries
-give the story!
-
- 2400 Z  splat.arc         3968  220   18  0  0   0  512  30 (rz) 0 ccvax off
- 2400 K  splat.arc         3968  110   36  0  0   0   89  -1 get  -1 ccvax off
-
-The contents of RZSZ.ARC can be uploaded to a VAX/XMS system
-by ZCOMM or Professional-YAM using the supplied vupl.t script.
-Connect to your VMS system, select an empty directory, and
-then give the YAM/ZCOMM command: "source vupl.t".  This will
-attempt to start a Kermit server ans upload the files to it.
-If the script can't fire up a Kermit server, the script will
-use the VMS DCL "create" command to upload the files directly.
-In the latter case, use a clean line for best results.
-Compile/Link directions for VMS C are in the comments at the
-beginning of the rz.c and sz.c files.
-
-The contents of RZSZ.ARC can be uploaded to a Unix or Xenix
+The contents of RZSZ.ZOO can be uploaded to a Unix or Xenix
 system by ZCOMM or Professional-YAM using the supplied zupl.t
 script.  Connect to your Unix/Xenix system, select an empty
 directory, and then give the YAM/ZCOMM command: "source
@@ -47,8 +38,9 @@ The "DSZ" shareware program allows ZMODEM file transfers with
 traditional DOS comm programs, but it must be called manually.
 (The computer should do that for you!) DSZ provides a "mini
 term function" that supports ZMODEM AutoDownload.  DSZ (part
-of DSZ.ARC) and the ZMODEM protocol description (YZMODEM.ARC)
-are on TeleGodzilla and other fine bulletin boards.
+of DSZ.ZIP) and ZCOMM (ZCOMMEXE.ZIP, ZCOMMDOC.ZIP,
+ZCOMMHLP.ZIP) are available on TeleGodzilla and other fine
+bulletin boards.
 
 Chuck Forsberg WA7KGX          ...!tektronix!reed!omen!caf 
 Author of YMODEM, ZMODEM, Professional-YAM, ZCOMM, and DSZ
