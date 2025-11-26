@@ -14,8 +14,9 @@ nothing:
 	@echo "then type 'make SYSTEM' where SYSTEM is one of:"
 	@echo
 	@echo "	posix	POSIX compliant systems"
+	@echo "	next	NeXtstep v3.x (POSIX)"
 	@echo "	odt	SCO Open Desktop (strict)"
-	@echo "	icc	SCO Open Desktop, Intel compiler"
+	@echo "	everest	SCO Open Desktop (elf, strict)"
 	@echo "	sysvr4	SYSTEM 5.4 Unix"
 	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2), COHERENT 4.2"
 	@echo "	sysv	SYSTEM 3/5 Unix"
@@ -84,13 +85,13 @@ zoo: doc
 	zip rzsz zmr.c crc.c gz *.t minirb.c
 	mv rzsz.zip /u/t/yam
 
-taz: doc xenix crc
+tag: doc xenix crc
 	-rm -f /tmp/rzsz
 	tar cvf /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c *.doc \
 	 zmr.c crc.c gz *.t minirb.c rz sz crc
-	compress /tmp/rzsz
-	mv /tmp/rzsz.Z /u/t/yam/rzsz.taz
+	gzip -9 /tmp/rzsz
+	mv /tmp/rzsz.gz /u/t/yam/rzsz.tag
 
 tar:doc
 	tar cvf /tmp/rzsz.tar README Makefile zmodem.h zm.c sz.c rz.c \
@@ -207,14 +208,14 @@ odt:
 	ln sz zcommand
 	ln sz zcommandi
 
-icc:
-	icc -O -ip -mem -DUSG -DMD=2 rz.c -o rz
+everest:
+	cc -b elf -w 3 -O3 -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	icc -O -ip -mem -DUSG -DREADCHECK sz.c -lx -o sz
+	cc -b elf -w 3 -O3 -DUSG -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -329,6 +330,23 @@ amiga:
 	ln sz sx
 	ln sz zcommand
 	ln sz zcommandi
+
+next:
+	LIBS=-lposix
+	$(CC) -g -posix $(OFLAG) -DPOSIX -DMD=2 rz.c -o rz
+	size rz
+	-rm -f rb rx rc
+	ln rz rb
+	ln rz rx
+	ln rz rc
+	$(CC) -g -posix $(OFLAG) -DPOSIX sz.c -o sz
+	size sz
+	-rm -f sb sx zcommand zcommandi
+	ln sz sb
+	ln sz sx
+	ln sz zcommand
+	ln sz zcommandi
+
 
 lint:
 	lint -DUSG -DSV -DOLD sz.c >/tmp/sz.fluff

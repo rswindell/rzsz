@@ -1,5 +1,5 @@
-Rz and sz are Unix programs designed to support dial-in XMODEM,
-YMODEM, and ZMODEM transfers via the controlling TTY port.
+Unix Rz and sz support XMODEM, YMODEM, and ZMODEM transfers via
+the dial-in controlling TTY port.
 
 The contents of this archive can be uploaded to a remote Unix or
 Xenix system by ZCOMM or Professional-YAM using the supplied
@@ -62,7 +62,16 @@ of OMEN files available for FTP.  The files in this direcotryy
 are uploaded with ZMODEM directly from the Omen home system,
 preserving modification dates and file contents.
 
+Jan 28 1995: Sz now accepts standard input: "ls -l | sz -"
+See sz.doc.  Sz is now compiled with buffering to support
+input from sources that do not allow seeks (pipes, etc.).
+<<When sendng from a pipe>> the ZMODEM window size is set to
+guarantee error recovery will fit within the buffer.  In
+some applications it may be desireable to increase the
+buffer size in the sz.c source code.
+
 June 22 1994: sz -e now escapes the all ones character (0xFF).
+This is useful in some terminal server applications.
 Sz now understands receiver specified control character
 prefixing (ZCOMM/Professional-YAM zmresc string parameter).
 

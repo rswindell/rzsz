@@ -1,10 +1,10 @@
-#define VERSION "3.38 06-03-94"
+#define VERSION "3.41 04-21-95"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  *
  * rz.c By Chuck Forsberg
- *    Copyright 1994 Omen Technology Inc All Rights Reserved
+ *    Copyright 1995 Omen Technology Inc All Rights Reserved
  *
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
@@ -67,7 +67,7 @@
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 
-char *Copyrrz = "Copyright 1994 Omen Technology Inc All Rights Reserved";
+char *Copyrrz = "Copyright 1995 Omen Technology Inc All Rights Reserved";
 
 
 #define LOGFILE "/tmp/rzlog"
@@ -218,7 +218,7 @@ char *argv[];
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 
-	chkinvok(virgin=argv[0]);	/* if called as [-]rzCOMMAND set flag */
+	chkinvok(virgin=argv[0]);
 	inittty();
 	npats = 0;
 	while (--argc) {
@@ -260,6 +260,9 @@ char *argv[];
 					break;
 				case 'v':
 					++Verbose; break;
+				case 'y':
+					Lzmanag = ZMCLOB;
+					break;
 				default:
 					usage();
 				}
@@ -279,7 +282,7 @@ char *argv[];
 	if (Verbose) {
 		if (freopen(LOGFILE, "a", stderr)==NULL)
 			if (freopen(LOGFILE2, "a", stderr)==NULL) {
-				printf("Can't open log file!");
+				printf("Can't open log file!\n");
 				exit(2);
 			}
 		setbuf(stderr, NULL);
@@ -327,16 +330,16 @@ usage()
 	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
 	  Progname, VERSION, OS);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
-	fprintf(stderr,"Usage:	rz [-v]		(ZMODEM)\n");
-	fprintf(stderr,"or	rb [-av]	(YMODEM)\n");
-	fprintf(stderr,"or	rc [-av] file	(XMODEM-CRC)\n");
-	fprintf(stderr,"or	rx [-av] file	(XMODEM)\n\n");
+	fprintf(stderr,"Usage:	rz [-v]   [-wN] [-tT]	(ZMODEM)\n");
+	fprintf(stderr,"or	rb [-avy] [-tT]		(YMODEM)\n");
+	fprintf(stderr,"or	rc [-avy] [-tT] file	(XMODEM-CRC)\n");
+	fprintf(stderr,"or	rx [-avy] [-tT] file	(XMODEM)\n\n");
 	fprintf(stderr,
 "Supports the following incoming ZMODEM options given to the sending program:\n\
 	compression (-Z), binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
 	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
 	clobber (-y), match+clobber (-Y),  and append (-+).\n\n");
-	fprintf(stderr,"Copyright (c) 1994 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"Copyright (c) 1995 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	"See rz.doc for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
@@ -853,8 +856,7 @@ register char *s,*t;
 
 
 /*
- * If called as [-][dir/../]vrzCOMMAND set Verbose to 1
- * If called as rb use YMODEM protocol
+ * If called as rb use YMODEM protocol, etc.
  */
 chkinvok(s)
 char *s;
@@ -1172,7 +1174,7 @@ nxthdr:
 			}
 moredata:
 			if (Verbose>1)
-				fprintf(stderr, "\r%7ld ZMODEM%s    ",
+				fprintf(stderr, "%7ld ZMODEM%s\n",
 				  rxbytes, Crc32r?" CRC-32":"");
 #ifdef SEGMENTS
 			if (chinseg >= (1024 * SEGMENTS)) {
@@ -1269,7 +1271,7 @@ closeit()
 	time_t time();
 
 	if (fclose(fout)==ERROR) {
-		fprintf(stderr, "file close ERROR\n");
+		fprintf(stderr, "File close ERROR\n");
 		return ERROR;
 	}
 	if (Modtime) {

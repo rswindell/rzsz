@@ -1,11 +1,11 @@
-#define VERSION "3.38 06-22-94"
+#define VERSION "3.40 02-21-95"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  **************************************************************************
  *
  * sz.c By Chuck Forsberg,  Omen Technology INC
- *    Copyright 1994 Omen Technology Inc All Rights Reserved
+ *    Copyright 1995 Omen Technology Inc All Rights Reserved
  * 
  *********************************************************************
  *********************************************************************
@@ -59,7 +59,7 @@
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  */
 
-char *Copyrsz = "Copyright 1994 Omen Technology Inc All Rights Reserved";
+char *Copyrsz = "Copyright 1995 Omen Technology Inc All Rights Reserved";
 
 char *substr();
 
@@ -72,7 +72,7 @@ char *substr();
 extern int errno;
 #define STATIC
 
-#define PATHLEN 256
+#define PATHLEN 1000
 #define OK 0
 #define FALSE 0
 #ifdef TRUE
@@ -134,13 +134,13 @@ FILE *in;
 
 STATIC int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
 
-#ifdef TXBSIZE
+#ifndef TXBSIZE
+#define TXBSIZE 32768
+#endif
+
 #define TXBMASK (TXBSIZE-1)
 STATIC char Txb[TXBSIZE];		/* Circular buffer for file reads */
 STATIC char *txbuf = Txb;		/* Pointer to current file segment */
-#else
-STATIC char txbuf[1024];
-#endif
 STATIC long vpos = 0;		/* Number of bytes read from file */
 
 STATIC char Lastrx;
@@ -182,7 +182,6 @@ STATIC int Beenhereb4;		/* How many times we've been ZRPOS'd here */
 STATIC int Ksendstr;		/* 1= Send esc-?-3-4-l to remote kermit */
 STATIC char *ksendbuf = "\033[?34l";
 
-STATIC jmp_buf tohere;		/* For the interrupt on RX timeout */
 STATIC jmp_buf intrjmp;	/* For the interrupt on RX CAN */
 
 
@@ -463,6 +462,7 @@ char *argp[];
 	Crcflg=FALSE;
 	firstsec=TRUE;
 	bytcnt = -1;
+	vfile("wcsend: argc=%d", argc);
 	if (Nozmodem) {
 		printf("Start your local YMODEM receive.     ");
 		fflush(stdout);
@@ -502,10 +502,12 @@ wcs(oname)
 char *oname;
 {
 	register c;
+	register char *p;
 	struct stat f;
 	char name[PATHLEN];
 
 	strcpy(name, oname);
+	vfile("wcs: name=%s", name);
 
 	if (Restricted) {
 		/* restrict pathnames to current tree or uucppublic */
@@ -516,7 +518,17 @@ char *oname;
 		}
 	}
 
-	in=fopen(oname, "r");
+#ifdef TXBSIZE
+	if ( !strcmp(name, "-")) {
+		if ((p = getenv("ONAME")) && *p)
+			strcpy(name, p);
+		else
+			sprintf(name, "s%d.sz", getpid());
+		in = stdin;
+	}
+	else
+#endif
+		in=fopen(name, "r");
 
 	if (in==NULL) {
 		++errcnt;
@@ -570,6 +582,7 @@ char *name;
 	char name2[PATHLEN];
 	struct stat f;
 
+	vfile("wctxpn: %s", name);
 	if (Modem2) {
 		if (*name && fstat(fileno(in), &f)!= -1) {
 			fprintf(stderr, "Sending %s, %ld XMODEM blocks. ",
@@ -609,7 +622,7 @@ char *name;
 		*q++ = 0;
 	if (*name) {
 		if (fstat(fileno(in), &f)!= -1)
-			sprintf(p, "%lu %lo %o 0 %d %ld", f.st_size, f.st_mtime,
+			sprintf(p, "%lu %lo %o 3 %d %ld", f.st_size, f.st_mtime,
 			  f.st_mode, Filesleft, Totalleft);
 		Totalleft -= f.st_size;
 	}
@@ -625,6 +638,7 @@ char *name;
 		txbuf[127] = (f.st_size + 127) >>7;
 		txbuf[126] = (f.st_size + 127) >>15;
 	}
+	vfile("wctxpn: %s", p);
 	if (Zmodem)
 		return zsendfile(txbuf, 1+strlen(p)+(p-txbuf));
 	if (wcputsec(txbuf, 0, 128)==ERROR)
@@ -730,10 +744,8 @@ int cseclen;	/* data length of this sector to send */
 
 	firstch=0;	/* part of logic to detect CAN CAN */
 
-	if (Verbose>2)
+	if (Verbose>1)
 		fprintf(stderr, "Sector %3d %2dk\n", Totsecs, Totsecs/8 );
-	else if (Verbose>1)
-		fprintf(stderr, "\rSector %3d %2dk ", Totsecs, Totsecs/8 );
 	for (attempts=0; attempts <= RETRYMAX; attempts++) {
 		Lastrx= firstch;
 		sendline(cseclen==1024?STX:SOH);
@@ -948,7 +960,7 @@ usage()
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
 	for (pp=usinfo; **pp; ++pp)
 		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr,"\nCopyright (c) 1994 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"\nCopyright (c) 1995 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	 "See sz.doc for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
@@ -1015,7 +1027,7 @@ getzrxinit()
 			/* Override to force shorter frame length */
 			if (Rxbuflen && (Rxbuflen>Tframlen) && (Tframlen>=32))
 				Rxbuflen = Tframlen;
-			if ( !Rxbuflen && (Tframlen>=32) && (Tframlen<=1024))
+			if ( !Rxbuflen && (Tframlen>=32))
 				Rxbuflen = Tframlen;
 			vfile("Rxbuflen=%d", Rxbuflen);
 
@@ -1034,10 +1046,13 @@ getzrxinit()
 #endif
 				    ) {
 					Canseek = -1;
+					f.st_size = 0;
+					f.st_mtime = 0;
 #ifdef TXBSIZE
 					Txwindow = TXBSIZE - 1024;
 					Txwspac = TXBSIZE/4;
 #else
+					sprintf(endmsg, "Can't seek on input");
 					return ERROR;
 #endif
 				}
@@ -1050,6 +1065,8 @@ getzrxinit()
 				if (Baudrate > 1200)
 					blklen = 512;
 				if (Baudrate > 2400)
+					blklen = 1024;
+				if (Baudrate < 300)
 					blklen = 1024;
 			}
 			if (Rxbuflen && blklen>Rxbuflen)
@@ -1304,7 +1321,7 @@ gotack:
 		} else
 			e = ZCRCG;
 		if (Verbose>1)
-			fprintf(stderr, "\r%7ld ZMODEM%s    ",
+			fprintf(stderr, "%7ld ZMODEM%s\n",
 			  Txpos, Crc32t?" CRC-32":"");
 		zsdata(txbuf, n, e);
 		bytcnt = Txpos += n;

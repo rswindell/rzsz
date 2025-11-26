@@ -9,12 +9,11 @@
 	  rx, rc, rb, rz - Receive Files and Commands with X/Y/ZMODEM
 
      SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
-	  rrrrzzzz [-	ttttvvvv]
-	  rrrrbbbb [-	ttttvvvv]
-	  rrrrcccc [-	ttttvvvv] _f_i_l_e
-	  rrrrxxxx [-	ttttvvvv] _f_i_l_e
+	  rrrrzzzz [-vvvv] [-wwwwWWWWIIIINNNNDDDDOOOOWWWW] [-ttttTTTTIIIIMMMMEEEEOOOOUUUUTTTT]
+	  rrrrbbbb [-vvvvyyyy] [-ttttTTTTIIIIMMMMEEEEOOOOUUUUTTTT]
+	  rrrrcccc [-vvvvyyyy] [-ttttTTTTIIIIMMMMEEEEOOOOUUUUTTTT] _f_i_l_e
+	  rrrrxxxx [-vvvvyyyy] [-ttttTTTTIIIIMMMMEEEEOOOOUUUUTTTT] _f_i_l_e
 	  ggggzzzz _f_i_l_e ...
-	  [----][vvvv]rrrrzzzzCCCCOOOOMMMMMMMMAAAANNNNDDDD
 
      LLLLIIIICCCCEEEENNNNSSSSEEEE AAAAGGGGRRRREEEEEEEEMMMMEEEENNNNTTTT
 	  This is a Copyrighted	shareware program.  Commercial use of
@@ -57,10 +56,11 @@
 	  programs, not	to act as one.	This program is	not designed
 	  to be	called from _c_u(_1), _t_i_p(_1), or other communications
 	  programs.  Unix flavors of Omen Technology's Professional-
+	  YAM communications software are suitable for dial-out
 
 
 
-     Page 1					     (printed 7/17/94)
+     Page 1					     (printed 4/21/95)
 
 
 
@@ -71,7 +71,6 @@
 
 
 
-	  YAM communications software are suitable for dial-out
 	  applications.	 Unix Professional-YAM supports	dial-out
 	  applications with telephone directory, a powerful script
 	  language with	learn function,	high quality multiple protocol
@@ -123,10 +122,11 @@
 	  EXAMPLE: gz "-a C:*.c	D:*.h"
 
 	  If invoked with a leading ``v'', _r_z will report progress to
+	  /tmp/rzlog.
 
 
 
-     Page 2					     (printed 7/17/94)
+     Page 2					     (printed 4/21/95)
 
 
 
@@ -137,7 +137,6 @@
 
 
 
-	  /tmp/rzlog.
 	  EXAMPLE: ln rz vrz; rz=vrz; export rz
 
 	  If the SHELL environment variable includes _r_s_h or _r_k_s_h
@@ -148,10 +147,14 @@
 
 	  The meanings of the available	options	are:
 
-	  ttttttttiiiimmmm Change timeout to _t_i_m tenths of seconds.
+	  ttttTTTTIIIIMMMMEEEEOOOOUUUUTTTT
+	       Change TIMEOUT to _T_I_M_E_O_U_T tenths	of seconds.
 	  vvvv    Verbose causes a	list of	file names to be appended to
 	       /tmp/rzlog .  More v's generate more detailed debugging
 	       output.
+	  wwwwWWWWIIIINNNNDDDDOOOOWWWW
+	       Use a receive window of WINDOW bytes.  Details in the
+	       Professional-YAM	user manual.
 	  (Pro-YAM command)
 	  <_A_L_T-_2>
 	  Pro-YAM Command: _s_z *._h *._c
@@ -185,14 +188,11 @@
 	  networks.  Terminal servers often interfere with file
 	  transfers by "eating"	control	characters and/or losing data.
 
-	  Accessing a distant system using tttteeeellllnnnneeeetttt or rrrrllllooooggggiiiinnnn on a local
-	  Unix system entails the same problems.  If you have a	choice
-	  between tttteeeellllnnnneeeetttt and rrrrllllooooggggiiiinnnn try	rlogin with the	----8888 option.
-	  Set the escape character to ^P (control P) which is
+	  Accessing a distant system using tttteeeellllnnnneeeetttt on a local Unix
 
 
 
-     Page 3					     (printed 7/17/94)
+     Page 3					     (printed 4/21/95)
 
 
 
@@ -203,7 +203,9 @@
 
 
 
-	  protected by ZMODEM.
+	  system entails the same problems.  If	tttteeeellllnnnneeeetttt does not	work
+	  well,	try rrrrllllooooggggiiiinnnn with	the ----8888 option.	Set the	escape
+	  character to ^P (control P) which is protected by ZMODEM.
 
 	  When terminal	servers	interfere with file transfers, server
 	  commands are often available to help the problem.  When
@@ -253,12 +255,10 @@
 	  allow	larger input buffers to	support	file uploads.  If you
 	  can upload short files (less than 100	bytes) but not longer
 	  files, try
-	       sz -w1024 file...
-	  with your uploading program.	(Not all programs support this
 
 
 
-     Page 4					     (printed 7/17/94)
+     Page 4					     (printed 4/21/95)
 
 
 
@@ -269,6 +269,8 @@
 
 
 
+	       sz -w1024 file...
+	  with your uploading program.	(Not all programs support this
 	  option; use ZCOMM or Professional-YAM.)
 
 	  When both flow control and character transparency are
@@ -320,11 +322,9 @@
 	  ("zmodem pl128").  Although this compromises ZMODEM's
 	  throughput, ZMODEM's superior	reliability remains intact.
 
-	  If a program that does not properly implement	the specified
 
 
-
-     Page 5					     (printed 7/17/94)
+     Page 5					     (printed 4/21/95)
 
 
 
@@ -335,6 +335,7 @@
 
 
 
+	  If a program that does not properly implement	the specified
 	  file transfer	protocol causes	_r_z to "hang" the port after a
 	  failed transfer, either wait for _r_z to time out or keyboard
 	  a dozen Ctrl-X characters.  Every reported instance of this
@@ -389,8 +390,7 @@
 
 
 
-
-     Page 6					     (printed 7/17/94)
+     Page 6					     (printed 4/21/95)
 
 
 
@@ -456,7 +456,7 @@
 
 
 
-     Page 7					     (printed 7/17/94)
+     Page 7					     (printed 4/21/95)
 
 
 

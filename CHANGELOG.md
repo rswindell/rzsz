@@ -1,5 +1,20 @@
 # Changelog
 
+## [1995-04-21] RZ 3.41 / SZ 3.40
+
+This release included this `README` update:
+```
+Jan 28 1995: Sz now accepts standard input: "ls -l | sz -"
+See sz.doc.  Sz is now compiled with buffering to support
+input from sources that do not allow seeks (pipes, etc.).
+<<When sendng from a pipe>> the ZMODEM window size is set to
+guarantee error recovery will fit within the buffer.  In
+some applications it may be desireable to increase the
+buffer size in the sz.c source code.
+```
+  - RZ: Add (back) '-y' (clobber) option
+  - Increase maximum supported path lengths from 255 to 999 characters
+
 ## [1994-06-22] RZ 3.38 / SZ 3.38
 
 This release included this `README` update:
