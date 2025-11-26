@@ -1,5 +1,15 @@
 # Changelog
 
+## [1988-04-22] RZ 2.02 / SZ 2.01
+
+  - VMS flavor hacks
+  - CRC tables moved to separate source file (`crctab.c`)
+
+Note: Although this release introduces the source code for some new programs,
+I chose not to include them in this repository to keep the noise level down:
+  - `crc.c`: Demonstration program to compute the 32-bit CRC
+  - `vrzsz.c` and `vvmodem.c`: VMS support (vvrb/vvsb programs)
+
 ## [1988-03-29] RZ 1.31 / SZ 1.44
 
   - getspeed() defaults to 38400 instead of 0
