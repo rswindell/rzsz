@@ -1,5 +1,5 @@
 '\" Revision Level 
-'\" Last Delta     10-09-87
+'\" Last Delta     02-19-88
 .TH SZ 1 OMEN
 .SH NAME
 sx, sb, sz \- XMODEM, YMODEM, ZMODEM file send
@@ -23,15 +23,27 @@ sz
 sz
 .RB [\- 1oqtv ]
 .B "-i COMMAND"
+.br
+sz -TT
 .SH DESCRIPTION
 .B Sz
 uses the ZMODEM, YMODEM or XMODEM error correcting protocol to send
-one or more files over a serial port to a variety of programs running under
+one or more files over a dial-in serial port to a variety of programs running under
 PC-DOS, CP/M, Unix, VMS, and other operating systems.
 
+While
+.I rz
+is smart enough to be called from
+.I cu(1),
+very few versions of
+.I cu(1)
+are smart enough to allow
+.I sz
+to work properly.
+Unix flavors of Professional-YAM are available for such dial-out application.
 
-The first form of
-.B sz
+
+.B Sz
 sends one or more files with ZMODEM protocol.
 
 ZMODEM
@@ -48,6 +60,7 @@ that sneak into even the most advanced networks.
 
 Advanced file management features include
 AutoDownload (Automatic file Download initiated without user intervention),
+Display of individual and total file lengths and transmission time estimates,
 Crash Recovery,
 selective file transfers,
 and preservation of
@@ -57,7 +70,7 @@ Output from another program may be piped to
 .B sz
 for transmission by denoting standard input with "-":
 .ce
-ps -ef | sz -
+ls -l | sz -
 The program output is transmitted with the filename sPID.sz
 where PID is the process ID of the
 .B sz
@@ -67,7 +80,7 @@ If the environment variable
 is set, that is used instead.
 In this case, the Unix command:
 .ce
-ONAME=con ps -ef|sz -ay -
+ls -l | ONAME=con sz -ay -
 will send a "file" to the PC-DOS console display.
 The
 .B -y
@@ -79,9 +92,8 @@ causes the receiver to convert Unix newlines to PC-DOS carriage returns
 and linefeeds.
 
 
-The second form is invoked as
-.B sb
-to batch send one or more files with ZMODEM or YMODEM protocol.
+.B Sb
+batch sends one or more files with YMODEM or ZMODEM protocol.
 The initial ZMODEM initialization is not sent.
 When requested by the receiver,
 .B sb
@@ -107,11 +119,8 @@ and the modify time and file mode
 are set accordingly.
 
 
-The third form of
-.B sz
-is invoked as
-.B sx
-to send a single
+.B Sx
+sends a single
 .I file
 with
 .B XMODEM
@@ -128,7 +137,9 @@ string
 .I "rsh"
 or
 .I "rksh"
-(restricted shell), sz operates in restricted mode.
+(restricted shell),
+.B sz
+operates in restricted mode.
 Restricted mode restricts pathnames to the current directory and
 PUBDIR (usually /usr/spool/uucppublic) and/or subdirectories
 thereof.
@@ -147,7 +158,16 @@ exits as soon as the receiver has correctly received the command,
 before it is executed.
 
 
-If sz is invoked with stdout and stderr to different datasets,
+The sixth form (sz -TT)
+attempts to output all 256 code combinations to the terminal.
+In you are having difficulty sending files,
+this command lets you see which character codes are being
+eaten by the operating system.
+
+
+If
+.B sz
+is invoked with stdout and stderr to different datasets,
 Verbose is set to 2, causing frame by frame progress reports
 to stderr.
 This may be disabled with the
@@ -171,6 +191,7 @@ to be used with the
 .I Professional-YAM
 $
 command.
+This also works with some versions of ncu(1), but not cu(1).
 .TP
 .B a
 Convert NL characters in the transmitted file to CR/LF.
@@ -192,7 +213,7 @@ a "." is inserted to allow a total of eleven.
 .TP
 .B e
 Escape all control characters;
-normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
+normally XON, XOFF, DLE, CR- at -CR, and Ctrl-X are escaped.
 .TP
 .B f
 Send Full pathname.
@@ -257,6 +278,9 @@ tenths of seconds.
 .TP
 .B u
 Unlink the file after successful transmission.
+.TP
+.B "w N"
+Limit the transmit window size to N bytes (ZMODEM).
 .TP
 .B v
 Verbose
@@ -342,6 +366,10 @@ from Unix to a PC and Crosstalk with
 .I sz
 translating Unix newlines to DOS CR/LF.
 This combination is much slower than ZMODEM.
+.SH ERROR MESSAGES
+"Caught signal 99"
+indicates the program was not properly compiled,
+refer to "bibi(99)" in rbsb.c for details.
 .SH SEE ALSO
 rz(omen),
 ZMODEM.DOC,
@@ -444,7 +472,7 @@ perhaps it should check for the presence of at least one accessible file before
 getting hot and bothered.
 The test mode leaves a zero length file on the receiving system.
 
-Some high speed modems have a firmware bug that drops characters when the
+A few high speed modems have a firmware bug that drops characters when the
 direction of high speed transmissson is reversed.
 The environment variable ZNULLS may be used to specify the number of nulls to
 send before a ZDATA frame.

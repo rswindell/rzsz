@@ -1,10 +1,12 @@
 /*
  *
- * -rev 04-16-87
+ *  Rev 03-06-1988
  *  This file contains Unix specific code for setting terminal modes,
  *  very little is specific to ZMODEM or YMODEM per se (that code is in
  *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
  *  are also in this file, a fast table driven macro version
+ *
+ *	V7/BSD HACKERS:  SEE NOTES UNDER mode(2) !!!
  *
  *   This file is #included so the main file can set parameters such as HOWMANY.
  *   See the main files (rz.c/sz.c) for compile instructions.
@@ -15,6 +17,10 @@
 #include <sys/stat.h>
 #include <sgtty.h>
 #define OS "V7/BSD"
+#ifdef LLITOUT
+long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
+long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
+#endif
 #endif
 
 #ifndef OS
@@ -29,11 +35,33 @@
 #include <termio.h>
 #include <sys/ioctl.h>
 #define OS "SYS III/V"
+#define MODE2OK
 #endif
 
 #if HOWMANY  > 255
 Howmany must be 255 or less
 #endif
+
+/*
+ * return 1 iff stdout and stderr are different devices
+ *  indicating this program operating with a modem on a
+ *  different line
+ */
+int Fromcu;		/* Were called from cu or yam */
+from_cu()
+{
+	struct stat a, b;
+
+	fstat(1, &a); fstat(2, &b);
+	Fromcu = a.st_rdev != b.st_rdev;
+	return;
+}
+cucheck()
+{
+	if (Fromcu)
+		fprintf(stderr,"Please read the manual page BUGS chapter!\r\n");
+}
+
 
 struct {
 	unsigned baudr;
@@ -47,11 +75,48 @@ struct {
 	4800,	B4800,
 	9600,	B9600,
 	19200,	EXTA,
-	9600,	EXTB,
+	38400,	EXTB,
 	0,
 };
 
 int Twostop;		/* Use two stop bits */
+
+
+#ifndef READCHECK
+#ifdef FIONREAD
+#define READCHECK
+/*
+ *  Return non 0 iff something to read from io descriptor f
+ */
+rdchk(f)
+{
+	static long lf;
+
+	ioctl(f, FIONREAD, &lf);
+	return ((int) lf);
+}
+#endif
+#ifdef SV
+#define READCHECK
+#include <fcntl.h>
+
+char checked = '\0' ;
+/*
+ * Nonblocking I/O is a bit different in System V, Release 2
+ */
+rdchk(f)
+{
+	int lf, savestat;
+
+	savestat = fcntl(f, F_GETFL) ;
+	fcntl(f, F_SETFL, savestat | O_NDELAY) ;
+	lf = read(f, &checked, 1) ;
+	fcntl(f, F_SETFL, savestat) ;
+	return(lf) ;
+}
+#endif
+#endif
+
 
 static unsigned
 getspeed(code)
@@ -78,7 +143,7 @@ int iofd = 0;		/* File descriptor for ioctls & reads */
 /*
  * mode(n)
  *  3: save old tty stat, set raw mode with flow control
- *  2: set a cbreak, XON/XOFF control mode if using Pro-YAM's -g option
+ *  2: set XON/XOFF for sb/sz with ZMODEM or YMODEM-g
  *  1: save old tty stat, set raw mode 
  *  0: restore original tty mode
  */
@@ -89,7 +154,7 @@ mode(n)
 	vfile("mode:%d", n);
 	switch(n) {
 #ifdef USG
-	case 2:	/* Cbreak mode used by sb when -g detected */
+	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0)
 			(void) ioctl(iofd, TCGETA, &oldtty);
 		tty = oldtty;
@@ -103,14 +168,21 @@ mode(n)
 		if (Twostop)
 			tty.c_cflag |= CSTOPB;	/* Set two stop bits */
 
-		tty.c_lflag = 
-#ifdef XCLUDE
-		  XCLUDE |
-#endif
-		  Zmodem ? 0 : ISIG;
 
-		tty.c_cc[VINTR] = 030;		/* Interrupt char */
+#ifdef READCHECK
+		tty.c_lflag = Zmodem ? 0 : ISIG;
+		tty.c_cc[VINTR] = Zmodem ? -1:030;	/* Interrupt char */
+#else
+		tty.c_lflag = ISIG;
+		tty.c_cc[VINTR] = Zmodem ? 03:030;	/* Interrupt char */
+#endif
+		tty.c_cc[VQUIT] = -1;			/* Quit char */
+#ifdef NFGVMIN
 		tty.c_cc[VMIN] = 1;
+#else
+		tty.c_cc[VMIN] = 3;	 /* This many chars satisfies reads */
+#endif
+		tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
 
 		(void) ioctl(iofd, TCSETAW, &tty);
 		did0 = TRUE;
@@ -125,9 +197,6 @@ mode(n)
 
 		 /* No echo, crlf mapping, INTR, QUIT, delays, no erase/kill */
 		tty.c_lflag &= ~(ECHO | ICANON | ISIG);
-#ifdef XCLUDE
-		tty.c_lflag |= XCLUDE;
-#endif
 
 		tty.c_oflag = 0;	/* Transparent output */
 
@@ -147,20 +216,36 @@ mode(n)
 		return OK;
 #endif
 #ifdef V7
-	case 2:	/*  This doesn't work ... */
-		printf("No mode(2) in V7/BSD!"); bibi(99);
+	/*
+	 *  NOTE: this should transmit all 8 bits and at the same time
+	 *   respond to XOFF/XON flow control.  If no FIONREAD or other
+	 *   READCHECK alternative, also must respond to INTRRUPT char
+	 *   This won't work with V7.  It should with LLITOUT, but sorry.
+	 */
+	case 2:		/* Un-raw mode used by sz, sb when -g detected */
 		if(!did0) {
 			ioctl(iofd, TIOCEXCL, 0);
 			ioctl(iofd, TIOCGETP, &oldtty);
 			ioctl(iofd, TIOCGETC, &oldtch);
+#ifdef LLITOUT
+			ioctl(TIOCLGET, &Locmode);	/* Get "local mode" */
+#endif
 		}
 		tty = oldtty;
 		tch = oldtch;
+#ifdef READCHECK
+		tch.t_intrc = Zmodem ? -1:030;	/* Interrupt char */
+#else
 		tch.t_intrc = Zmodem ? 03:030;	/* Interrupt char */
+#endif
 		tty.sg_flags |= (ODDP|EVENP|CBREAK);
 		tty.sg_flags &= ~(ALLDELAY|CRMOD|ECHO|LCASE);
 		ioctl(iofd, TIOCSETP, &tty);
 		ioctl(iofd, TIOCSETC, &tch);
+#ifdef LLITOUT
+		ioctl(TIOCLBIS, &Locbit);
+#endif
+		bibi(99);	/* un-raw doesn't work w/o lit out */
 		did0 = TRUE;
 		return OK;
 	case 1:
@@ -169,6 +254,9 @@ mode(n)
 			ioctl(iofd, TIOCEXCL, 0);
 			ioctl(iofd, TIOCGETP, &oldtty);
 			ioctl(iofd, TIOCGETC, &oldtch);
+#ifdef LLITOUT
+			ioctl(TIOCLGET, &Locmode);	/* Get "local mode" */
+#endif
 		}
 		tty = oldtty;
 		tty.sg_flags |= RAW;
@@ -184,14 +272,18 @@ mode(n)
 #ifdef USG
 		(void) ioctl(iofd, TCSBRK, 1);	/* Wait for output to drain */
 		(void) ioctl(iofd, TCFLSH, 1);	/* Flush input queue */
-		(void) ioctl(iofd, TCSETAW, &oldtty);	/* Restore original modes */
+		(void) ioctl(iofd, TCSETAW, &oldtty);	/* Restore modes */
 		(void) ioctl(iofd, TCXONC,1);	/* Restart output */
 #endif
 #ifdef V7
 		ioctl(iofd, TIOCSETP, &oldtty);
 		ioctl(iofd, TIOCSETC, &oldtch);
 		ioctl(iofd, TIOCNXCL, 0);
+#ifdef LLITOUT
+		ioctl(TIOCLSET, &Locmode);	/* Restore "local mode" */
 #endif
+#endif
+
 		return OK;
 	default:
 		return ERROR;
@@ -214,38 +306,6 @@ sendbrk()
 	ioctl(iofd, TCSBRK, 0);
 #endif
 }
-
-#ifdef FIONREAD
-#define READCHECK
-/*
- *  Return non 0 iff something to read from io descriptor f
- */
-rdchk(f)
-{
-	static long lf;
-
-	ioctl(f, FIONREAD, &lf);
-	return ((int) lf);
-}
-#endif
-#ifdef SVR2
-#define READCHECK
-#include <fcntl.h>
-
-char checked = '\0' ;
-/*
- * Nonblocking I/O is a bit different in System V, Release 2
- */
-rdchk(f)
-{
-	int lf, savestat = fcntl(f, F_GETFL) ;
-
-	fcntl(f, F_SETFL, savestat | O_NDELAY) ;
-	lf = read(f, &checked, 1) ;
-	fcntl(f, F_SETFL, savestat) ;
-	return(lf) ;
-}
-#endif
 
 
 /* crctab calculated by Mark G. Mendel, Network Systems Corporation */

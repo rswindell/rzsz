@@ -1,4 +1,4 @@
-#define VERSION "sz 1.36 08-31-87"
+#define VERSION "sz 1.44 03-03-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -M0 -Ox -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -6,7 +6,7 @@
  * sz.c By Chuck Forsberg
  *
  *	cc -O sz.c -o sz		USG (SYS III/V) Unix
- *	cc -O -DSVR2 sz.c -o sz		Sys V Release 2 with non-blocking input
+ *	cc -O -DSV sz.c -o sz		Sys V Release 2 with non-blocking input
  *					Define to allow reverse channel checking
  *	cc -O -DV7  sz.c -o sz		Unix Version 7, 2.8 - 4.3 BSD
  *
@@ -49,15 +49,17 @@ char *substr(), *getenv();
 #define ERROR (-1)
 
 #define HOWMANY 2
-int Zmodem=0;		/* ZMODEM protocol requested */
+int Zmodem=0;		/* ZMODEM protocol requested by receiver */
 unsigned Baudrate;
 unsigned Txwindow;	/* Control the size of the transmitted window */
 unsigned Txwspac;	/* Spacing between zcrcq requests */
 unsigned Txwcnt;	/* Counter used to space ack requests */
 long Lrxpos;		/* Receiver's last reported offset */
-int Fromcu = 0;		/* Were called from cu or yam */
 int errors;
 #include "rbsb.c"	/* most of the system dependent stuff here */
+
+int Filesleft;
+long Totalleft;
 
 /*
  * Attention string to be executed by receiver to interrupt streaming data
@@ -92,8 +94,6 @@ FILE *in;
 #define TIMEOUT (-2)
 #define RCDO (-3)
 #define RETRYMAX 10
-#define SECSIZ 128	/* cp/m's Magic Number record size */
-#define KSIZE 1024
 
 char Lastrx;
 char Crcflg;
@@ -108,11 +108,11 @@ int Unlinkafter=0;	/* Unlink file after it is sent */
 int Dottoslash=0;	/* Change foo.bar.baz to foo/bar/baz */
 int firstsec;
 int errcnt=0;		/* number of files unreadable */
-int blklen=SECSIZ;		/* length of transmitted records */
+int blklen=128;		/* length of transmitted records */
 int Optiong;		/* Let it rip no wait for sector ACK's */
 int Noeofseen;
 int Totsecs;		/* total number of sectors this file */
-char txbuf[KSIZE];
+char txbuf[1024];
 int Filcnt=0;		/* count of number of files opened */
 int Lfseen=0;
 unsigned Rxbuflen = 16384;	/* Receiver's max buffer length */
@@ -133,7 +133,8 @@ char *Cmdstr;		/* Pointer to the command string */
 int Cmdtries = 11;
 int Cmdack1;		/* Rx ACKs command, then do it */
 int Exitcode;
-int Testattn;		/* Force receiver to send Attn, etc with qbf. */
+int Test;		/* 1= Force receiver to send Attn, etc with qbf. */
+			/* 2= Character transparency test */
 char *qbf="The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
 long Lastread;		/* Beginning offset of last buffer read */
 int Lastn;		/* Count of last buffer read or -1 */
@@ -151,9 +152,12 @@ bibi(n)
 	fprintf(stderr, "sz: caught signal %d; exiting\n", n);
 	if (n == SIGQUIT)
 		abort();
+	if (n == 99)
+		fprintf(stderr, "mode(2) in rbsb.c not implemented!!\n");
+	cucheck();
 	exit(128+n);
 }
-/* Called when Zmodem gets an interrupt (^X) */
+/* Called when ZMODEM gets an interrupt (^X) */
 onintr()
 {
 	signal(SIGINT, SIG_IGN);
@@ -182,7 +186,7 @@ char *argv[];
 {
 	register char *cp;
 	register npats;
-	int agcnt; char **agcv;
+	int dm;
 	char **patts;
 	static char xXbuf[BUFSIZ];
 
@@ -190,6 +194,7 @@ char *argv[];
 		Znulls = atoi(cp);
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
+	from_cu();
 	chkinvok(argv[0]);
 
 	Rxtimeout = 600;
@@ -241,7 +246,7 @@ char *argv[];
 				case 'e':
 					Zctlesc = 1; break;
 				case 'k':
-					blklen=KSIZE; break;
+					blklen=1024; break;
 				case 'L':
 					if (--argc < 1) {
 						usage();
@@ -279,7 +284,11 @@ char *argv[];
 						usage();
 					break;
 				case 'T':
-					Testattn = TRUE; break;
+					if (++Test > 1) {
+						chartest(1); chartest(2);
+						mode(0);  exit(0);
+					}
+					break;
 				case 'u':
 					++Unlinkafter; break;
 				case 'v':
@@ -318,7 +327,7 @@ char *argv[];
 			}
 		}
 	}
-	if (npats < 1 && !Command) 
+	if (npats < 1 && !Command && !Test) 
 		usage();
 	if (Verbose) {
 		if (freopen(LOGFILE, "a", stderr)==NULL) {
@@ -327,7 +336,7 @@ char *argv[];
 		}
 		setbuf(stderr, NULL);
 	}
-	if ((Fromcu=from_cu()) && !Quiet) {
+	if (Fromcu && !Quiet) {
 		if (Verbose == 0)
 			Verbose = 2;
 	}
@@ -347,14 +356,13 @@ char *argv[];
 		if (!Nozmodem) {
 			printf("rz\r");  fflush(stdout);
 		}
+		countem(npats, patts);
 		if (!Command && !Quiet && Verbose != 1) {
-			fprintf(stderr, "%s: %d file%s requested:\r\n",
-			 Progname, npats, npats>1?"s":"");
-			for ( agcnt=npats, agcv=patts; --agcnt>=0; ) {
-				fprintf(stderr, "%s ", *agcv++);
-			}
-			fprintf(stderr, "\r\n");
-			printf("\r\n\bSending in Batch Mode\r\n");
+			dm = Filesleft + (Totalleft*11L) / (Baudrate * 6L);
+			fprintf(stderr,
+			 "%s: %d file%s %ld bytes %u.%u minutes\r\n",
+			 Progname, Filesleft, Filesleft>1?"s":"", Totalleft,
+			 dm/10, dm%10);
 		}
 		if (!Nozmodem) {
 			stohdr(0L);
@@ -378,7 +386,10 @@ char *argv[];
 	}
 	fflush(stdout);
 	mode(0);
-	exit((errcnt != 0) | Exitcode);
+	dm = ((errcnt != 0) | Exitcode);
+	if (dm)
+		cucheck();
+	exit(dm);
 	/*NOTREACHED*/
 }
 
@@ -397,7 +408,7 @@ char *argp[];
 	}
 	Totsecs = 0;
 	if (Filcnt==0) {	/* bitch if we couldn't open ANY files */
-		if (1) {
+		if ( !Modem2) {
 			Command = TRUE;
 			Cmdstr = "echo \"sz: Can't open any requested files\"";
 			if (getnak()) {
@@ -523,22 +534,27 @@ char *name;
 			q = txbuf;
 	*q++ = 0;
 	p=q;
-	while (q < (txbuf + KSIZE))
+	while (q < (txbuf + 1024))
 		*q++ = 0;
 	if (!Ascii && (in!=stdin) && *name && fstat(fileno(in), &f)!= -1)
-		sprintf(p, "%lu %lo %o", f.st_size, f.st_mtime, f.st_mode);
+		sprintf(p, "%lu %lo %o 0 %d %ld", f.st_size, f.st_mtime,
+		  f.st_mode, Filesleft, Totalleft);
+	Totalleft -= f.st_size;
+	if (--Filesleft <= 0)
+		Totalleft = 0;
+	if (Totalleft < 0)
+		Totalleft = 0;
+
 	/* force 1k blocks if name won't fit in 128 byte block */
 	if (txbuf[125])
-		blklen=KSIZE;
+		blklen=1024;
 	else {		/* A little goodie for IMP/KMD */
-		if (Zmodem)
-			blklen = SECSIZ;
 		txbuf[127] = (f.st_size + 127) >>7;
 		txbuf[126] = (f.st_size + 127) >>15;
 	}
 	if (Zmodem)
 		return zsendfile(txbuf, 1+strlen(p)+(p-txbuf));
-	if (wcputsec(txbuf, 0, SECSIZ)==ERROR)
+	if (wcputsec(txbuf, 0, 128)==ERROR)
 		return ERROR;
 	return OK;
 }
@@ -553,17 +569,17 @@ getnak()
 		case ZPAD:
 			if (getzrxinit())
 				return ERROR;
-			Ascii = 0;
+			Ascii = 0;	/* Receiver does the conversion */
 			return FALSE;
 		case TIMEOUT:
 			zperr("Timeout on pathname");
 			return TRUE;
 		case WANTG:
-#ifdef USG
+#ifdef MODE2OK
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */
 #endif
 			Optiong = TRUE;
-			blklen=KSIZE;
+			blklen=1024;
 		case WANTCRC:
 			Crcflg = TRUE;
 		case NAK:
@@ -646,7 +662,7 @@ int cseclen;	/* data length of this sector to send */
 		fprintf(stderr, "\rSector %3d %2dk ", Totsecs, Totsecs/8 );
 	for (attempts=0; attempts <= RETRYMAX; attempts++) {
 		Lastrx= firstch;
-		sendline(cseclen==KSIZE?STX:SOH);
+		sendline(cseclen==1024?STX:SOH);
 		sendline(sectnum);
 		sendline(-sectnum -1);
 		oldcrc=checksum=0;
@@ -864,18 +880,6 @@ char *s, *p, *u;
 }
 
 /*
- * return 1 iff stdout and stderr are different devices
- *  indicating this program operating with a modem on a
- *  different line
- */
-from_cu()
-{
-	struct stat a, b;
-	fstat(1, &a); fstat(2, &b);
-	return (a.st_rdev != b.st_rdev);
-}
-
-/*
  * substr(string, token) searches for token in string s
  * returns pointer to token within string if found, NULL otherwise
  */
@@ -941,7 +945,10 @@ usage()
 
 	for (pp=babble; **pp; ++pp)
 		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr, "%s for %s by Chuck Forsberg  ", VERSION, OS);
+	fprintf(stderr, "%s for %s by Chuck Forsberg, Omen Technology INC\n",
+	 VERSION, OS);
+	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
+	cucheck();
 	exit(1);
 }
 
@@ -969,10 +976,12 @@ getzrxinit()
 			Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
 			Zctlesc |= Rxflags & TESCCTL;
 			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
+			if ( !(Rxflags & CANFDX))
+				Txwindow = 0;
 			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
 			if ( !Fromcu)
 				signal(SIGINT, SIG_IGN);
-#ifdef USG
+#ifdef MODE2OK
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */
 #endif
 #ifndef READCHECK
@@ -1000,11 +1009,25 @@ getzrxinit()
 			 * If input is not a regular file, force ACK's each 1024
 			 *  (A smarter strategey could be used here ...)
 			 */
-			fstat(fileno(in), &f);
-			if (((f.st_mode & S_IFMT) != S_IFREG)
-			  && (Rxbuflen == 0 || Rxbuflen > 1024))
-				Rxbuflen = 1024;
-			vfile("Rxbuflen=%d", Rxbuflen);
+			if ( !Command) {
+				fstat(fileno(in), &f);
+				if (((f.st_mode & S_IFMT) != S_IFREG)
+				  && (Rxbuflen == 0 || Rxbuflen > 1024))
+					Rxbuflen = 1024;
+			}
+
+			if (Baudrate > 300)	/* Set initial subpacket len */
+				blklen = 256;
+			if (Baudrate > 1200)
+				blklen = 512;
+			if (Baudrate > 2400)
+				blklen = 1024;
+			if (Rxbuflen && blklen>Rxbuflen)
+				blklen = Rxbuflen;
+			if (blkopt && blklen > blkopt)
+				blklen = blkopt;
+			vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
+			vfile("Txwindow = %u Txwspac = %d", Txwindow, Txwspac);
 
 			return (sendzsinit());
 		case ZCAN:
@@ -1106,18 +1129,6 @@ zsendfdata()
 	int junkcount;		/* Counts garbage chars received by TX */
 	static int tleft = 6;	/* Counter for test mode */
 
-	if (Baudrate > 300)
-		blklen = 256;
-	if (Baudrate > 1200)
-		blklen = 512;
-	if (Baudrate > 2400)
-		blklen = KSIZE;
-	if (Rxbuflen && blklen>Rxbuflen)
-		blklen = Rxbuflen;
-	if (blkopt && blklen > blkopt)
-		blklen = blkopt;
-	vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
-	vfile("Txwindow = %u Txwspac = %d", Txwindow, Txwspac);
 	Lrxpos = 0;
 	junkcount = 0;
 	Beenhereb4 = FALSE;
@@ -1149,7 +1160,7 @@ gotack:
 		 *  rdchk(fdes) returns non 0 if a character is available
 		 */
 		while (rdchk(iofd)) {
-#ifdef SVR2
+#ifdef SV
 			switch (checked)
 #else
 			switch (readline(1))
@@ -1179,14 +1190,14 @@ gotack:
 	 *  many times.  Each time the signal should be caught, causing the
 	 *  file to be started over from the beginning.
 	 */
-	if (Testattn) {
+	if (Test) {
 		if ( --tleft)
 			while (tcount < 20000) {
 				printf(qbf); fflush(stdout);
 				tcount += strlen(qbf);
 #ifdef READCHECK
 				while (rdchk(iofd)) {
-#ifdef SVR2
+#ifdef SV
 					switch (checked)
 #else
 					switch (readline(1))
@@ -1252,7 +1263,7 @@ gotack:
 		 */
 		fflush(stdout);
 		while (rdchk(iofd)) {
-#ifdef SVR2
+#ifdef SV
 			switch (checked)
 #else
 			switch (readline(1))
@@ -1325,7 +1336,7 @@ getinsync(flag)
 	register c;
 
 	for (;;) {
-		if (Testattn) {
+		if (Test) {
 			printf("\r\n\n\n***** Signal Caught *****\r\n");
 			Rxpos = 0; c = ZRPOS;
 		} else
@@ -1350,7 +1361,7 @@ getinsync(flag)
 			bytcnt = Lrxpos = Txpos = Rxpos;
 			if (Lastsync == Rxpos) {
 				if (++Beenhereb4 > 4)
-					if (blklen > 256)
+					if (blklen > 32)
 						blklen /= 2;
 			}
 			Lastsync = Rxpos;
@@ -1464,10 +1475,69 @@ char *s;
 	}
 	Progname = s;
 	if (s[0]=='s' && s[1]=='b') {
-		Nozmodem = TRUE; blklen=KSIZE;
+		Nozmodem = TRUE; blklen=1024;
 	}
 	if (s[0]=='s' && s[1]=='x') {
 		Modem2 = TRUE;
 	}
 }
-/* End of sz.c */
+countem(argc, argv)
+register char **argv;
+{
+	register c;
+	struct stat f;
+
+	for (Totalleft = 0, Filesleft = 0; --argc >=0; ++argv) {
+		f.st_size = -1;
+		if (Verbose>2) {
+			fprintf(stderr, "\nCountem: %03d %s ", argc, *argv);
+			fflush(stderr);
+		}
+		if (access(*argv, 04) >= 0 && stat(*argv, &f) >= 0) {
+			c = f.st_mode & S_IFMT;
+			if (c != S_IFDIR && c != S_IFBLK) {
+				++Filesleft;  Totalleft += f.st_size;
+			}
+		}
+		if (Verbose>2)
+			fprintf(stderr, " %ld", f.st_size);
+	}
+	if (Verbose>2)
+		fprintf(stderr, "\ncountem: Total %d %ld\n",
+		  Filesleft, Totalleft);
+}
+
+chartest(m)
+{
+	register n;
+
+	mode(m);
+	printf("\r\n\nCharacter Transparency Test Mode %d\r\n", m);
+	printf("If Pro-YAM/ZCOMM is not displaying ^M hit ALT-V NOW.\r\n");
+	printf("Hit Enter.\021");  fflush(stdout);
+	readline(500);
+
+	for (n = 0; n < 256; ++n) {
+		if (!(n%8))
+			printf("\r\n");
+		printf("%02x ", n);  fflush(stdout);
+		sendline(n);	fflush(stdout);
+		printf("  ");  fflush(stdout);
+		if (n == 127) {
+			printf("Hit Enter.\021");  fflush(stdout);
+			readline(500);
+			printf("\r\n");  fflush(stdout);
+		}
+	}
+	printf("\021\r\nEnter Characters, echo is in hex.\r\n");
+	printf("Hit SPACE or pause 40 seconds for exit.\r\n");
+
+	while (n != TIMEOUT && n != ' ') {
+		n = readline(400);
+		printf("%02x\r\n", n);
+		fflush(stdout);
+	}
+	printf("\r\nMode %d character transparency test ends.\r\n", m);
+	fflush(stdout);
+}
+

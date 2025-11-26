@@ -1,7 +1,7 @@
 /*
  *   Z M . C
  *    ZMODEM protocol primitives
- *    07-28-87  Chuck Forsberg Omen Technology Inc
+ *    11-10-87  Chuck Forsberg Omen Technology Inc
  *
  * Entry point Functions:
  *	zsbhdr(type, hdr) send binary header
@@ -37,6 +37,8 @@ int Crc32;		/* Display flag indicating 32 bit CRC being received */
 int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
 char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 
+static lastsent;	/* Last char we sent */
+static evenp;		/* Even parity seen on header */
 
 static char *frametypes[] = {
 	"Carrier Lost",		/* -3 */
@@ -68,6 +70,9 @@ static char *frametypes[] = {
 			/*  not including psuedo negative entries */
 };
 
+static char masked[] = "8 bit transparent path required";
+static char badcrc[] = "Bad CRC";
+
 /* Send ZMODEM binary header hdr of type type */
 zsbhdr(type, hdr)
 register char *hdr;
@@ -78,7 +83,7 @@ register char *hdr;
 	vfile("zsbhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
 	if (type == ZDATA)
 		for (n = Znulls; --n >=0; )
-			zsendline(0);
+			xsendline(0);
 
 	xsendline(ZPAD); xsendline(ZDLE);
 
@@ -153,12 +158,13 @@ register char *hdr;
 /*
  * Send binary array buf of length length, with ending ZDLE sequence frameend
  */
+static char *Zendnames[] = { "ZCRCE", "ZCRCG", "ZCRCQ", "ZCRCW"};
 zsdata(buf, length, frameend)
 register char *buf;
 {
 	register unsigned short crc;
 
-	vfile("zsdata: length=%d end=%x", length, frameend);
+	vfile("zsdata: %d %s", length, Zendnames[frameend-ZCRCE&3]);
 	if (Crc32t)
 		zsda32(buf, length, frameend);
 	else {
@@ -180,12 +186,17 @@ register char *buf;
 zsda32(buf, length, frameend)
 register char *buf;
 {
+	register c;
 	register UNSL long crc;
 
 	crc = 0xFFFFFFFFL;
-	for (;--length >= 0;++buf) {
-		crc = UPDC32((0377 & *buf), crc);
-		zsendline(*buf);
+	for (;--length >= 0; ++buf) {
+		c = *buf & 0377;
+		if (c & 0140)
+			xsendline(lastsent = c);
+		else
+			zsendline(c);
+		crc = UPDC32(c, crc);
 	}
 	xsendline(ZDLE); xsendline(frameend);
 	crc = UPDC32(frameend, crc);
@@ -229,11 +240,12 @@ crcfoo:
 					goto crcfoo;
 				crc = updcrc(c, crc);
 				if (crc & 0xFFFF) {
-					zperr("Bad data CRC");
+					zperr(badcrc);
 					return ERROR;
 				}
 				Rxcount = length - (end - buf);
-				vfile("zrdata: cnt = %d ret = %x", Rxcount, d);
+				vfile("zrdata: %d  %s", Rxcount,
+				 Zendnames[d-GOTCRCE&3]);
 				return d;
 			case GOTCAN:
 				zperr("Sender Canceled");
@@ -285,11 +297,12 @@ crcfoo:
 					goto crcfoo;
 				crc = UPDC32(c, crc);
 				if (crc != 0xDEBB20E3) {
-					zperr("Bad data CRC");
+					zperr(badcrc);
 					return ERROR;
 				}
 				Rxcount = length - (end - buf);
-				vfile("zrdat32: cnt = %d ret = %x", Rxcount, d);
+				vfile("zrdat32: %d %s", Rxcount,
+				 Zendnames[d-GOTCRCE&3]);
 				return d;
 			case GOTCAN:
 				zperr("Sender Canceled");
@@ -371,6 +384,7 @@ agn2:
 		goto startover;
 	case ZPAD|0200:		/* This is what we want. */
 	case ZPAD:		/* This is what we want. */
+		evenp = c & 0200;
 		break;
 	}
 	cancount = 5;
@@ -458,8 +472,14 @@ register char *hdr;
 		return c;
 	crc = updcrc(c, crc);
 	if (crc & 0xFFFF) {
-		zperr("Bad Header CRC"); return ERROR;
+		if (evenp)
+			zperr(masked);
+		zperr(badcrc);
+		return ERROR;
 	}
+#ifdef ZMODEM
+	Protocol = ZMODEM;
+#endif
 	Zmodem = 1;
 	return Rxtype;
 }
@@ -497,8 +517,14 @@ register char *hdr;
 #endif
 	}
 	if (crc != 0xDEBB20E3) {
-		zperr("Bad Header CRC"); return ERROR;
+		if (evenp)
+			zperr(masked);
+		zperr(badcrc);
+		return ERROR;
 	}
+#ifdef ZMODEM
+	Protocol = ZMODEM;
+#endif
 	Zmodem = 1;
 	return Rxtype;
 }
@@ -530,10 +556,13 @@ char *hdr;
 		return c;
 	crc = updcrc(c, crc);
 	if (crc & 0xFFFF) {
-		zperr("Bad Header CRC"); return ERROR;
+		zperr(badcrc); return ERROR;
 	}
 	if (readline(1) == '\r')	/* Throw away possible cr/lf */
 		readline(1);
+#ifdef ZMODEM
+	Protocol = ZMODEM;
+#endif
 	Zmodem = 1; return Rxtype;
 }
 
@@ -554,37 +583,40 @@ register c;
  *  Escape XON, XOFF. Escape CR following @ (Telenet net escape)
  */
 zsendline(c)
-register c;
 {
-	static lastsent;
 
-	switch (c &= 0377) {
-	case ZDLE:
-		xsendline(ZDLE);
-		xsendline (lastsent = (c ^= 0100));
-		break;
-	case 015:
-	case 0215:
-		if (!Zctlesc && (lastsent & 0177) != '@')
-			goto sendit;
-	/* **** FALL THRU TO **** */
-	case 020:
-	case 021:
-	case 023:
-	case 0220:
-	case 0221:
-	case 0223:
-		xsendline(ZDLE);
-		c ^= 0100;
-sendit:
+	/* Quick check for non control characters */
+	if (c & 0140)
 		xsendline(lastsent = c);
-		break;
-	default:
-		if (Zctlesc && ! (c & 0140)) {
+	else {
+		switch (c &= 0377) {
+		case ZDLE:
+			xsendline(ZDLE);
+			xsendline (lastsent = (c ^= 0100));
+			break;
+		case 015:
+		case 0215:
+			if (!Zctlesc && (lastsent & 0177) != '@')
+				goto sendit;
+		/* **** FALL THRU TO **** */
+		case 020:
+		case 021:
+		case 023:
+		case 0220:
+		case 0221:
+		case 0223:
 			xsendline(ZDLE);
 			c ^= 0100;
+	sendit:
+			xsendline(lastsent = c);
+			break;
+		default:
+			if (Zctlesc && ! (c & 0140)) {
+				xsendline(ZDLE);
+				c ^= 0100;
+			}
+			xsendline(lastsent = c);
 		}
-		xsendline(lastsent = c);
 	}
 }
 
@@ -629,7 +661,10 @@ zdlread()
 	register c;
 
 again:
-	switch (c = readline(Rxtimeout)) {
+	/* Quick check for non control characters */
+	if ((c = readline(Rxtimeout)) & 0140)
+		return c;
+	switch (c) {
 	case ZDLE:
 		break;
 	case 023:
@@ -677,7 +712,8 @@ again2:
 			return (c ^ 0100);
 		break;
 	}
-	zperr("Bad escape sequence %x", c);
+	if (Verbose>1)
+		zperr("Bad escape sequence %x", c);
 	return ERROR;
 }
 

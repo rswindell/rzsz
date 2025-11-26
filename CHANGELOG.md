@@ -1,5 +1,26 @@
 # Changelog
 
+## [1988-03-09] RZ 1.29 / SZ 1.44
+
+The original USENET announcement of this release by Chuck:
+```
+XMODEM, YMODEM, ZMODEM Unix Programs 3/3
+Chuck Forsberg WA7KGX <caf at omen.UUCP>
+Wed Mar 9 06:00:31 AEST 1988
+
+This edition of the Unix rz/sz programs adds directory creation
+to rz and fixes a problem with running sz on BSD systems.  The
+doco has been enhanced to answer most of the questions people
+have had about these programs.
+
+This is being released on alt.sources and pnw.general to get some
+feedback before shipping off to the comp.sources.unix black hole.
+```
+
+  - Introduces "True YMODEM (Omen Technology trademark)"
+  - Directory creation code from John Gilmore's PD TAR program
+  - More support for systems that do not support overlapping I/O
+
 ## [1987-10-11] RZ 1.26 / SZ 1.36
 
 ### RZ

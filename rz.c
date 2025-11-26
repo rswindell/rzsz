@@ -1,8 +1,8 @@
-#define VERSION "1.26 10-11-87"
+#define VERSION "1.29 03-08-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
-/*% cc -M0 -Ox -K -i % -o rz; size rz;
-<-xtx-*> cc386 -Ox rz.c -o $B/rz;  size $B/rz
+/*% cc -M0 -Ox -K -i -DMD % -o rz; size rz;
+<-xtx-*> cc386 -Ox -DMD -DSEGMENTS=8 rz.c -o $B/rz;  size $B/rz
  *
  * rz.c By Chuck Forsberg
  *
@@ -37,6 +37,12 @@
  *  NFGVMIN Updated 2-18-87 CAF for Xenix systems where c_cc[VMIN]
  *  doesn't work properly (even though it compiles without error!),
  *
+ *  SEGMENTS=n added 2-21-88 as a model for CP/M programs
+ *    for CP/M-80 systems that cannot overlap modem and disk I/O.
+ *
+ *  -DMD may be added to compiler command line to compile in
+ *    Directory-creating routines from Public Domain TAR by John Gilmore
+ *
  *  HOWMANY may be tuned for best performance
  *
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
@@ -47,6 +53,8 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <ctype.h>
+#include <string.h>
+#include <errno.h>
 FILE *popen();
 
 #define OK 0
@@ -97,10 +105,8 @@ long getfree()
 #define ERRORMAX 5
 #define RETRYMAX 5
 #define WCEOT (-10)
-#define SECSIZ 128	/* cp/m's Magic Number record size */
 #define PATHLEN 257	/* ready for 4.2 bsd ? */
-#define KSIZE 1024	/* record size with k option */
-#define UNIXFILE 0x8000	/* happens to the the S_IFREG file mask bit for stat */
+#define UNIXFILE 0xF000	/* The S_IFMT file mask bit for stat */
 
 int Lastrx;
 int Crcflg;
@@ -118,7 +124,7 @@ int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
 #define DEFBYTL 2000000000L	/* default rx file size */
 long Bytesleft;		/* number of bytes of incoming file left */
 long Modtime;		/* Unix style mod time for incoming file */
-short Filemode;		/* Unix style mode for incoming file */
+int Filemode;		/* Unix style mode for incoming file */
 char Pathname[PATHLEN];
 char *Progname;		/* the name by which we were called */
 
@@ -133,7 +139,15 @@ int Rxbinary=FALSE;	/* receive all files in bin mode */
 int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
 int Blklen;		/* record length of received packets */
-char secbuf[KSIZE+1];
+
+#ifdef SEGMENTS
+int chinseg = 0;	/* Number of characters received in this data seg */
+char secbuf[1+(SEGMENTS+1)*1024];
+#else
+char secbuf[1025];
+#endif
+
+
 char linbuf[HOWMANY];
 int Lleft=0;		/* number of characters in linbuf */
 time_t timep[2];
@@ -162,6 +176,7 @@ bibi(n)
 		zmputs(Attn);
 	canit(); mode(0);
 	fprintf(stderr, "rz: caught signal %d; exiting", n);
+	cucheck();
 	exit(128+n);
 }
 
@@ -179,6 +194,7 @@ char *argv[];
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
 
+	from_cu();
 	chkinvok(virgin=argv[0]);	/* if called as [-]rzCOMMAND set flag */
 	npats = 0;
 	while (--argc) {
@@ -248,7 +264,7 @@ char *argv[];
 		setbuf(stderr, NULL);
 		fprintf(stderr, "argv[0]=%s Progname=%s\n", virgin, Progname);
 	}
-	if (fromcu() && !Quiet) {
+	if (Fromcu && !Quiet) {
 		if (Verbose == 0)
 			Verbose = 2;
 	}
@@ -267,14 +283,15 @@ char *argv[];
 	mode(0);
 	if (exitcode && !Zmodem)	/* bellow again with all thy might. */
 		canit();
+	if (exitcode)
+		cucheck();
 	exit(exitcode);
 }
 
 
 usage()
 {
-	fprintf(stderr,"%s %s for %s by Chuck Forsberg\n",
-	  Progname, VERSION, OS);
+	cucheck();
 	fprintf(stderr,"Usage:	rz [-1abeuv]		(ZMODEM Batch)\n");
 	fprintf(stderr,"or	rb [-1abuv]		(YMODEM Batch)\n");
 	fprintf(stderr,"or	rx [-1abcv] file	(XMODEM or XMODEM-1k)\n");
@@ -284,6 +301,9 @@ usage()
 	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
 	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
 	fprintf(stderr,"	  -v Verbose more v's give more info\n");
+	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
+	  Progname, VERSION, OS);
+	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
 	exit(1);
 }
 /*
@@ -466,10 +486,10 @@ int maxtime;
 	for (Lastrx=errors=0; errors<RETRYMAX; errors++) {
 
 		if ((firstch=readline(maxtime))==STX) {
-			Blklen=KSIZE; goto get2;
+			Blklen=1024; goto get2;
 		}
 		if (firstch==SOH) {
-			Blklen=SECSIZ;
+			Blklen=128;
 get2:
 			sectcurr=readline(1);
 			if ((sectcurr+(oldcrc=readline(1)))==Wcsmask) {
@@ -671,7 +691,8 @@ char *name;
 			*p = 0;
 	}
 
-	if (!Zmodem && MakeLCPathname && !IsAnyLower(name))
+	if (!Zmodem && MakeLCPathname && !IsAnyLower(name)
+	  && !(Filemode&UNIXFILE))
 		uncaps(name);
 	if (Topipe) {
 		sprintf(Pathname, "%s %s", Progname+2, name);
@@ -689,12 +710,120 @@ char *name;
 		checkpath(name);
 		if (Nflag)
 			name = "/dev/null";
-		if ((fout=fopen(name, openmode)) == NULL)
+#ifdef MD
+		fout = fopen(name, openmode);
+		if ( !fout)
+			if (make_dirs(name))
+				fout = fopen(name, openmode);
+#else
+		fout = fopen(name, openmode);
+#endif
+		if ( !fout)
 			return ERROR;
 	}
 	return OK;
 #endif /* BIX */
 }
+
+#ifdef MD
+/*
+ *  Directory-creating routines from Public Domain TAR by John Gilmore
+ */
+
+/*
+ * After a file/link/symlink/dir creation has failed, see if
+ * it's because some required directory was not present, and if
+ * so, create all required dirs.
+ */
+make_dirs(pathname)
+register char *pathname;
+{
+	register char *p;		/* Points into path */
+	int madeone = 0;		/* Did we do anything yet? */
+	int save_errno = errno;		/* Remember caller's errno */
+
+	if (errno != ENOENT)
+		return 0;		/* Not our problem */
+
+	for (p = strchr(pathname, '/'); p != NULL; p = strchr(p+1, '/')) {
+		/* Avoid mkdir of empty string, if leading or double '/' */
+		if (p == pathname || p[-1] == '/')
+			continue;
+		/* Avoid mkdir where last part of path is '.' */
+		if (p[-1] == '.' && (p == pathname+1 || p[-2] == '/'))
+			continue;
+		*p = 0;				/* Truncate the path there */
+		if ( !mkdir(pathname, 0777)) {	/* Try to create it as a dir */
+			vfile("Made directory %s\n", pathname);
+			madeone++;		/* Remember if we made one */
+			*p = '/';
+			continue;
+		}
+		*p = '/';
+		if (errno == EEXIST)		/* Directory already exists */
+			continue;
+		/*
+		 * Some other error in the mkdir.  We return to the caller.
+		 */
+		break;
+	}
+	errno = save_errno;		/* Restore caller's errno */
+	return madeone;			/* Tell them to retry if we made one */
+}
+
+#if (MD != 2)
+#define	TERM_SIGNAL(status)	((status) & 0x7F)
+#define TERM_COREDUMP(status)	(((status) & 0x80) != 0)
+#define TERM_VALUE(status)	((status) >> 8)
+/*
+ * Make a directory.  Compatible with the mkdir() system call on 4.2BSD.
+ */
+mkdir(dpath, dmode)
+char *dpath;
+int dmode;
+{
+	int cpid, status;
+	struct stat statbuf;
+	extern int errno;
+
+	if (stat(dpath,&statbuf) == 0) {
+		errno = EEXIST;		/* Stat worked, so it already exists */
+		return -1;
+	}
+
+	/* If stat fails for a reason other than non-existence, return error */
+	if (errno != ENOENT) return -1; 
+
+	switch (cpid = fork()) {
+
+	case -1:			/* Error in fork() */
+		return(-1);		/* Errno is set already */
+
+	case 0:				/* Child process */
+		/*
+		 * Cheap hack to set mode of new directory.  Since this
+		 * child process is going away anyway, we zap its umask.
+		 * FIXME, this won't suffice to set SUID, SGID, etc. on this
+		 * directory.  Does anybody care?
+		 */
+		status = umask(0);	/* Get current umask */
+		status = umask(status | (0777 & ~dmode)); /* Set for mkdir */
+		execl("/bin/mkdir", "mkdir", dpath, (char *)0);
+		_exit(-1);		/* Can't exec /bin/mkdir */
+	
+	default:			/* Parent process */
+		while (cpid != wait(&status)) ;	/* Wait for kid to finish */
+	}
+
+	if (TERM_SIGNAL(status) != 0 || TERM_VALUE(status) != 0) {
+		errno = EIO;		/* We don't know why, but */
+		return -1;		/* /bin/mkdir failed */
+	}
+
+	return 0;
+}
+#endif /* MD != 2 */
+#endif /* MD */
 
 /*
  * Putsec writes the n characters of buf to receive file fout.
@@ -707,6 +836,8 @@ register n;
 {
 	register char *p;
 
+	if (n == 0)
+		return OK;
 	if (Thisbinary) {
 		for (p=buf; --n>=0; )
 			putc( *p++, fout);
@@ -818,18 +949,6 @@ canit()
 }
 
 
-/*
- * Return 1 iff stdout and stderr are different devices
- *  indicating this program operating with a modem on a
- *  different line
- */
-fromcu()
-{
-	struct stat a, b;
-	fstat(1, &a); fstat(2, &b);
-	return (a.st_rdev != b.st_rdev);
-}
-
 report(sct)
 int sct;
 {
@@ -906,7 +1025,11 @@ tryz()
 
 	for (n=Zmodem?15:5; --n>=0; ) {
 		/* Set buffer length (0) and capability flags */
+#ifdef SEGMENTS
+		stohdr(SEGMENTS*1024L);
+#else
 		stohdr(0L);
+#endif
 #ifdef CANBREAK
 		Txhdr[ZF0] = CANFC32|CANFDX|CANOVIO|CANBRK;
 #else
@@ -930,7 +1053,7 @@ again:
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
 			tryzhdrtype = ZRINIT;
-			c = zrdata(secbuf, KSIZE);
+			c = zrdata(secbuf, 1024);
 			mode(3);
 			if (c == GOTCRCW)
 				return ZFILE;
@@ -939,6 +1062,7 @@ again:
 		case ZSINIT:
 			Zctlesc = TESCCTL & Rxhdr[ZF0];
 			if (zrdata(Attn, ZATTNLEN) == GOTCRCW) {
+				stohdr(1L);
 				zshhdr(ZACK, Txhdr);
 				goto again;
 			}
@@ -950,7 +1074,7 @@ again:
 			goto again;
 		case ZCOMMAND:
 			cmdzack1flg = Rxhdr[ZF0];
-			if (zrdata(secbuf, KSIZE) == GOTCRCW) {
+			if (zrdata(secbuf, 1024) == GOTCRCW) {
 				if (cmdzack1flg & ZCACK1)
 					stohdr(0L);
 				else
@@ -1024,6 +1148,9 @@ rzfile()
 	n = 20; rxbytes = 0l;
 
 	for (;;) {
+#ifdef SEGMENTS
+		chinseg = 0;
+#endif
 		stohdr(rxbytes);
 		zshhdr(ZRPOS, Txhdr);
 nxthdr:
@@ -1033,14 +1160,22 @@ nxthdr:
 			return ERROR;
 		case ZNAK:
 		case TIMEOUT:
+#ifdef SEGMENTS
+			putsec(secbuf, chinseg);
+			chinseg = 0;
+#endif
 			if ( --n < 0) {
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;
 			}
 		case ZFILE:
-			zrdata(secbuf, KSIZE);
+			zrdata(secbuf, 1024);
 			continue;
 		case ZEOF:
+#ifdef SEGMENTS
+			putsec(secbuf, chinseg);
+			chinseg = 0;
+#endif
 			if (rclhdr(Rxhdr) != rxbytes) {
 				/*
 				 * Ignore eof if it's at wrong place - force
@@ -1057,28 +1192,61 @@ nxthdr:
 			vfile("rzfile: normal EOF");
 			return c;
 		case ERROR:	/* Too much garbage in header search error */
+#ifdef SEGMENTS
+			putsec(secbuf, chinseg);
+			chinseg = 0;
+#endif
 			if ( --n < 0) {
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;
 			}
 			zmputs(Attn);
 			continue;
+		case ZSKIP:
+#ifdef SEGMENTS
+			putsec(secbuf, chinseg);
+			chinseg = 0;
+#endif
+			closeit();
+			vfile("rzfile: Sender SKIPPED file");
+			return c;
 		case ZDATA:
 			if (rclhdr(Rxhdr) != rxbytes) {
 				if ( --n < 0) {
 					return ERROR;
 				}
+#ifdef SEGMENTS
+				putsec(secbuf, chinseg);
+				chinseg = 0;
+#endif
 				zmputs(Attn);  continue;
 			}
 moredata:
 			if (Verbose>1)
 				fprintf(stderr, "\r%7ld ZMODEM%s    ",
 				  rxbytes, Crc32?" CRC-32":"");
-			switch (c = zrdata(secbuf, KSIZE)) {
+#ifdef SEGMENTS
+			if (chinseg >= (1024 * SEGMENTS)) {
+				putsec(secbuf, chinseg);
+				chinseg = 0;
+			}
+			switch (c = zrdata(secbuf+chinseg, 1024))
+#else
+			switch (c = zrdata(secbuf, 1024))
+#endif
+			{
 			case ZCAN:
+#ifdef SEGMENTS
+				putsec(secbuf, chinseg);
+				chinseg = 0;
+#endif
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;
 			case ERROR:	/* CRC error */
+#ifdef SEGMENTS
+				putsec(secbuf, chinseg);
+				chinseg = 0;
+#endif
 				if ( --n < 0) {
 					vfile("rzfile: zgethdr returned %d", c);
 					return ERROR;
@@ -1086,6 +1254,10 @@ moredata:
 				zmputs(Attn);
 				continue;
 			case TIMEOUT:
+#ifdef SEGMENTS
+				putsec(secbuf, chinseg);
+				chinseg = 0;
+#endif
 				if ( --n < 0) {
 					vfile("rzfile: zgethdr returned %d", c);
 					return ERROR;
@@ -1093,7 +1265,13 @@ moredata:
 				continue;
 			case GOTCRCW:
 				n = 20;
+#ifdef SEGMENTS
+				chinseg += Rxcount;
+				putsec(secbuf, chinseg);
+				chinseg = 0;
+#else
 				putsec(secbuf, Rxcount);
+#endif
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
@@ -1101,19 +1279,31 @@ moredata:
 				goto nxthdr;
 			case GOTCRCQ:
 				n = 20;
+#ifdef SEGMENTS
+				chinseg += Rxcount;
+#else
 				putsec(secbuf, Rxcount);
+#endif
 				rxbytes += Rxcount;
 				stohdr(rxbytes);
 				zshhdr(ZACK, Txhdr);
 				goto moredata;
 			case GOTCRCG:
 				n = 20;
+#ifdef SEGMENTS
+				chinseg += Rxcount;
+#else
 				putsec(secbuf, Rxcount);
+#endif
 				rxbytes += Rxcount;
 				goto moredata;
 			case GOTCRCE:
 				n = 20;
+#ifdef SEGMENTS
+				chinseg += Rxcount;
+#else
 				putsec(secbuf, Rxcount);
+#endif
 				rxbytes += Rxcount;
 				goto nxthdr;
 			}
@@ -1162,7 +1352,7 @@ closeit()
 		timep[1] = Modtime;
 		utime(Pathname, timep);
 	}
-	if (Filemode)
+	if ((Filemode&S_IFMT) == S_IFREG)
 		chmod(Pathname, (07777 & Filemode));
 	return OK;
 }
@@ -1201,7 +1391,7 @@ ackbibi()
  */
 bttyout(c)
 {
-	if (Verbose || fromcu())
+	if (Verbose || Fromcu)
 		putc(c, stderr);
 }
 
