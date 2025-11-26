@@ -175,13 +175,13 @@ sysvr4:
 	ln sz zcommandi
 
 odt:
-	cc -strict -W2 -n -DUSG -DMD=2 rz.c -o rz
+	cc -O -strict -W2 -n -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	cc -strict -W2 -n -DUSG -DREADCHECK sz.c -lx -o sz
+	cc -O -strict -W2 -n -DUSG -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb

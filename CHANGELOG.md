@@ -1,5 +1,9 @@
 # Changelog
 
+## [1994-02-24] RZ 3.34 / SZ 3.34
+
+  - SZ: Increase max -l value from 1K to 64K bytes
+
 ## [1994-02-18] RZ 3.33 / SZ 3.33
 
 This release included this `README` update:

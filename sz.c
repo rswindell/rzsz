@@ -1,4 +1,4 @@
-#define VERSION "3.33 02-18-94"
+#define VERSION "3.34 02-24-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -147,7 +147,7 @@ STATIC int BEofseen;		/* EOF seen on input set by fooseek */
 STATIC int Totsecs;		/* total number of sectors this file */
 STATIC int Filcnt=0;		/* count of number of files opened */
 STATIC unsigned Rxbuflen=16384;	/* Receiver's max buffer length */
-STATIC int Tframlen = 0;	/* Override for tx frame length */
+STATIC long Tframlen = 0;	/* Override for tx frame length */
 STATIC int blkopt=0;		/* Override value for zmodem blklen */
 STATIC int Rxflags = 0;
 STATIC long bytcnt;
@@ -279,13 +279,13 @@ char *argv[];
 					break;
 				case 'l':
 					if (isdigit(*cp))
-						Tframlen = atoi(cp);
+						Tframlen = atol(cp);
 					else {
 						if (--argc < 1)
 							usage();
-						Tframlen = atoi(*++argv);
+						Tframlen = atol(*++argv);
 					}
-					if (Tframlen<32 || Tframlen>1024)
+					if (Tframlen<32 || Tframlen>65535L)
 						usage();
 					break;
 				case 'N':
@@ -968,7 +968,7 @@ getzrxinit()
 			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
 			if ( !(Rxflags & CANFDX))
 				Txwindow = 0;
-			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
+			vfile("Rxbuflen=%d Tframlen=%ld", Rxbuflen, Tframlen);
 			signal(SIGINT, SIG_IGN);
 #ifdef MODE2OK
 			mode(2);	/* Set cbreak, XON/XOFF, etc. */

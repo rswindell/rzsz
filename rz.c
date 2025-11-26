@@ -1,4 +1,4 @@
-#define VERSION "3.33 02-18-94"
+#define VERSION "3.34 02-18-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
