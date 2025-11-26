@@ -10,11 +10,11 @@
 	  zcommand, zcommandi -	Send Commands with ZMODEM
 
      SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
-	  sz [-++++aaaabbbbddddeeeeffffkkkkLLLLllllNNNNnnnnooooppppttttuuuuvvvvxxxxyyyyYYYYZZZZ] _f_i_l_e ...
-	  sb [-ddddffffkkkkttttuuuuvvvv] _f_i_l_e ...
-	  sx [-kkkkttttuuuuvvvv] _f_i_l_e
-	  zcommand [-oooottttvvvv] CCCCOOOOMMMMMMMMAAAANNNNDDDD
-	  zcommandi [-oooottttvvvv] CCCCOOOOMMMMMMMMAAAANNNNDDDD
+	  sz [-++++aaaabbbbddddeeeeffffkkkkLLLLllllNNNNnnnnooooppppwwwwuuuuvvvvxxxxyyyyYYYYZZZZ] _f_i_l_e ...
+	  sb [-ddddffffkkkkuuuuvvvv] _f_i_l_e ...
+	  sx [-kkkkuuuuvvvv] _f_i_l_e
+	  zcommand [-oooovvvv] CCCCOOOOMMMMMMMMAAAANNNNDDDD
+	  zcommandi [-oooovvvv] CCCCOOOOMMMMMMMMAAAANNNNDDDD
 	  sz -T
 
 
@@ -37,15 +37,12 @@
 	  registration may call	503-614-0430 to	arrange	for technical
 	  support on a consulting basis.
 
-	  Registered users encountering	problems using this program on
-	  standard serial ports	to transfer files with Professional-
-	  YAM or ZCOMM may call	the support number listed in the
-	  Professional-YAM/ZCOMM documentation.	 Solutions to nearly
-	  all file transfer problems are described in the
-	  Professional-YAM/ZCOMM documentation.
+	  Technical support for	registered users is available by phone
+	  and email.
+
 
      DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
-	  SSSSzzzz (send ZMODEM) uses	the ZMODEM, YMODEM or XMODEM error
+	  This program uses the	ZMODEM,	YMODEM or XMODEM error
 	  correcting protocol to send one or more files	over a dial-in
 	  serial port to a variety of programs running under PC-DOS,
 	  CP/M,	Unix, VMS, and other operating systems.
@@ -57,10 +54,13 @@
 	  This program is intended to act as a server for terminal
 	  programs, not	to act as one.	This program is	not designed
 	  to be	called from _c_u(_1) _t_i_p(_1), or other communications
+	  programs.  The client	rz/sz package, distributed in
+	  (crzsz.zip), is designed to be called	from such programs.
 
 
 
-     Page 1					     (printed 1/27/98)
+
+     Page 1					    (printed 6/14/100)
 
 
 
@@ -71,8 +71,8 @@
 
 
 
-	  programs.  Unix flavors of Omen Technology's Professional-
-	  YAM communications software are available for	dial-out
+	  Unix flavors of Omen Technology's Professional-YAM
+	  communications software are available	for dial-out
 	  applications.	 Unix Professional-YAM supports	dial-out
 	  applications with telephone directory, a powerful script
 	  language with	learn function,	high quality multiple protocol
@@ -102,8 +102,7 @@
 	  linefeeds.
 
 
-	  SSSSbbbb sends one or more files with YMODEM or ZMODEM protocol.
-	  The initial ZMODEM initialization is not sent.  When
+	  SSSSbbbb sends one or more files with YMODEM protocol.  When
 	  requested by the receiver, ssssbbbb	supports YYYYMMMMOOOODDDDEEEEMMMM----gggg with
 	  "cbreak" tty mode, XON/XOFF flow control, and	interrupt
 	  character set	to CAN (^X).  YYYYMMMMOOOODDDDEEEEMMMM----gggg (Professional-YAM gggg
@@ -123,10 +122,11 @@
 
 	  Iff sssszzzz is invoked with $SHELL	set and	iff that variable
 	  contains the string _r_s_h or _r_k_s_h (restricted shell), sssszzzz
+	  operates in restricted mode.	Restricted mode	restricts
 
 
 
-     Page 2					     (printed 1/27/98)
+     Page 2					    (printed 6/14/100)
 
 
 
@@ -137,7 +137,6 @@
 
 
 
-	  operates in restricted mode.	Restricted mode	restricts
 	  pathnames to the current directory and PUBDIR	(usually
 	  /usr/spool/uucppublic) and/or	subdirectories thereof.
 
@@ -189,10 +188,11 @@
 	       are escaped.
 	  ffff    Send Full pathname.  Normally directory prefixes	are
 	       stripped	from the transmitted filename.
+	  gggg    Send ESC-[-?-3-4-l to start DSZ from Kermit.
 
 
 
-     Page 3					     (printed 1/27/98)
+     Page 3					    (printed 6/14/100)
 
 
 
@@ -203,7 +203,6 @@
 
 
 
-	  gggg    Send ESC-[-?-3-4-l to start DSZ from Kermit.
 	  kkkk    (XMODEM/YMODEM) Send files using	1024 byte blocks
 	       rather than the default 128 byte	blocks.	 1024 byte
 	       packets speed file transfers at high bit	rates.
@@ -231,7 +230,6 @@
 	       that equals the length of the destination file.
 	  rrrrrrrr   As above, but compares the files	(the portion common to
 	       sender and receiver) before resuming the	transfer.
-	  ttttttttiiiimmmm Change timeout to _t_i_m tenths of seconds.
 	  uuuu    Unlink the file after successful	transmission.  Users
 	       should not manually abort or skip file transfers	when
 	       this option is used.
@@ -247,18 +245,20 @@
 	       on the destination system.
 	  ZZZZ    Use ZMODEM file compression to speed file transfer.
 
+     MMMMAAAANNNNUUUUAAAALLLL AAAABBBBOOOORRRRTTTT
+	  If the receiving program is not running, keyboarding CAN
+	  five times will cancel sz.  For convenience, sz also
+	  understands five ETX (Control-C) or five ESC (ESCAPE)
+	  characters when it first attempts to send a file.
+
      DDDDIIIIAAAAGGGGNNNNOOOOSSSSTTTTIIIICCCCSSSS
 	  Exit status is as follows: 0 for successful transfers.  1 if
 	  unrecoverable	errors are detected.  2	if syntax errors or
 	  file access problems are detected.  3	if the program was
-	  terminated by	a caught interrupt.
-
-     EEEEXXXXAAAAMMMMPPPPLLLLEEEESSSS
 
 
 
-
-     Page 4					     (printed 1/27/98)
+     Page 4					    (printed 6/14/100)
 
 
 
@@ -269,6 +269,9 @@
 
 
 
+	  terminated by	a caught interrupt.
+
+     EEEEXXXXAAAAMMMMPPPPLLLLEEEESSSS
 	  ZZZZMMMMOOOODDDDEEEEMMMM FFFFiiiilllleeee TTTTrrrraaaannnnssssffffeeeerrrr (Unix to	DSZ/ZCOMM/Professional-YAM)
 	  %%%% sssszzzz ----aaaa ****....cccc
 	  This single command transfers	all .c files in	the current
@@ -319,12 +322,9 @@
 	  Manual, crc(omen), sq(omen), todos(omen), tocpm(omen),
 	  tomac(omen), yam(omen)
 
-	  Compile time options required	for various operating systems
-	  are described	in the source file.
 
 
-
-     Page 5					     (printed 1/27/98)
+     Page 5					    (printed 6/14/100)
 
 
 
@@ -334,6 +334,9 @@
      SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
 
 
+
+	  Compile time options required	for various operating systems
+	  are described	in the source file.
 
      FFFFIIIILLLLEEEESSSS
 	  32 bit CRC code courtesy Gary	S. Brown.
@@ -384,13 +387,10 @@
 	  started(!).  Until terminal server vendors improve the
 	  quality of their product, you	may have to get	on their case
 	  until	they adequately	support	high performance file
-	  transfers.
-
-	  The telnet protcol used by the _t_e_l_n_e_t	program	and terminal
 
 
 
-     Page 6					     (printed 1/27/98)
+     Page 6					    (printed 6/14/100)
 
 
 
@@ -401,6 +401,9 @@
 
 
 
+	  transfers.
+
+	  The telnet protcol used by the _t_e_l_n_e_t	program	and terminal
 	  servers uses 0xFF (377 octal)	for special control functions.
 	  The 0xFF character may cause problems	if it appears in the
 	  data stream, especially uploading at high speeds.  With
@@ -450,13 +453,10 @@
 	       sz -ew1024 file...
 	  as a starting	point.
 
-	  Sometimes the	terminal server	software is defective and must
-	  be corrected.	 Please	contact	the network's vendor for
-	  corrective procedures.  An alternative is to install direct
 
 
 
-     Page 7					     (printed 1/27/98)
+     Page 7					    (printed 6/14/100)
 
 
 
@@ -467,6 +467,9 @@
 
 
 
+	  Sometimes the	terminal server	software is defective and must
+	  be corrected.	 Please	contact	the network's vendor for
+	  corrective procedures.  An alternative is to install direct
 	  serial ports for users desiring to upload files.
 
 	  We have also encountered problems when networking software
@@ -493,7 +496,7 @@
 	  (The default ZMODEM packet length is the file	length.)
 
      NNNNOOOOTTTTEEEESSSS
-	  SSSSzzzz,,,, ssssbbbb,,,, ssssxxxx,,,, (Reg.)and	zzzzccccoooommmmmmmmaaaannnndddd are hard links	to the
+	  SSSSzzzz,,,, ssssbbbb,,,, ssssxxxx,,,, zzzzccccoooommmmmmmmaaaannnndddd and zzzzccccoooommmmmmmmaaaannnnddddiiii are hard links to the
 	  compiled sz program.	These links are	generated by the
 	  Makefile.
 
@@ -501,7 +504,8 @@
 	  datasets piped to its	standard input (286 version excluded).
 	       ps -ef |	sz -
 	  The file is sent as "szPID" where PID	is the process ID of
-	  sending sz.
+	  the sending sz.  The file name can be	specified with the
+	  OOOONNNNAAAAMMMMEEEE	enviornment variable.
 
 	  Particular attention must be paid to flow control.  The
 	  modem	and Unix must agree on the flow	control	method.	 Sz
@@ -515,14 +519,10 @@
 
 	  If a program that does not properly implement	the specified
 	  file transfer	protocol causes	_s_b to "hang" the port after a
-	  failed transfer, either wait for _s_b to time out or keyboard
-	  a dozen Ctrl-X characters.  Every reported instance of this
-	  problem has been corrected by	using ZCOMM, Pro-YAM, DSZ, or
-	  other	program	with a correct implementation of the specified
 
 
 
-     Page 8					     (printed 1/27/98)
+     Page 8					    (printed 6/14/100)
 
 
 
@@ -533,6 +533,10 @@
 
 
 
+	  failed transfer, either wait for _s_b to time out or keyboard
+	  a dozen Ctrl-X characters.  Every reported instance of this
+	  problem has been corrected by	using ZCOMM, Pro-YAM, DSZ, or
+	  other	program	with a correct implementation of the specified
 	  protocol.
 
 	  Many programs	claiming to support YMODEM only	support	XMODEM
@@ -572,9 +576,28 @@
 
 
      BBBBUUUUGGGGSSSS
+	  Some operating systtems no longer use	an (unsigned) long to
+	  represent file length.  This has been	hacked around using a
+	  cast to long in the sprintf statement	in wctxpn().  You may
+	  wish to modify this statement	to suit	your local operating
+	  system.
+
 	  Some third party software packages do	not properly implement
 	  the ZMODEM protocol.	This often causes problems when	users
 	  attempt to use the -a	or other options.
+
+
+
+     Page 9					    (printed 6/14/100)
+
+
+
+
+
+
+     SSSSZZZZ((((1111))))		OOOOmmmmeeeennnn TTTTeeeecccchhhhnnnnoooollllooooggggyyyy	IIIINNNNCCCC ((((OOOOMMMMEEEENNNN))))		 SSSSZZZZ((((1111))))
+
+
 
 	  On at	least one BSD system, sz would abend it	got within a
 	  few kilobytes	of the end of file.
@@ -588,7 +611,50 @@
 
 
 
-     Page 9					     (printed 1/27/98)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 10					    (printed 6/14/100)
 
 
 

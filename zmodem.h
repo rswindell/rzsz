@@ -38,7 +38,6 @@
 #define ZCAN 16		/* Other end canned session with CAN*5 */
 #define ZFREECNT 17	/* Request for free bytes on filesystem */
 #define ZCOMMAND 18	/* Command from sending program */
-#define ZSTDERR 19	/* Output to standard error, data follows */
 
 /* ZDLE sequences */
 #define ZCRCE 'h'	/* CRC next, frame ends, header packet follows */

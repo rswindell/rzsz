@@ -1,10 +1,10 @@
-#define VERSION "3.48 01-27-98"
+#define VERSION "3.73 1-30-03"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  *
  * rz.c By Chuck Forsberg
- *    Copyright 1997 Omen Technology Inc All Rights Reserved
+ *    Copyright 2003 Omen Technology Inc All Rights Reserved
  *
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
@@ -44,8 +44,8 @@
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
- * products requires license payment of $20.00 US per user
- * (less in quantity, see mailer.rz).  Use of this code by
+ * products requires license payment of $20.00 US per user or as
+ * specified in the mailer.rz registration form.  Use of this code by
  * inclusion, decompilation, reverse engineering or any other means
  * constitutes agreement to these conditions and acceptance of
  * liability to license the materials and payment of reasonable
@@ -67,7 +67,7 @@
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 
-char *Copyrrz = "Copyright 1997 Omen Technology Inc All Rights Reserved";
+char *Copyrrz = "Copyright 1999 Omen Technology Inc All Rights Reserved";
 
 
 #define LOGFILE "/tmp/rzlog"
@@ -125,6 +125,18 @@ char Zsendmask[33];	/* Additional control chars to mask */
 char *substr();
 FILE *fout;
 
+
+/* send cancel string to get the other end to shut up */
+canit()
+{
+	static char canistr[] = {
+	 24,24,24,24,24,24,24,24,24,24,0
+	};
+
+	zmputs(canistr);
+	Lleft=0;	/* Do read next time ... */
+}
+
 /*
  * Routine to calculate the free bytes on the current file system
  *  ~0 means many free bytes (unknown)
@@ -146,8 +158,8 @@ int Restricted=0;	/* restricted; no /.. or ../ in filenames */
 long Bytesleft;	/* number of bytes of incoming file left */
 long Modtime;		/* Unix style mod time for incoming file */
 int Filemode;		/* Unix style mode for incoming file */
-long Totalleft;
-long Filesleft;
+long Totbytes, Totalleft;
+long Totfiles, Filesleft;
 char Pathname[PATHLEN];
 char *Progname;		/* the name by which we were called */
 
@@ -178,8 +190,8 @@ int Zrwindow = 1400;	/* RX window size (controls garbage count) */
  * Log an error
  */
 void
-zperr1(s,p,u)
-char *s, *p, *u;
+zperr1(s)
+char *s;
 {
 	if (Verbose <= 0)
 		return;
@@ -189,8 +201,8 @@ char *s, *p, *u;
 }
 
 void
-zperr2(s,p,u)
-char *s, *p, *u;
+zperr2(s,p)
+char *s, *p;
 {
 	if (Verbose <= 0)
 		return;
@@ -242,7 +254,7 @@ char *argv[];
 		Restricted=TRUE;
 
 	chkinvok(virgin=argv[0]);
-	inittty();
+	Tty = 0;  Ttystream = stdin;
 	npats = 0;
 	while (--argc) {
 		cp = *++argv;
@@ -256,10 +268,14 @@ char *argv[];
 				case '\\':
 					 *cp = toupper(*cp);  continue;
 				case 'a':
+#ifndef REGISTERED
 					if (!Batch || Nozmodem)
+#endif
 						Rxascii=TRUE;
+#ifndef REGISTERED
 					else
 						usage();
+#endif
 					break;
 				case 't':
 					if (isdigit(*cp))
@@ -311,7 +327,7 @@ char *argv[];
 		setbuf(stderr, NULL);
 		fprintf(stderr, "argv[0]=%s Progname=%s\n", virgin, Progname);
 	}
-	vfile("%s %s for %s tty=%s\n", Progname, VERSION, OS, Nametty);
+	vfile("%s %s for %s\n", Progname, VERSION, OS);
 	mode(1);
 	if (signal(SIGINT, bibi) == SIG_IGN) {
 		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
@@ -330,13 +346,20 @@ char *argv[];
 		fprintf(stderr, "  %s: %s\r\n", Progname, endmsg);
 	fprintf(stderr, "%s %s finished.\r\n", Progname, VERSION);
 	fflush(stderr);
+	if(exitcode) {
+		mode(0); exit(1);
+	}
 #ifndef REGISTERED
 	/* Removing or disabling this code without registering is theft */
-	if (!Usevhdrs) {
+	if ((Totfiles > 0) && (!Usevhdrs)) {
+		sprintf(endmsg, "echo Unreg %s %s %ld %ld | mail rzsz@omen.com",
+		  Progname, VERSION, Totfiles, Totbytes );
+		system(endmsg);
+		canit();
+		sleep(4);
 		fprintf(stderr, "\n\n\n**** UNREGISTERED COPY *****\r\n");
 		fprintf(stderr, "Please read the License Agreement in rz.doc\r\n");
 		fflush(stderr);
-		sleep(10);
 	}
 #endif
 	mode(0);
@@ -360,16 +383,17 @@ usage()
 	compression (-Z), binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
 	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
 	clobber (-y), match+clobber (-Y),  and append (-+).\n\n");
-	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
-	  Progname, VERSION, OS);
+	fprintf(stderr,"%s %s by Chuck Forsberg,  Omen Technology INC\n",
+	  Progname, VERSION);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
-	fprintf(stderr,"Copyright (c) 1997 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"Copyright (c) 1999 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	"See rz.doc and README for option descriptions and licensing information.\n\n");
+	fprintf(stderr,"\t\t\tCompiled for %s\n", OS);
 	fprintf(stderr,
-	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
+	"\nThis program is designed to talk to terminal programs,\nnot to be called by one.\n");
 #ifndef REGISTERED
-	fprintf(stderr, "\n\n\n      **** UNREGISTERED COPY *****\r\n");
+	fprintf(stderr, "\n      **** UNREGISTERED COPY *****\r\n");
 	fprintf(stderr, "Please read the License Agreement in rz.doc\r\n");
 #endif
 	exit(2);
@@ -487,6 +511,7 @@ wcrx()
 			cblklen = Bytesleft>Blklen ? Blklen:Bytesleft;
 			if (putsec(secbuf, cblklen)==ERROR)
 				return ERROR;
+			Totbytes += cblklen;
 			if ((Bytesleft-=cblklen) < 0)
 				Bytesleft = 0;
 			sendchar=ACK;
@@ -500,6 +525,7 @@ wcrx()
 				return ERROR;
 			sendline(ACK); flushmo();
 			Lleft=0;	/* Do read next time ... */
+			++Totfiles;
 			return OK;
 		}
 		else if (sectcurr==ERROR)
@@ -591,7 +617,7 @@ bilge:
 			zperr1( "TIMEOUT");
 		}
 		else
-			zperr1( "Got 0%o sector header", firstch);
+			zperr2( "Got 0%o sector header", firstch);
 
 humbug:
 		Lastrx=0;
@@ -655,6 +681,7 @@ char *name;
 		  &dummy, &Filesleft, &Totalleft, &dummy, &dummy);
 		if (Filemode & UNIXFILE)
 			++Thisbinary;
+		++Totfiles;  Totbytes += Bytesleft;
 		if (Verbose) {
 			fprintf(stderr,  "Incoming: %s %ld %lo %o\n",
 			  name, Bytesleft, Modtime, Filemode);
@@ -1326,14 +1353,6 @@ closeit()
 		timep[1] = Modtime;
 		utime(Pathname, timep);
 	}
-	if (
-#ifdef POSIX
-	S_ISREG(Filemode)
-#else
-	(Filemode&S_IFMT) == S_IFREG
-#endif
-	)
-		chmod(Pathname, (unsigned short)(07777 & Filemode));
 	return OK;
 }
 

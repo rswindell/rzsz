@@ -10,7 +10,7 @@ nothing:
 	@echo "make any necessary hacks for oddball or merged SYSV/BSD systems,"
 	@echo "then type 'make SYSTEM' where SYSTEM is one of:"
 	@echo
-	@echo "	posix	POSIX compliant systems"
+	@echo "	posix	POSIX compliant systems (Linux, FBSD, etc.)"
 	@echo "	aix	AIX systems"
 	@echo "	next	NeXtstep v3.x (POSIX)"
 	@echo "	odt	SCO Open Desktop"
@@ -32,7 +32,7 @@ nothing:
 	@echo "	doc	Format the man pages with nroff"
 	@echo
 
-all:doc usenet unixforum sshar shar zoo
+all:doc usenet unixforum sshar shar zip zoo
 
 usenet:doc
 	shar -c -a -n rzsz -o /tmp/rzsz -l64 \
@@ -84,10 +84,11 @@ zoo: doc
 	touch /tmp/rzsz.zoo
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /u/t/yam
+
+zip:doc
 	-rm -f rzsz.zip
-	zip rzsz readme mailer.rz makefile zmodem.h zm.c sz.c rz.c
-	zip rzsz undos.c crctab.c rbsb.c *.doc file_id.diz
-	zip rzsz zmr.c crc.c gz *.t minirb.c
+	zip rzsz readme mailer.rz makefile zmodem.h zm.c sz.c rz.c undos.c \
+	crctab.c rbsb.c *.doc file_id.diz zmr.c crc.c gz *.t minirb.c 
 	mv rzsz.zip /u/t/yam
 
 tag: doc  xenix
@@ -111,7 +112,7 @@ tags:
 xenix:
 	/usr/ods30/bin/cc \
 	-I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
-	-M2 $(CFLAGS) $(RFLAGS) $(OFLAG) -s -DSMALL -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	-M2l $(CFLAGS) $(RFLAGS) $(OFLAG) -s -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz; file sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -260,13 +261,13 @@ posix:
 
 POSIX:
 	@echo "Well, stricter, as in *safer sex* ..."
-	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX -DMD=2 -DCOMPL rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX -DCOMPL sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -373,7 +374,7 @@ next:
 	ln sz zcommandi
 
 undos:	undos.c
-	cc -O undos.c -o undos
+	cc -O $(RFLAGS)  undos.c -o undos
 	-rm -f tounix todos unmac tomac tocpm unparity
 	ln undos tounix
 	ln undos todos
@@ -384,8 +385,8 @@ undos:	undos.c
 
 
 lint:
-	lint -DUSG -DSV -DOLD sz.c >/tmp/sz.fluff
-	lint -DUSG -DSV -DOLD rz.c >/tmp/rz.fluff
+	lint -DUSG -DSV sz.c >/tmp/sz.fluff
+	lint -DUSG -DSV rz.c >/tmp/rz.fluff
 
 
 sz: nothing

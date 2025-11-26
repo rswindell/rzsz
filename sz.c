@@ -1,11 +1,11 @@
-#define VERSION "3.48 01-27-98"
+#define VERSION "3.73 1-30-03"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  **************************************************************************
  *
  * sz.c By Chuck Forsberg,  Omen Technology INC
- *    Copyright 1997 Omen Technology Inc All Rights Reserved
+ *    Copyright 2003 Omen Technology Inc All Rights Reserved
  * 
  *********************************************************************
  *********************************************************************
@@ -40,8 +40,8 @@
  * 
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
- * products requires license payment of $20.00 US per user
- * (less in quantity, see mailer.rz).  Use of this code by
+ * products requires license payment of $20.00 US per user or as
+ * specified in the mailer.rz registration form.  Use of this code by
  * inclusion, decompilation, reverse engineering or any other means
  * constitutes agreement to these conditions and acceptance of
  * liability to license the materials and payment of reasonable
@@ -59,7 +59,7 @@
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  */
 
-char *Copyrsz = "Copyright 1997 Omen Technology Inc All Rights Reserved";
+char *Copyrsz = "Copyright 2000 Omen Technology Inc All Rights Reserved";
 
 char *substr();
 
@@ -87,11 +87,13 @@ extern int errno;
 #define XON ('q'&037)
 #define SOH 1
 #define STX 2
+#define ETX 3
 #define EOT 4
 #define ACK 6
 #define NAK 025
 #define SYN 026
 #define CPMEOF 032
+#define ESC 033
 #define WANTCRC 0103	/* send C not NAK to get crc not checksum */
 #define WANTG 0107	/* Send G not NAK to get nonstop batch xmsn */
 #define TIMEOUT (-2)
@@ -115,8 +117,8 @@ char Zsendmask[33];	/* Additional control chars to mask */
 
 #include "crctab.c"
 
-STATIC int Filesleft;
-STATIC long Totalleft;
+STATIC int Totfiles, Filesleft;
+STATIC long Totbytes, Totalleft;
 
 /*
  * Attention string to be executed by receiver to interrupt streaming data
@@ -193,6 +195,18 @@ STATIC char *ksendbuf = "\033[?34l";
 STATIC jmp_buf intrjmp;	/* For the interrupt on RX CAN */
 
 
+/* send cancel string to get the other end to shut up */
+canit()
+{
+	static char canistr[] = {
+	 24,24,24,24,24,24,24,24,24,24,0
+	};
+
+	zmputs(canistr);
+	Lleft=0;	/* Do read next time ... */
+}
+
+
 /* called by signal interrupt or terminate to clean things up */
 void
 bibi(n)
@@ -224,8 +238,8 @@ STATIC int Zrwindow = 1400;	/* RX window size (controls garbage count) */
  * Log an error
  */
 void
-zperr1(s,p,u)
-char *s, *p, *u;
+zperr1(s)
+char *s;
 {
 	if (Verbose <= 0)
 		return;
@@ -235,8 +249,8 @@ char *s, *p, *u;
 }
 
 void
-zperr2(s,p,u)
-char *s, *p, *u;
+zperr2(s,p)
+char *s, *p;
 {
 	if (Verbose <= 0)
 		return;
@@ -271,7 +285,7 @@ char *argv[];
 		Znulls = atoi(cp);
 	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
 		Restricted=TRUE;
-	inittty();
+	Tty = 1;  Ttystream = stdout;
 	chkinvok(argv[0]);
 
 	Rxtimeout = 600;
@@ -404,7 +418,7 @@ char *argv[];
 			}
 		setbuf(stderr, NULL);
 	}
-	vfile("%s %s for %s tty=%s\n", Progname, VERSION, OS, Nametty);
+	vfile("%s %s for %s\n", Progname, VERSION, OS);
 
 	mode(3);
 
@@ -444,7 +458,8 @@ char *argv[];
 	} else if (wcsend(npats, patts)==ERROR) {
 		Exitcode=1;
 		canit();
-		sleep(20);
+		printf("Wait please ..."); fflush(stdout);
+		sleep(10);
 	}
 	if (Skipcount) {
 		printf("%d file(s) skipped by receiver request\r\n", Skipcount);
@@ -458,19 +473,27 @@ char *argv[];
 	}
 	printf("%s %s finished.\r\n", Progname, VERSION);
 	fflush(stdout);
-	mode(0);
-	if(errcnt || Exitcode)
-		exit(1);
+	if(errcnt || Exitcode) {
+		mode(0); exit(1);
+	}
 
 #ifndef REGISTERED
 	/* Removing or disabling this code without registering is theft */
-	if (!Usevhdrs)  {
+	if ((Totfiles > 0) && (!Usevhdrs))
+	{
+		sprintf(Txb, "echo Unreg %s %s %d %ld | mail rzsz@omen.com",
+		  Progname, VERSION, Totfiles, Totbytes);
+		system(Txb);
+		canit();
+		sleep(4);
+		printf("%s %s finished.\r\n", Progname, VERSION);
 		printf("\n\n\n**** UNREGISTERED COPY *****\r\n");
-		printf("\n\n\nPlease read the License Agreement in sz.doc\n");
+		printf("\n\n\nPlease read the License Agreement in sz.doc\r\n");
 		fflush(stdout);
-		sleep(10);
 	}
 #endif
+	fflush(stdout);
+	mode(0);
 	exit(0);
 	/*NOTREACHED*/
 }
@@ -597,7 +620,7 @@ char *oname;
 	default:
 		return ERROR;
 	}
-	if (!Zmodem && wctx(f.st_size))
+	if (!Zmodem && wctx((long)f.st_size))
 		return ERROR;
 
 	if (Unlinkafter)
@@ -624,7 +647,7 @@ char *name;
 	if (Modem2) {
 		if (*name && fstat(fileno(in), &f)!= -1) {
 			fprintf(stderr, "Sending %s, %ld XMODEM blocks. ",
-			  name, (127+f.st_size)>>7);
+			  name, (long)(127+f.st_size)>>7);
 		}
 		printf("Start your local XMODEM receive.     ");
 		fflush(stdout);
@@ -660,7 +683,7 @@ char *name;
 		*q++ = 0;
 	if (*name) {
 		if (fstat(fileno(in), &f)!= -1)
-			sprintf(p, "%lu %lo %o 3 %d %ld", f.st_size, f.st_mtime,
+			sprintf(p, "%lu %lo %o 3 %d %ld", (long)f.st_size, f.st_mtime,
 			  f.st_mode, Filesleft, Totalleft);
 		Totalleft -= f.st_size;
 	}
@@ -678,8 +701,8 @@ char *name;
 	}
 	vfile("wctxpn: %s", p);
 	if (Zmodem)
-		return zsendfile(txbuf, 1+strlen(p)+(p-txbuf));
-	if (wcputsec(txbuf, 0, 128)==ERROR)
+		return zsendfile(txbuf, ((int)1+strlen(p)+(p-txbuf)));
+	if (wcputsec(txbuf, 0, blklen)==ERROR)
 		return ERROR;
 	return OK;
 }
@@ -708,11 +731,24 @@ getnak()
 			Crcflg = TRUE;
 		case NAK:
 			return FALSE;
+		case ETX:
+			if ((firstch = readline(20)) == ETX && Lastrx == ETX) {
+				sprintf(endmsg, "Got ETX waiting to send file");
+				return TRUE;
+			}
+			break;
+		case ESC:
+			if ((firstch = readline(20)) == ESC && Lastrx == ESC) {
+				sprintf(endmsg, "Got ESC waiting to send file");
+				return TRUE;
+			}
+			break;
 		case CAN:
 			if ((firstch = readline(20)) == CAN && Lastrx == CAN) {
 				sprintf(endmsg, "Got CAN waiting to send file");
 				return TRUE;
 			}
+			break;
 		default:
 			break;
 		}
@@ -751,6 +787,7 @@ long flen;
 		if (wcputsec(txbuf, ++sectnum, thisblklen)==ERROR)
 			return ERROR;
 		charssent += thisblklen;
+		Totbytes += thisblklen;
 	}
 	fclose(in);
 	attempts=0;
@@ -765,8 +802,9 @@ long flen;
 		zperr1("No ACK on EOT");
 		return ERROR;
 	}
-	else
-		return OK;
+	else {
+		++Totfiles;  return OK;
+	}
 }
 
 wcputsec(buf, sectnum, cseclen)
@@ -852,7 +890,7 @@ register char *buf;
 {
 	register m;
 
-	m = read(fileno(in), buf, count);
+	m = read(fileno(in), buf, (size_t) count);
 	if (m <= 0)
 		return 0;
 	while (m < count)
@@ -995,16 +1033,21 @@ usage()
 {
 	char **pp;
 
-	fprintf(stderr, "\n%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
-	 Progname, VERSION, OS);
-	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
 	for (pp=usinfo; **pp; ++pp)
 		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr,"\nCopyright (c) 1997 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"\n%s %s by Chuck Forsberg,  Omen Technology INC\n",
+	  Progname, VERSION);
+	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
+	fprintf(stderr,"Copyright (c) 2000 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
-	 "See sz.doc and README for option descriptions and licensing information.\n\n");
+	"See sz.doc and README for option descriptions and licensing information.\n\n");
+	fprintf(stderr,"\t\t\tCompiled for %s\n", OS);
 	fprintf(stderr,
-	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
+	"\nThis program is designed to talk to terminal programs,\nnot to be called by one.\n");
+#ifndef REGISTERED
+	fprintf(stderr, "\n      **** UNREGISTERED COPY *****\r\n");
+	fprintf(stderr, "Please read the License Agreement in sz.doc\r\n");
+#endif
 	exit(3);
 }
 
@@ -1460,9 +1503,9 @@ egotack:
 			if (Skipbitch)
 				++errcnt;
 			fclose(in);
-			return c;
+			return ZSKIP;
 		default:
-			sprintf(endmsg, "Got %d trying to send end of file", c);
+			sprintf(endmsg, "Failure sending end of file");
 		case ERROR:
 			fclose(in);
 			return ERROR;
@@ -1645,6 +1688,7 @@ register char **argv;
 	if (Verbose>2)
 		fprintf(stderr, "\ncountem: Total %d %ld\n",
 		  Filesleft, Totalleft);
+	Totfiles = Filesleft;  Totbytes = Totalleft;
 }
 
 chartest(m)

@@ -1,6 +1,6 @@
 /*
  * File: zmr.c
- * Copyright 1988, 1994 Omen Technology Inc All Rights Reserved
+ * Copyright 1988, 2002 Omen Technology Inc All Rights Reserved
  *
  *
  * 
@@ -47,45 +47,38 @@ char *buf;
 	register unsigned long crc;
 
 	crc = 0xFFFFFFFFL;  l = *buf++ & 0377;
-	if (length == 1) {
-		zsendline(l); crc = UPDC32(l, crc);
-		if (l == ZRESC) {
-			zsendline(1); crc = UPDC32(1, crc);
+	for (n = 0; --length >= 0; ++buf) {
+		if ((c = *buf & 0377) == l && n < 126 && length>0) {
+			++n;  continue;
 		}
-	} else {
-		for (n = 0; --length >= 0; ++buf) {
-			if ((c = *buf & 0377) == l && n < 126 && length>0) {
-				++n;  continue;
+		switch (n) {
+		case 0:
+			zsendline(l);
+			crc = UPDC32(l, crc);
+			if (l == ZRESC) {
+				zsendline(0100); crc = UPDC32(0100, crc);
 			}
-			switch (n) {
-			case 0:
-				zsendline(l);
+			l = c; break;
+		case 1:
+			if (l != ZRESC) {
+				zsendline(l); zsendline(l);
 				crc = UPDC32(l, crc);
-				if (l == ZRESC) {
-					zsendline(0100); crc = UPDC32(0100, crc);
-				}
-				l = c; break;
-			case 1:
-				if (l != ZRESC) {
-					zsendline(l); zsendline(l);
-					crc = UPDC32(l, crc);
-					crc = UPDC32(l, crc);
-					n = 0; l = c; break;
-				}
-				/* **** FALL THRU TO **** */
-			default:
-				zsendline(ZRESC); crc = UPDC32(ZRESC, crc);
-				if (l == 040 && n < 34) {
-					n += 036;
-					zsendline(n); crc = UPDC32(n, crc);
-				}
-				else {
-					n += 0101;
-					zsendline(n); crc = UPDC32(n, crc);
-					zsendline(l); crc = UPDC32(l, crc);
-				}
+				crc = UPDC32(l, crc);
 				n = 0; l = c; break;
 			}
+			/* **** FALL THRU TO **** */
+		default:
+			zsendline(ZRESC); crc = UPDC32(ZRESC, crc);
+			if (l == 040 && n < 34) {
+				n += 036;
+				zsendline(n); crc = UPDC32(n, crc);
+			}
+			else {
+				n += 0101;
+				zsendline(n); crc = UPDC32(n, crc);
+				zsendline(l); crc = UPDC32(l, crc);
+			}
+			n = 0; l = c; break;
 		}
 	}
 	xsendline(ZDLE); xsendline(frameend);

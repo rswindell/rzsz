@@ -1,5 +1,32 @@
 # Changelog
 
+## [2003-01-30] RZ 3.73 / SZ 3.73
+
+This is the last public release of RZ / SZ that is known to have been
+made by Chuck Forsberg.
+
+This release included this `README` update:
+```
+The Omen Technology Code in unmodified copies of rz/sz 3.54
+is Y2K Compliant.  When compiled by a Y2K compliant
+compiler, linked with a Y2K compliant library, executed on a
+Y2K compliant system, and used with Y2K compliant clients,
+rz/sz 3.54 is Y2K compliant.  Consulting is available to
+investigate Y2K issues with third party software.  Omen
+Technology cannot accept liability for Y2K problems caused
+by third party software.
+```
+Note: Although the `README` now makes reference to an apparent 3.54 release,
+no archive file for this release has been located. Given the 5 year gap
+between versions 3.48 and 3.73, it's likely that there were more official
+public releases in that window of time.
+
+  - Print diagnostic message if received ETX or ESC while waiting to send
+    a file and ultimately timing out.
+  - Remove ZSTDERR frame type
+  - Attempts to send an email to <rzsz@omen.com> when attempting to use
+    "for pay" features in an executable compiled without REGISTERED defined.
+
 ## [1998-01-27] RZ 3.48 / SZ 3.48
 
 This release included this `README` update:

@@ -5,7 +5,7 @@
  *   See the main files (rz.c/sz.c) for compile instructions.
  */
 
-char *Copyr = "Copyright 1994 Omen Technology Inc All Rights Reserved";
+char *Copyr = "Copyright 1999 Omen Technology Inc All Rights Reserved";
 
 #ifdef V7
 #include <sys/types.h>
@@ -24,6 +24,7 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #ifdef USG
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #define STAT
 #include <termio.h>
 #define OS "SYS III/V"
@@ -40,6 +41,7 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <fcntl.h>
 #define STAT
 #include <termios.h>
 #define OS "POSIX"
@@ -76,10 +78,9 @@ Howmany must be 255 or less
  *  character reads for these systems. Added 7-01-84 CAF
  */
 
-#define sendline(c) putc(c & 0377, Ttystream)
-#define xsendline(c) putc(c, Ttystream)
+#define sendline(c) putchar(c)
+#define xsendline(c) putchar(c)
 
-char *Nametty;
 FILE *Ttystream;
 int Tty;
 char linbuf[HOWMANY];
@@ -111,14 +112,13 @@ rdchk(f)
 	static long lf;
 
 	ioctl(f, FIONREAD, &lf);
-	return ((int) lf);
+	return ((int) (lf>0));
 }
 
 #else		/* FIONREAD */
 
 #ifdef SV
 #define READCHECK
-#include <fcntl.h>
 
 int checked = 0;
 /*
@@ -141,7 +141,7 @@ rdchk(f)
 	lf = read(f, &bchecked, 1) ;
 	fcntl(f, F_SETFL, savestat) ;
 	checked = bchecked & 0377;	/* force unsigned byte */
-	return(lf) ;
+	return(lf>0) ;
 }
 #endif
 #endif
@@ -399,28 +399,13 @@ sendbrk()
 #endif
 }
 
-/* Initialize tty device for serial file xfer */
-inittty()
-{
-	if ((Nametty = ttyname(2)) && *Nametty) {
-		Tty = open(Nametty, 2);
-	} else {
-		Tty = open(Nametty = "/dev/tty", 2);
-	}
-
-	if (Tty <= 0) {
-		perror(Nametty);  exit(2);
-	}
-	Ttystream = fdopen(Tty, "w");
-}
-
 flushmoc()
 {
-	fflush(Ttystream);
+	fflush(stdout);
 }
 flushmo()
 {
-	fflush(Ttystream);
+	fflush(stdout);
 }
 
 /*
@@ -438,12 +423,10 @@ readline(timeout)
 int timeout;
 {
 	register n;
+	register char *p;
 	static char *cdq;	/* pointer for removing chars from linbuf */
 
 	if (--Lleft >= 0) {
-		if (Verbose > 8) {
-			fprintf(stderr, "%02x ", *cdq&0377);
-		}
 		return (*cdq++ & 0377);
 	}
 	n = timeout/10;
@@ -472,8 +455,8 @@ int timeout;
 	if (Lleft < 1)
 		return TIMEOUT;
 	if (Verbose > 8) {
-		for (n = Lleft; --n >= 0; ) {
-			fprintf(stderr, "%02x ", *cdq&0377);
+		for (p=cdq, n = Lleft; --n >= 0; ) {
+			fprintf(stderr, "%02x ", *p++ &0377);
 		}
 		fprintf(stderr, "\n");
 	}
@@ -500,18 +483,6 @@ purgeline()
 #endif
 }
 
-
-/* send cancel string to get the other end to shut up */
-canit()
-{
-	static char canistr[] = {
-	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
-	};
-
-	zmputs(canistr);
-	Lleft=0;	/* Do read next time ... */
-}
-
 /*
  * Send a string to the modem, processing for \336 (sleep 1 sec)
  *   and \335 (break signal)
@@ -535,8 +506,9 @@ char *s;
 }
 
 
-/* VARARGS1 */
+/* VARARGS */
 vfile(f, a, b, c, d)
+/* VARARGS */
 char *f;
 long a, b, c, d;
 {

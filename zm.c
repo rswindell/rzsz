@@ -99,8 +99,6 @@ static char *frametypes[] = {
 	"ZCAN",
 	"ZFREECNT",
 	"ZCOMMAND",
-	"ZSTDERR",
-	"xxxxx"
 #define FRTYPES 22	/* Total number of frame types in this array */
 			/*  not including psuedo negative entries */
 };
