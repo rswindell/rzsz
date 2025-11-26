@@ -1,5 +1,23 @@
 # Changelog
 
+## [1994-02-18] RZ 3.33 / SZ 3.33
+
+This release included this `README` update:
+```
+Feb 18 94: A bug in sz that caused constipation at the end of a file under
+certain options was corrected.
+```
+
+The found archive file that contained this release included the following
+`FILE_ID.DIZ` file (apparently for the first time):
+```
+Rz and Sz - is a pair of Unix programs
+designed to support dial-in XModem,
+YModem, and ZModem transfers via the
+controlling TTY port. NEW: general
+enhancements.
+```
+
 ## [1994-01-27] RZ 3.32 / SZ 3.32
 
 This release included this `README` update:

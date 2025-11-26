@@ -1,4 +1,4 @@
-#define VERSION "3.32 01-27-94"
+#define VERSION "3.33 02-18-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -326,9 +326,10 @@ usage()
 	fprintf(stderr,"or	rc [-av] file	(XMODEM-CRC)\n");
 	fprintf(stderr,"or	rx [-av] file	(XMODEM)\n\n");
 	fprintf(stderr,
-"Supports incoming ZMODEM binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
+"Supports the following incoming ZMODEM options given to the sending program:\n\
+	compression (-Z), binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
 	newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
-clobber (-y), match+clobber (-Y), compression (-Z), and append (-+).\n\n");
+	clobber (-y), match+clobber (-Y),  and append (-+).\n\n");
 	fprintf(stderr,"Copyright 1994 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
 	"See rz.doc for option descriptions and licensing information.\n\n");

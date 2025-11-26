@@ -1,4 +1,4 @@
-#define VERSION "3.32 01-27-94"
+#define VERSION "3.33 02-18-94"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -820,8 +820,10 @@ zfilbuf()
 	return (vpos - bytcnt);
 #else
 	n = fread(txbuf, 1, blklen, in);
-	if (n < blklen)
+	if (n < blklen) {
 		Eofseen = 1;
+		vfile("zfilbuf: n=%d vpos=%lu Eofseen=%d", n, vpos, Eofseen);
+	}
 	return n;
 #endif
 }
@@ -914,7 +916,7 @@ register char *s,*t;
 
 char *usinfo[] = {
 	"Send Files and Commands with ZMODEM/YMODEM/XMODEM Protocol\n",
-	"Usage:	sz [-+abcdefgklLnNuvwyY] [-] file ...",
+	"Usage:	sz [-+abcdefgklLnNuvwyYZ] [-] file ...",
 	"\t	zcommand [-egv] COMMAND",
 	"\t	zcommandi [-egv] COMMAND",
 	"\t	sb [-adfkuv] [-] file ...",
@@ -1257,12 +1259,9 @@ gotack:
 
 	do {
 		n = zfilbuf();
-		if (Eofseen) {
-			if ((Lrxpos == 0) || Unlinkafter | Txwindow)
-				e = ZCRCW;
-			else
-				e = ZCRCE;
-		} else if (junkcount > 3)
+		if (Eofseen)
+			e = ZCRCE;
+		else if (junkcount > 3)
 			e = ZCRCW;
 		else if (bytcnt == Lastsync)
 			e = ZCRCW;
