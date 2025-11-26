@@ -1,5 +1,16 @@
 # Changelog
 
+## [1998-01-27] RZ 3.48 / SZ 3.48
+
+This release included this `README` update:
+```
+Apr 30 1997: Rz handling of -N fixed.  Sz buffering fixed to prevent spurious
+Bad Seek errors.
+```
+Note: the `-N` referenced is actually specified on the sending (sz) side,
+where it places the ZMNEWL value in the zmanage (file management request)
+value sent to the receiving (rz) side over the wire.
+
 ## [1997-01-06] RZ 3.44 / SZ 3.43
 
 Note: Although the VERSION string in sz.c is "3.43 01-06-96", that appears to

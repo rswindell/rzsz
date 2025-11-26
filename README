@@ -1,5 +1,7 @@
 Unix Rz and sz support XMODEM, YMODEM, and ZMODEM transfers via
-the dial-in controlling TTY port.
+the dial-in controlling TTY (or PTY) port.  Also included is the
+"undos" program which converts between Unix, MSDOS, CP/M, and
+Macintosh text file end of line conventions.
 
 The contents of this archive can be uploaded to a remote Unix or
 Xenix system by ZCOMM or Professional-YAM using the supplied
@@ -15,11 +17,12 @@ compile the programs for, and the command to do so (e.g.,
 
 The Makefile is self explanatory; just say "make".
 
-Unregistered users can use our support hotline: 900-555-7836 at
-$4.69 per minute.  Callers must be 18+ years of age.  Registered
-users can obtain free support for problems not involving
-terminal servers or third party software using email or the
-regular Omen Technology phone number.
+Unregistered users can obtain support on a consulting basis.
+Please call 503-614-0430 to arrange consulting support.
+
+Registered users can obtain free support for problems not
+involving terminal servers or third party software using email
+or the regular Omen Technology phone number.
 
 Rz and sz work best with comm programs that properly support
 ZMODEM command and file AutoDownload (Pro-YAM and ZCOMM).
@@ -53,7 +56,8 @@ but lack recent enhancements and bug fixes.
 The Man pages are formatted for those without Unix nroff.  For
 best results, use less(1) (available on comp.sources.misc) as
 your manual page reader.  The troff sources for the rz/sz man pages
-are included with copies of Unix Professional-YAM.
+are included with copies of Unix Professional-YAM, and are provided
+to registered sites as described in the mailer.rz file.
 
 Please check our web page www.omen.com for the latest information.
 
@@ -62,6 +66,9 @@ directory.  This account has the latest and greatest selection
 of OMEN files available for FTP.  The files in this direcotryy
 are uploaded with ZMODEM directly from the Omen home system,
 preserving modification dates and file contents.
+
+Apr 30 1997: Rz handling of -N fixed.  Sz buffering fixed
+to prevent spurious Bad Seek errors.
 
 Aug 2 1996: The paranoid can now disable command uploads: see rz.doc
 

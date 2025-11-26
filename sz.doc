@@ -30,11 +30,12 @@
 	  Use of this program constitutes agreement to the License
 	  Agreement.
 
+	  Please check http://www.omen.com for more information.
+
      SSSSUUUUPPPPPPPPOOOORRRRTTTT
-	  Users	who have not purchased support may dial	900-555-7836
-	  (900-555-RTFM) for technical assistance.  There is a charge
-	  of $4.69 per minute to use this support line.	 Callers must
-	  be 18	years or older.
+	  Users	who have not purchased support as part of their
+	  registration may call	503-614-0430 to	arrange	for technical
+	  support on a consulting basis.
 
 	  Registered users encountering	problems using this program on
 	  standard serial ports	to transfer files with Professional-
@@ -56,11 +57,10 @@
 	  This program is intended to act as a server for terminal
 	  programs, not	to act as one.	This program is	not designed
 	  to be	called from _c_u(_1) _t_i_p(_1), or other communications
-	  programs.  Unix flavors of Omen Technology's Professional-
 
 
 
-     Page 1					      (printed 1/6/97)
+     Page 1					     (printed 1/27/98)
 
 
 
@@ -71,6 +71,7 @@
 
 
 
+	  programs.  Unix flavors of Omen Technology's Professional-
 	  YAM communications software are available for	dial-out
 	  applications.	 Unix Professional-YAM supports	dial-out
 	  applications with telephone directory, a powerful script
@@ -112,8 +113,8 @@
 	  On Unix systems, additional information about	the file is
 	  transmitted.	If the receiving program uses this
 	  information, the transmitted file length controls the	exact
-	  number of bytes written to the output	dataset, and the
-	  modify time and file mode are	set accordingly.
+	  number of bytes written to the output	dataset	and the	modify
+	  time are set accordingly.
 
 
 	  SSSSxxxx sends a single _f_i_l_e with XXXXMMMMOOOODDDDEEEEMMMM or	XXXXMMMMOOOODDDDEEEEMMMM----1111kkkk protocol
@@ -122,11 +123,10 @@
 
 	  Iff sssszzzz is invoked with $SHELL	set and	iff that variable
 	  contains the string _r_s_h or _r_k_s_h (restricted shell), sssszzzz
-	  operates in restricted mode.	Restricted mode	restricts
 
 
 
-     Page 2					      (printed 1/6/97)
+     Page 2					     (printed 1/27/98)
 
 
 
@@ -137,6 +137,7 @@
 
 
 
+	  operates in restricted mode.	Restricted mode	restricts
 	  pathnames to the current directory and PUBDIR	(usually
 	  /usr/spool/uucppublic) and/or	subdirectories thereof.
 
@@ -188,11 +189,10 @@
 	       are escaped.
 	  ffff    Send Full pathname.  Normally directory prefixes	are
 	       stripped	from the transmitted filename.
-	  gggg    Send ESC-[-?-3-4-l to start DSZ from Kermit.
 
 
 
-     Page 3					      (printed 1/6/97)
+     Page 3					     (printed 1/27/98)
 
 
 
@@ -203,6 +203,7 @@
 
 
 
+	  gggg    Send ESC-[-?-3-4-l to start DSZ from Kermit.
 	  kkkk    (XMODEM/YMODEM) Send files using	1024 byte blocks
 	       rather than the default 128 byte	blocks.	 1024 byte
 	       packets speed file transfers at high bit	rates.
@@ -257,8 +258,7 @@
 
 
 
-
-     Page 4					      (printed 1/6/97)
+     Page 4					     (printed 1/27/98)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					      (printed 1/6/97)
+     Page 5					     (printed 1/27/98)
 
 
 
@@ -390,7 +390,7 @@
 
 
 
-     Page 6					      (printed 1/6/97)
+     Page 6					     (printed 1/27/98)
 
 
 
@@ -456,7 +456,7 @@
 
 
 
-     Page 7					      (printed 1/6/97)
+     Page 7					     (printed 1/27/98)
 
 
 
@@ -498,7 +498,7 @@
 	  Makefile.
 
 	  SSSSzzzz is	now compiled with internal buffering to	allow sending
-	  datasets piped to its	standard input.
+	  datasets piped to its	standard input (286 version excluded).
 	       ps -ef |	sz -
 	  The file is sent as "szPID" where PID	is the process ID of
 	  sending sz.
@@ -522,7 +522,7 @@
 
 
 
-     Page 8					      (printed 1/6/97)
+     Page 8					     (printed 1/27/98)
 
 
 
@@ -563,14 +563,19 @@
 	  features not supported by _s_z.	Please contact Omen Technology
 	  Inc for product information.
 
+	  http://www.omen.com
+
 	  Omen Technology INC
 	  Post Office Box 4681
 	  Portland OR 97208
 	  503-614-0430 (Sales)
-	  900-555-RTFM (Non-Customer Technical Support)
 
 
      BBBBUUUUGGGGSSSS
+	  Some third party software packages do	not properly implement
+	  the ZMODEM protocol.	This often causes problems when	users
+	  attempt to use the -a	or other options.
+
 	  On at	least one BSD system, sz would abend it	got within a
 	  few kilobytes	of the end of file.
 	  Using	the "-w8192" option fixed the problem.	The real cause
@@ -583,12 +588,7 @@
 
 
 
-
-
-
-
-
-     Page 9					      (printed 1/6/97)
+     Page 9					     (printed 1/27/98)
 
 
 

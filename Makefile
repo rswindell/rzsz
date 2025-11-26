@@ -4,9 +4,6 @@ CC=cc
 OFLAG= -O
 
 
-ARCFILES= COPYING README rbsb.c gz *.t minirb.c zmodem.h \
-	zm.c zmr.c crctab.c sz.c rz.c mailer.rz crc.c
-
 nothing:
 	@echo
 	@echo "Please study the #ifdef's in crctab.c, rbsb.c, rz.c and sz.c,"
@@ -31,6 +28,7 @@ nothing:
 	@echo "	amiga	3000UX running SVR4"
 	@echo "	POSIX	POSIX compliant systems (SCO Open Desktop, strict)"
 	@echo
+	@echo "	undos	Make the undos, todos, etc. program."
 	@echo "	doc	Format the man pages with nroff"
 	@echo
 
@@ -38,17 +36,17 @@ all:doc usenet unixforum sshar shar zoo
 
 usenet:doc
 	shar -c -a -n rzsz -o /tmp/rzsz -l64 \
-	  COPYING README Makefile zmodem.h zm.c rz.c rbsb.c \
+	  COPYING README Makefile undos.c zmodem.h zm.c rz.c rbsb.c \
 	 crc.c crctab.c minirb.c mailer.rz zmr.c *.doc gz sz.c *.t 
 
 sshar:doc
 	shar -c -a -n rzsz -o /tmp/rzsz -l64 \
-	  COPYING README Makefile zmodem.h zm.c rz.c rbsb.c \
+	  COPYING README Makefile undos.c zmodem.h zm.c rz.c rbsb.c \
 	 crc.c crctab.c mailer.rz zmr.c *.doc gz sz.c
 
 shar:doc
 	shar -c COPYING README Makefile zmodem.h zm.c \
-	 zmr.c sz.c rz.c crctab.c \
+	 undos.c zmr.c sz.c rz.c crctab.c \
 	 mailer.rz crc.c rbsb.c minirb.c *.doc gz *.t >/tmp/rzsz.sh
 	 cp /tmp/rzsz.sh /u/t/yam
 
@@ -57,10 +55,11 @@ unixforum: shar
 	gzip -9 /tmp/rzsz.sh
 	cp /tmp/rzsz.sh.gz /u/t/yam
 
-doc:rz.doc sz.doc crc.doc minirb.doc
+doc:rz.doc sz.doc crc.doc minirb.doc undos.doc
 
 clean:
 	rm -f *.o *.out sz sb sx zcommand zcommandi rz rb rx rc
+	rm -f undos tounix todos unmac tomac tocpm unparity
 
 minirb.doc:minirb.1
 	nroff -man minirb.1 | col  >minirb.doc
@@ -74,17 +73,20 @@ sz.doc:sz.1 servers.mi
 crc.doc:crc.1
 	nroff -man crc.1 | col  >crc.doc
 
+undos.doc:undos.1
+	nroff -man undos.1 | col  >undos.doc
+
 zoo: doc
 	-rm -f /tmp/rzsz.zoo
 	zoo ah /tmp/rzsz COPYING README Makefile zmodem.h zm.c sz.c rz.c \
-	 mailer.rz crctab.c rbsb.c *.doc \
+	 undos.c mailer.rz crctab.c rbsb.c *.doc \
 	 zmr.c crc.c gz *.t minirb.c
 	touch /tmp/rzsz.zoo
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /u/t/yam
 	-rm -f rzsz.zip
 	zip rzsz readme mailer.rz makefile zmodem.h zm.c sz.c rz.c
-	zip rzsz crctab.c rbsb.c *.doc file_id.diz
+	zip rzsz undos.c crctab.c rbsb.c *.doc file_id.diz
 	zip rzsz zmr.c crc.c gz *.t minirb.c
 	mv rzsz.zip /u/t/yam
 
@@ -92,13 +94,13 @@ tag: doc  xenix
 	-rm -f /tmp/rzsz
 	tar cvf /tmp/rzsz COPYING README Makefile zmodem.h zm.c sz.c rz.c \
 	 mailer.rz crctab.c rbsb.c *.doc \
-	 zmr.c crc.c gz *.t minirb.c rz sz crc
+	 undos.c zmr.c crc.c gz *.t minirb.c rz sz crc undos
 	gzip -9 /tmp/rzsz
 	mv /tmp/rzsz.gz /u/t/yam/rzsz.tag
 
 tar:doc
 	tar cvf /tmp/rzsz.tar COPYING README Makefile zmodem.h zm.c sz.c rz.c \
-	 mailer.rz crctab.c rbsb.c \
+	 undos.c mailer.rz crctab.c rbsb.c \
 	 zmr.c crc.c *.1 gz *.t minirb.c
 
 tags:
@@ -109,7 +111,7 @@ tags:
 xenix:
 	/usr/ods30/bin/cc \
 	-I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
-	-M2l $(CFLAGS) $(OFLAG) -s -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	-M2 $(CFLAGS) $(RFLAGS) $(OFLAG) -s -DSMALL -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz; file sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -118,21 +120,32 @@ xenix:
 	ln sz zcommandi
 	/usr/ods30/bin/cc \
 	 -I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
-	-M2l $(CFLAGS) $(OFLAG) -s -DUSG -DMD rz.c -o rz
+	-M2 $(CFLAGS) $(RFLAGS) $(OFLAG) -s -DUSG -DMD rz.c -o rz
 	size rz; file rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
+	/usr/ods30/bin/cc \
+	 -I/usr/ods30/usr/include -I/usr/ods30/usr/include/sys \
+	-M2 $(CFLAGS) $(OFLAG) -s undos.c -o undos
+	size undos; file undos
+	-rm -f tounix todos unmac tomac tocpm unparity
+	ln undos tounix
+	ln undos todos
+	ln undos unmac
+	ln undos tomac
+	ln undos tocpm
+	ln undos unparity
 
 x386:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DNFGVMIN -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -141,13 +154,13 @@ x386:
 	ln sz zcommandi
 
 sysv:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD -DOLD rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DMD -DOLD rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN -DOLD sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN -DOLD sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -156,13 +169,13 @@ sysv:
 	ln sz zcommandi
 
 sysiii:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DOLD rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DOLD rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN -DOLD sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN -DOLD sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -171,13 +184,13 @@ sysiii:
 	ln sz zcommandi
 
 sysvr3:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -186,13 +199,13 @@ sysvr3:
 	ln sz zcommandi
 
 sysvr4:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DSV -DUSG sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -201,13 +214,13 @@ sysvr4:
 	ln sz zcommandi
 
 odt:
-	cc -O -n -DUSG -DMD=2 rz.c -o rz
+	cc -O -n $(RFLAGS) -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	cc -O -n -DUSG -DREADCHECK sz.c -lx -o sz
+	cc -O -n $(RFLAGS) -DUSG -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -216,13 +229,13 @@ odt:
 	ln sz zcommandi
 
 everest:
-	cc -b elf -w 3 -O3 -DUSG -DMD=2 rz.c -o rz
+	cc -b elf -w 3 -O3 $(RFLAGS) -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	cc -b elf -w 3 -O3 -DUSG -DREADCHECK sz.c -lx -o sz
+	cc -b elf -w 3 $(RFLAGS) -O3 -DUSG -DREADCHECK sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -231,13 +244,13 @@ everest:
 	ln sz zcommandi
 
 posix:
-	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -247,13 +260,13 @@ posix:
 
 POSIX:
 	@echo "Well, stricter, as in *safer sex* ..."
-	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX -DMD=2 -DCOMPL rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX -DMD=2 -DCOMPL rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DPOSIX -DCOMPL sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DPOSIX -DCOMPL sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -263,13 +276,13 @@ POSIX:
 
 
 bsd:
-	$(CC) $(CFLAGS) $(OFLAG) -DMD=2 -Dstrchr=index -DV7 rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DMD=2 -Dstrchr=index -DV7 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DV7 -DNFGVMIN sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DV7 -DNFGVMIN sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -278,14 +291,14 @@ bsd:
 	ln sz zcommandi
 
 tandy:
-	$(CC) $(CFLAGS) $(OFLAGS) -n -DUSG -DMD -DT6K sz.c -lx -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAGS) -n -DUSG -DMD -DT6K sz.c -lx -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
 	ln sz sx
 	ln sz zcommand
 	ln sz zcommandi
-	$(CC) $(CFLAGS) $(OFLAGS) -n -DUSG -DMD -DT6K rz.c -lx -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAGS) -n -DUSG -DMD -DT6K rz.c -lx -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
@@ -293,13 +306,13 @@ tandy:
 	ln rz rc
 
 dnix:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DMD rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN -DREADCHECK sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DSV -DUSG -DNFGVMIN -DREADCHECK sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -308,13 +321,13 @@ dnix:
 	ln sz zcommandi
 
 dnix5r3:
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DMD=2 rz.c -o rz
 	size rz
 	-rm -f rb rx rc
 	ln rz rb
 	ln rz rx
 	ln rz rc
-	$(CC) $(CFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN -DREADCHECK sz.c -o sz
+	$(CC) $(CFLAGS) $(RFLAGS) $(OFLAG) -DUSG -DSV -DNFGVMIN -DREADCHECK sz.c -o sz
 	size sz
 	-rm -f sb sx zcommand zcommandi
 	ln sz sb
@@ -358,6 +371,16 @@ next:
 	ln sz sx
 	ln sz zcommand
 	ln sz zcommandi
+
+undos:	undos.c
+	cc -O undos.c -o undos
+	-rm -f tounix todos unmac tomac tocpm unparity
+	ln undos tounix
+	ln undos todos
+	ln undos unmac
+	ln undos tomac
+	ln undos tocpm
+	ln undos unparity
 
 
 lint:

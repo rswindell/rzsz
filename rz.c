@@ -1,10 +1,10 @@
-#define VERSION "3.44 09-16-96"
+#define VERSION "3.48 01-27-98"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  *
  * rz.c By Chuck Forsberg
- *    Copyright 1996 Omen Technology Inc All Rights Reserved
+ *    Copyright 1997 Omen Technology Inc All Rights Reserved
  *
  * A program for Unix to receive files and commands from computers running
  *  Professional-YAM, PowerCom, YAM, IMP, or programs supporting XMODEM.
@@ -67,7 +67,7 @@
  *  USG UNIX (3.0) ioctl conventions courtesy  Jeff Martin
  */
 
-char *Copyrrz = "Copyright 1996 Omen Technology Inc All Rights Reserved";
+char *Copyrrz = "Copyright 1997 Omen Technology Inc All Rights Reserved";
 
 
 #define LOGFILE "/tmp/rzlog"
@@ -177,9 +177,30 @@ int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 /*
  * Log an error
  */
-/*VARARGS1*/
 void
-zperr(s,p,u)
+zperr1(s,p,u)
+char *s, *p, *u;
+{
+	if (Verbose <= 0)
+		return;
+	fprintf(stderr, "Retry %d: ", errors);
+	fprintf(stderr, s);
+	fprintf(stderr, "\n");
+}
+
+void
+zperr2(s,p,u)
+char *s, *p, *u;
+{
+	if (Verbose <= 0)
+		return;
+	fprintf(stderr, "Retry %d: ", errors);
+	fprintf(stderr, s, p);
+	fprintf(stderr, "\n");
+}
+
+void
+zperr3(s,p,u)
 char *s, *p, *u;
 {
 	if (Verbose <= 0)
@@ -342,13 +363,11 @@ usage()
 	fprintf(stderr,"%s %s for %s by Chuck Forsberg, Omen Technology INC\n",
 	  Progname, VERSION, OS);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
-	fprintf(stderr,"Copyright (c) 1996 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"Copyright (c) 1997 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
-	"See rz.doc for option descriptions and licensing information.\n\n");
+	"See rz.doc and README for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
 	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
-	fprintf(stderr,
-	"\nTechnical support hotline: 900-555-7836 (1-900-555-RTFM) $4.69/min.\n\n");
 #ifndef REGISTERED
 	fprintf(stderr, "\n\n\n      **** UNREGISTERED COPY *****\r\n");
 	fprintf(stderr, "Please read the License Agreement in rz.doc\r\n");
@@ -432,7 +451,7 @@ et_tu:
 	Lleft=0;	/* Do read next time ... */
 	switch (c = wcgetsec(rpn, 100)) {
 	case WCEOT:
-		zperr( "Pathname fetch returned %d", c);
+		zperr2( "Pathname fetch returned %d", c);
 		sendline(ACK);  flushmo();
 		Lleft=0;	/* Do read next time ... */
 		readline(1);
@@ -473,7 +492,7 @@ wcrx()
 			sendchar=ACK;
 		}
 		else if (sectcurr==(sectnum&0377)) {
-			zperr( "Received dup Sector");
+			zperr1( "Received dup Sector");
 			sendchar=ACK;
 		}
 		else if (sectcurr==WCEOT) {
@@ -486,7 +505,7 @@ wcrx()
 		else if (sectcurr==ERROR)
 			return ERROR;
 		else {
-			zperr( "Sync Error");
+			zperr1( "Sync Error");
 			return ERROR;
 		}
 	}
@@ -537,7 +556,7 @@ get2:
 						goto bilge;
 					oldcrc=updcrc(firstch, oldcrc);
 					if (oldcrc & 0xFFFF)
-						zperr( "CRC");
+						zperr1( "CRC");
 					else {
 						Firstsec=FALSE;
 						return sectcurr;
@@ -548,17 +567,17 @@ get2:
 					return sectcurr;
 				}
 				else
-					zperr( "Checksum");
+					zperr1( "Checksum");
 			}
 			else
-				zperr("Sector number garbled");
+				zperr1("Sector number garbled");
 		}
 		/* make sure eot really is eot and not just mixmash */
 		else if (firstch==EOT && Lleft==0)
 			return WCEOT;
 		else if (firstch==CAN) {
 			if (Lastrx==CAN) {
-				zperr( "Sender CANcelled");
+				zperr1( "Sender CANcelled");
 				return ERROR;
 			} else {
 				Lastrx=CAN;
@@ -569,10 +588,10 @@ get2:
 			if (Firstsec)
 				goto humbug;
 bilge:
-			zperr( "TIMEOUT");
+			zperr1( "TIMEOUT");
 		}
 		else
-			zperr( "Got 0%o sector header", firstch);
+			zperr1( "Got 0%o sector header", firstch);
 
 humbug:
 		Lastrx=0;
@@ -658,6 +677,8 @@ char *name;
 
 	if (*name && stat(name, &f)!= -1) {
 		zmanag &= ZMMASK;
+		if (zmanag==ZMPROT)
+			goto skipfile;
 		vfile("Current %s is %ld %lo", name, f.st_size, f.st_mtime);
 		if (Thisbinary && zconv==ZCRESUM) {
 			rxbytes = f.st_size & ~511;
@@ -674,13 +695,14 @@ char *name;
 			vfile("Crash recovery at %ld", rxbytes);
 			return 0;
 		}
-		else if ((zmanag==ZMNEW) ||
-		  ((zmanag==ZMNEWL) && Bytesleft <= f.st_size) ) {
+		switch (zmanag & ZMMASK) {
+		case ZMNEWL:
+			if (Bytesleft > f.st_size)
+				goto doopen;
+		case ZMNEW:
 			if ((f.st_mtime+1) >= Modtime)
 				goto skipfile;
 			goto doopen;
-		}
-		switch (zmanag & ZMMASK) {
 		case ZMCLOB:
 		case ZMAPND:
 			goto doopen;
@@ -1066,6 +1088,7 @@ rzfiles()
 		switch (c = rzfile()) {
 		case ZEOF:
 		case ZSKIP:
+		case ZFERR:
 			switch (tryz()) {
 			case ZCOMPL:
 				return OK;

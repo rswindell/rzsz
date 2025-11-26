@@ -1,11 +1,11 @@
-#define VERSION "3.43 01-06-96"
+#define VERSION "3.48 01-27-98"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
  **************************************************************************
  *
  * sz.c By Chuck Forsberg,  Omen Technology INC
- *    Copyright 1995 Omen Technology Inc All Rights Reserved
+ *    Copyright 1997 Omen Technology Inc All Rights Reserved
  * 
  *********************************************************************
  *********************************************************************
@@ -59,7 +59,7 @@
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  */
 
-char *Copyrsz = "Copyright 1995 Omen Technology Inc All Rights Reserved";
+char *Copyrsz = "Copyright 1997 Omen Technology Inc All Rights Reserved";
 
 char *substr();
 
@@ -135,7 +135,7 @@ FILE *in;
 
 STATIC int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
 
-#if 1
+#ifndef SMALL
 #ifndef TXBSIZE
 #define TXBSIZE 32768
 #endif
@@ -219,12 +219,34 @@ STATIC int Nozmodem = 0;	/* If invoked as "sb" */
 STATIC char *Progname = "sz";
 STATIC int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 
+
 /*
  * Log an error
  */
-/*VARARGS1*/
 void
-zperr(s,p,u)
+zperr1(s,p,u)
+char *s, *p, *u;
+{
+	if (Verbose <= 0)
+		return;
+	fprintf(stderr, "Retry %d: ", errors);
+	fprintf(stderr, s);
+	fprintf(stderr, "\n");
+}
+
+void
+zperr2(s,p,u)
+char *s, *p, *u;
+{
+	if (Verbose <= 0)
+		return;
+	fprintf(stderr, "Retry %d: ", errors);
+	fprintf(stderr, s, p);
+	fprintf(stderr, "\n");
+}
+
+void
+zperr3(s,p,u)
 char *s, *p, *u;
 {
 	if (Verbose <= 0)
@@ -233,6 +255,7 @@ char *s, *p, *u;
 	fprintf(stderr, s, p, u);
 	fprintf(stderr, "\n");
 }
+
 
 #include "zm.c"
 #include "zmr.c"
@@ -421,6 +444,7 @@ char *argv[];
 	} else if (wcsend(npats, patts)==ERROR) {
 		Exitcode=1;
 		canit();
+		sleep(20);
 	}
 	if (Skipcount) {
 		printf("%d file(s) skipped by receiver request\r\n", Skipcount);
@@ -441,6 +465,7 @@ char *argv[];
 #ifndef REGISTERED
 	/* Removing or disabling this code without registering is theft */
 	if (!Usevhdrs)  {
+		printf("\n\n\n**** UNREGISTERED COPY *****\r\n");
 		printf("\n\n\nPlease read the License Agreement in sz.doc\n");
 		fflush(stdout);
 		sleep(10);
@@ -605,7 +630,7 @@ char *name;
 		fflush(stdout);
 		return OK;
 	}
-	zperr("Awaiting pathname nak for %s", *name?name:"<END>");
+	zperr2("Awaiting pathname nak for %s", *name?name:"<END>");
 	if ( !Zmodem)
 		if (getnak())
 			return ERROR;
@@ -710,7 +735,7 @@ long flen;
 	  && firstch != WANTG && firstch!=TIMEOUT && firstch!=CAN)
 		;
 	if (firstch==CAN) {
-		zperr("Receiver CANcelled");
+		zperr1("Receiver CANcelled");
 		return ERROR;
 	}
 	if (firstch==WANTCRC)
@@ -737,7 +762,7 @@ long flen;
 	}
 		while ((firstch=(readline(Rxtimeout)) != ACK) && attempts < RETRYMAX);
 	if (attempts == RETRYMAX) {
-		zperr("No ACK on EOT");
+		zperr1("No ACK on EOT");
 		return ERROR;
 	}
 	else
@@ -788,24 +813,24 @@ gotnak:
 		case CAN:
 			if(Lastrx == CAN) {
 cancan:
-				zperr("Cancelled");  return ERROR;
+				zperr1("Cancelled");  return ERROR;
 			}
 			break;
 		case TIMEOUT:
-			zperr("Timeout on sector ACK"); continue;
+			zperr1("Timeout on sector ACK"); continue;
 		case WANTCRC:
 			if (firstsec)
 				Crcflg = TRUE;
 		case NAK:
-			zperr("NAK on sector"); continue;
+			zperr1("NAK on sector"); continue;
 		case ACK: 
 			firstsec=FALSE;
 			Totsecs += (cseclen>>7);
 			return OK;
 		case ERROR:
-			zperr("Got burst for sector ACK"); break;
+			zperr1("Got burst for sector ACK"); break;
 		default:
-			zperr("Got %02x for sector ACK", firstch); break;
+			zperr2("Got %02x for sector ACK", firstch); break;
 		}
 		for (;;) {
 			Lastrx = firstch;
@@ -817,7 +842,7 @@ cancan:
 				goto cancan;
 		}
 	}
-	zperr("Retry Count Exceeded");
+	zperr1("Retry Count Exceeded");
 	return ERROR;
 }
 
@@ -882,18 +907,20 @@ long pos;
 		BEofseen = 0;
 		if (Canseek > 0) {
 			vpos = pos & ~TXBMASK;
-			if (vpos >= pos)
+			if (vpos > pos)
 				vpos -= TXBSIZE;
+			vfile("seek to vpos=%ld", vpos);
 			if (fseek(fptr, vpos, 0))
 				return 1;
 		}
 		else if (Canseek == 0) {
+			vfile("seek to 00000");
 			if (fseek(fptr, vpos = 0L, 0))
 				return 1;
 		} else
 			return 1;
 		while (vpos < pos) {
-			n = fread(Txb, 1, TXBSIZE, fptr);
+			n = fread(Txb, (size_t)1, (size_t)TXBSIZE, fptr);
 			vpos += n;
 			vfile("n=%d vpos=%ld", n, vpos);
 			if (n < TXBSIZE) {
@@ -913,7 +940,7 @@ long pos;
 			txbuf = Txb + (vpos & TXBMASK);
 			m = TXBSIZE - (vpos & TXBMASK);
 			vfile("m=%ld vpos=%ld", m,vpos);
-				n = fread(txbuf, 1, m, fptr);
+				n = fread(txbuf, (size_t)1, (size_t)m, fptr);
 			vfile("n=%ld vpos=%ld", n,vpos);
 			vpos += n;
 			vfile("bo=%d m=%ld vpos=%ld", txbuf-Txb,m,vpos);
@@ -973,13 +1000,11 @@ usage()
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
 	for (pp=usinfo; **pp; ++pp)
 		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr,"\nCopyright (c) 1995 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr,"\nCopyright (c) 1997 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
-	 "See sz.doc for option descriptions and licensing information.\n\n");
+	 "See sz.doc and README for option descriptions and licensing information.\n\n");
 	fprintf(stderr,
 	"This program is designed to talk to terminal programs,\nnot to be called by one.\n");
-	fprintf(stderr,
-	"\nTechnical support hotline: 900-555-7836 (1-900-555-RTFM) $4.69/min.\n\n");
 	exit(3);
 }
 
@@ -1338,7 +1363,7 @@ gotack:
 #endif
 			}
 		signal(SIGINT, SIG_IGN); canit();
-		sleep(3); purgeline(); mode(0);
+		sleep(20); purgeline(); mode(0);
 		printf("\nsz: Tcount = %ld\n", tcount);
 		if (tleft) {
 			printf("ERROR: Interrupts Not Caught\n");
@@ -1480,7 +1505,7 @@ getinsync(flag)
 			/*   dump the modem's buffer.		 */
 			clearerr(in);	/* In case file EOF seen */
 			if (fseek(in, Rxpos, 0)) {
-				sprintf(endmsg, "Bad Seek");
+				sprintf(endmsg, "Bad Seek to %ld", Rxpos);
 				return ERROR;
 			}
 			Eofseen = 0;

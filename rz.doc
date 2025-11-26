@@ -27,11 +27,12 @@
 	  Use of this program constitutes agreement to the License
 	  Agreement.
 
+	  Please check http://www.omen.com for more information.
+
      SSSSUUUUPPPPPPPPOOOORRRRTTTT
-	  Users	who have not purchased support may dial	900-555-7836
-	  (900-555-RTFM) for technical assistance.  There is a charge
-	  of $4.69 per minute to use this support line.	 Callers must
-	  be 18	years or older.
+	  Users	who have not purchased support as part of their
+	  registration may call	503-614-0430 to	arrange	for technical
+	  support on a consulting basis.
 
 	  Registered users encountering	problems using this program on
 	  standard serial ports	to transfer files with Professional-
@@ -56,11 +57,10 @@
 	  programs, not	to act as one.	This program is	not designed
 	  to be	called from _c_u(_1), _t_i_p(_1), or other communications
 	  programs.  Unix flavors of Omen Technology's Professional-
-	  YAM communications software are suitable for dial-out
 
 
 
-     Page 1					      (printed 1/6/97)
+     Page 1					     (printed 1/27/98)
 
 
 
@@ -71,6 +71,7 @@
 
 
 
+	  YAM communications software are suitable for dial-out
 	  applications.	 Unix Professional-YAM supports	dial-out
 	  applications with telephone directory, a powerful script
 	  language with	learn function,	high quality multiple protocol
@@ -94,9 +95,8 @@
 
 	  If True YMODEM (Omen Technology trademark) file information
 	  (file	length,	etc.) is received, the file length controls
-	  the number of	bytes written to the output dataset, and the
-	  modify time and file mode (iff non zero) are set
-	  accordingly.
+	  the number of	bytes written to the output dataset and	the
+	  modify time (iff non zero) are set accordingly.
 
 	  If True YMODEM file information is not received, slashes in
 	  the pathname are changed to underscore, and any trailing
@@ -126,7 +126,7 @@
 
 
 
-     Page 2					      (printed 1/6/97)
+     Page 2					     (printed 1/27/98)
 
 
 
@@ -192,7 +192,7 @@
 
 
 
-     Page 3					      (printed 1/6/97)
+     Page 3					     (printed 1/27/98)
 
 
 
@@ -258,7 +258,7 @@
 
 
 
-     Page 4					      (printed 1/6/97)
+     Page 4					     (printed 1/27/98)
 
 
 
@@ -324,7 +324,7 @@
 
 
 
-     Page 5					      (printed 1/6/97)
+     Page 5					     (printed 1/27/98)
 
 
 
@@ -390,7 +390,7 @@
 
 
 
-     Page 6					      (printed 1/6/97)
+     Page 6					     (printed 1/27/98)
 
 
 
@@ -434,17 +434,19 @@
 	  newer(-n), newer+longer(-N), protect (-p), Crash Recovery(-
 	  r), clobber (-y), match+clobber (-Y),	compression(-Z), and
 	  append (-+) requests.	 Other options sent by the sender are
-	  ignored.  The	default	is protect (-p)	and binary (-b).
+	  ignored.  Crash recovery (-r)	cannot be combined with	other
+	  options.  The	default	is protect (-p)	and binary (-b).
 
 	  Unix Professional-YAM	provides higher	performance and	other
 	  features not supported by _r_z.	Please contact Omen Technology
 	  Inc for product information.
 
+	  http://www.omen.com
+
 	  Omen Technology INC
 	  Post Office Box 4681
 	  Portland OR 97208
 	  503-614-0430 (Sales)
-	  900-555-RTFM (Unregistered user Technical Support)
 
 
      FFFFIIIILLLLEEEESSSS
@@ -454,9 +456,7 @@
 
 
 
-
-
-     Page 7					      (printed 1/6/97)
+     Page 7					     (printed 1/27/98)
 
 
 

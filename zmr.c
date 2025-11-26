@@ -132,7 +132,7 @@ crcfoo:
 					goto crcfoo;
 				crc = UPDC32(c, crc);
 				if (crc != 0xDEBB20E3) {
-					zperr(badcrc);
+					zperr1(badcrc);
 					return ERROR;
 				}
 				Rxcount = length - (end - buf);
@@ -142,13 +142,13 @@ crcfoo:
 #endif
 				return d;
 			case GOTCAN:
-				zperr("Sender Canceled");
+				zperr1("Sender Canceled");
 				return ZCAN;
 			case TIMEOUT:
-				zperr("TIMEOUT");
+				zperr1("TIMEOUT");
 				return c;
 			default:
-				zperr("Bad data subpacket");
+				zperr1("Bad data subpacket");
 				return c;
 			}
 		}
@@ -181,7 +181,7 @@ spaces:
 		}
 	}
 badpkt:
-	zperr("Data subpacket too long");
+	zperr1("Data subpacket too long");
 	return ERROR;
 }
 
