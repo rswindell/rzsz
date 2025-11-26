@@ -1,4 +1,4 @@
-#define VERSION "sz 1.44 03-03-88"
+#define VERSION "sz 2.01 04-21-88"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -17,6 +17,15 @@
  *	ln sz sx			**** All versions ****
  *
  *
+ * Typical VMS compile and install sequence:
+ *		define LNK$LIBRARY   SYS$LIBRARY:VAXCRTL.OLB
+ *		cc sz.c
+ *		cc vvmodem.c
+ *		link sz,vvmodem
+ *
+ *	sz :== $disk$user2:[username.subdir]sz.exe
+ *
+ *
  *  ******* Some systems (Venix, Coherent, Regulus) do not *******
  *  ******* support tty raw mode read(2) identically to    *******
  *  ******* Unix. ONEREAD must be defined to force one     *******
@@ -29,6 +38,8 @@
  *
  *  USG UNIX (3.0) ioctl conventions courtesy Jeff Martin
  *
+ *  2.x has mods for VMS flavor
+ *
  * 1.34 implements tx backchannel garbage count and ZCRCW after ZRPOS
  * in accordance with the 7-31-87 ZMODEM Protocol Description
  */
@@ -36,28 +47,79 @@
 
 char *substr(), *getenv();
 
-#define LOGFILE "/tmp/szlog"
-
+#ifdef vax11c
+#include <types.h>
+#include <stat.h>
+#define LOGFILE "szlog.tmp"
 #include <stdio.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <ctype.h>
+#include <errno.h>
+#define OS "VMS"
+#define READCHECK
+#define BUFWRITE
+#define iofd
+extern int errno;
+#define SS_NORMAL SS$_NORMAL
+#define xsendline(c) sendline(c)
+
+
+#else	/* vax11c */
+
+
+#define SS_NORMAL 0
+#define LOGFILE "/tmp/szlog"
+#include <stdio.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <ctype.h>
+#include <errno.h>
+extern int errno;
+
+#define sendline(c) putchar(c & 0377)
+#define xsendline(c) putchar(c)
+
+#endif
 
 #define PATHLEN 256
 #define OK 0
 #define FALSE 0
 #define TRUE 1
 #define ERROR (-1)
+/* Ward Christensen / CP/M parameters - Don't change these! */
+#define ENQ 005
+#define CAN ('X'&037)
+#define XOFF ('s'&037)
+#define XON ('q'&037)
+#define SOH 1
+#define STX 2
+#define EOT 4
+#define ACK 6
+#define NAK 025
+#define CPMEOF 032
+#define WANTCRC 0103	/* send C not NAK to get crc not checksum */
+#define WANTG 0107	/* Send G not NAK to get nonstop batch xmsn */
+#define TIMEOUT (-2)
+#define RCDO (-3)
+#define RETRYMAX 10
+
 
 #define HOWMANY 2
 int Zmodem=0;		/* ZMODEM protocol requested by receiver */
-unsigned Baudrate;
+unsigned Baudrate=2400;	/* Default, should be set by first mode() call */
 unsigned Txwindow;	/* Control the size of the transmitted window */
 unsigned Txwspac;	/* Spacing between zcrcq requests */
 unsigned Txwcnt;	/* Counter used to space ack requests */
 long Lrxpos;		/* Receiver's last reported offset */
 int errors;
+
+#ifdef vax11c
+#include "vrzsz.c"	/* most of the system dependent stuff here */
+#else
 #include "rbsb.c"	/* most of the system dependent stuff here */
+#endif
+#include "crctab.c"
 
 int Filesleft;
 long Totalleft;
@@ -78,27 +140,8 @@ char Myattn[] = { 0 };
 #endif
 
 FILE *in;
-
-/* Ward Christensen / CP/M parameters - Don't change these! */
-#define ENQ 005
-#define CAN ('X'&037)
-#define XOFF ('s'&037)
-#define XON ('q'&037)
-#define SOH 1
-#define STX 2
-#define EOT 4
-#define ACK 6
-#define NAK 025
-#define CPMEOF 032
-#define WANTCRC 0103	/* send C not NAK to get crc not checksum */
-#define WANTG 0107	/* Send G not NAK to get nonstop batch xmsn */
-#define TIMEOUT (-2)
-#define RCDO (-3)
-#define RETRYMAX 10
-
 char Lastrx;
 char Crcflg;
-int Wcsmask=0377;
 int Verbose=0;
 int Modem2=0;		/* XMODEM Protocol - don't send pathnames */
 int Restricted=0;	/* restricted; no /.. or ../ in filenames */
@@ -165,16 +208,6 @@ onintr()
 	longjmp(intrjmp, -1);
 }
 
-
-#define sendline(c) putchar(c & Wcsmask)
-
-#define xsendline(c) putchar(c)
-
-flushmo()
-{
-	fflush(stdout);
-}
-
 int Zctlesc;	/* Encode control characters */
 int Nozmodem = 0;	/* If invoked as "sb" */
 char *Progname = "sz";
@@ -208,16 +241,14 @@ char *argv[];
 		if (*cp++ == '-' && *cp) {
 			while ( *cp) {
 				switch(*cp++) {
+				case '\\':
+					 *cp = toupper(*cp);  continue;
 				case '+':
 					Lzmanag = ZMAPND; break;
-				case '1':
-					iofd = 1; break;
 #ifdef CSTOPB
 				case '2':
 					Twostop = TRUE; break;
 #endif
-				case '7':
-					Wcsmask=0177; break;
 				case 'a':
 					Lzconv = ZCNL;
 					Ascii = TRUE; break;
@@ -290,8 +321,10 @@ char *argv[];
 						mode(0);  exit(0);
 					}
 					break;
+#ifndef vax11c
 				case 'u':
 					++Unlinkafter; break;
+#endif
 				case 'v':
 					++Verbose; break;
 				case 'w':
@@ -323,8 +356,10 @@ char *argv[];
 			if (argv[0][0]) {
 				npats=argc;
 				patts=argv;
+#ifndef vax11c
 				if ( !strcmp(*patts, "-"))
 					iofd = 1;
+#endif
 			}
 		}
 	}
@@ -358,13 +393,6 @@ char *argv[];
 			printf("rz\r");  fflush(stdout);
 		}
 		countem(npats, patts);
-		if (!Command && !Quiet && Verbose != 1) {
-			dm = Filesleft + (Totalleft*11L) / (Baudrate * 6L);
-			fprintf(stderr,
-			 "%s: %d file%s %ld bytes %u.%u minutes\r\n",
-			 Progname, Filesleft, Filesleft>1?"s":"", Totalleft,
-			 dm/10, dm%10);
-		}
 		if (!Nozmodem) {
 			stohdr(0L);
 			if (Command)
@@ -388,9 +416,10 @@ char *argv[];
 	fflush(stdout);
 	mode(0);
 	dm = ((errcnt != 0) | Exitcode);
-	if (dm)
-		cucheck();
-	exit(dm);
+	if (dm) {
+		cucheck();  exit(dm);
+	}
+	exit(SS_NORMAL);
 	/*NOTREACHED*/
 }
 
@@ -482,8 +511,10 @@ char *oname;
 	}
 	if (!Zmodem && wctx(f.st_size)==ERROR)
 		return ERROR;
+#ifndef vax11c
 	if (Unlinkafter)
 		unlink(oname);
+#endif
 	return 0;
 }
 
@@ -790,6 +821,7 @@ alrm()
 }
 
 
+#ifndef vax11c
 /*
  * readock(timeout, count) reads character(s) from file descriptor 0
  *  (1 <= count <= 3)
@@ -844,6 +876,11 @@ readline(n)
 	return (readock(n, 1));
 }
 
+flushmo()
+{
+	fflush(stdout);
+}
+
 
 purgeline()
 {
@@ -853,7 +890,7 @@ purgeline()
 	lseek(iofd, 0L, 2);
 #endif
 }
-
+#endif
 
 /* send cancel string to get the other end to shut up */
 canit()
@@ -862,9 +899,15 @@ canit()
 	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
 	};
 
+#ifdef vax11c
+	raw_wbuf(strlen(canistr), canistr);
+	purgeline();
+#else
 	printf(canistr);
 	fflush(stdout);
+#endif
 }
+
 
 /*
  * Log an error
@@ -903,14 +946,20 @@ register char *s,*t;
 }
 
 char *babble[] = {
+#ifdef vax11c
+	"	Send file(s) with ZMODEM Protocol",
+	"Usage:	sz [-2+abdefkLlNnquvwYy] [-] file ...",
+	"	sz [-2Ceqv] -c COMMAND",
+	"	\\ Force next option letter to upper case",
+#else
 	"Send file(s) with ZMODEM/YMODEM/XMODEM Protocol",
 	"	(Y) = Option applies to YMODEM only",
 	"	(Z) = Option applies to ZMODEM only",
-	"Usage:	sz [-12+abdefkLlNnquvwYy] [-] file ...",
-	"	sz [-12Ceqv] -c COMMAND",
-	"	sb [-12adfkquv] [-] file ...",
-	"	sx [-12akquv] [-] file",
-	"	1 Use stdout for modem input",
+	"Usage:	sz [-2+abdefkLlNnquvwYy] [-] file ...",
+	"	sz [-2Ceqv] -c COMMAND",
+	"	sb [-2adfkquv] [-] file ...",
+	"	sx [-2akquv] [-] file",
+#endif
 #ifdef CSTOPB
 	"	2 Use 2 stop bits",
 #endif
@@ -918,7 +967,9 @@ char *babble[] = {
 	"	a (ASCII) change NL to CR/LF",
 	"	b Binary file transfer override",
 	"	c send COMMAND (Z)",
+#ifndef vax11c
 	"	d Change '.' to '/' in pathnames (Y/Z)",
+#endif
 	"	e Escape all control characters (Z)",
 	"	f send Full pathname (Y/Z)",
 	"	i send COMMAND, ack Immediately (Z)",
@@ -931,7 +982,9 @@ char *babble[] = {
 	"	p Protect existing destination file (Z)",
 	"	r Resume/Recover interrupted file transfer (Z)",
 	"	q Quiet (no progress reports)",
+#ifndef vax11c
 	"	u Unlink file after transmission",
+#endif
 	"	v Verbose - provide debugging information",
 	"	w N Window is N bytes (Z)",
 	"	Y Yes, overwrite existing file, skip if not present at rx (Z)",
@@ -950,7 +1003,7 @@ usage()
 	 VERSION, OS);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n");
 	cucheck();
-	exit(1);
+	exit(SS_NORMAL);
 }
 
 /*
@@ -1001,11 +1054,13 @@ getzrxinit()
 				Rxbuflen = Tframlen;
 			vfile("Rxbuflen=%d", Rxbuflen);
 
+#ifndef vax11c
 			/* If using a pipe for testing set lower buf len */
 			fstat(iofd, &f);
 			if ((f.st_mode & S_IFMT) != S_IFCHR
 			  && (Rxbuflen == 0 || Rxbuflen > 4096))
 				Rxbuflen = 4096;
+#endif
 			/*
 			 * If input is not a regular file, force ACK's each 1024
 			 *  (A smarter strategey could be used here ...)
@@ -1016,13 +1071,15 @@ getzrxinit()
 				  && (Rxbuflen == 0 || Rxbuflen > 1024))
 					Rxbuflen = 1024;
 			}
-
-			if (Baudrate > 300)	/* Set initial subpacket len */
-				blklen = 256;
-			if (Baudrate > 1200)
-				blklen = 512;
-			if (Baudrate > 2400)
-				blklen = 1024;
+			/* Set initial subpacket length */
+			if (blklen < 1024) {	/* Command line override? */
+				if (Baudrate > 300)
+					blklen = 256;
+				if (Baudrate > 1200)
+					blklen = 512;
+				if (Baudrate > 2400)
+					blklen = 1024;
+			}
 			if (Rxbuflen && blklen>Rxbuflen)
 				blklen = Rxbuflen;
 			if (blkopt && blklen > blkopt)
@@ -1224,7 +1281,7 @@ gotack:
 			printf("ERROR: Interrupts Not Caught\n");
 			exit(1);
 		}
-		exit(0);
+		exit(SS_NORMAL);
 	}
 
 	do {
@@ -1463,6 +1520,9 @@ listen:
 chkinvok(s)
 char *s;
 {
+#ifdef vax11c
+	Progname = "sz";
+#else
 	register char *p;
 
 	p = s;
@@ -1481,7 +1541,9 @@ char *s;
 	if (s[0]=='s' && s[1]=='x') {
 		Modem2 = TRUE;
 	}
+#endif
 }
+
 countem(argc, argv)
 register char **argv;
 {
@@ -1522,7 +1584,7 @@ chartest(m)
 		if (!(n%8))
 			printf("\r\n");
 		printf("%02x ", n);  fflush(stdout);
-		sendline(n);	fflush(stdout);
+		sendline(n);	flushmo();
 		printf("  ");  fflush(stdout);
 		if (n == 127) {
 			printf("Hit Enter.\021");  fflush(stdout);
@@ -1541,4 +1603,4 @@ chartest(m)
 	printf("\r\nMode %d character transparency test ends.\r\n", m);
 	fflush(stdout);
 }
-
+/* End of sz.c */

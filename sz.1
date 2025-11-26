@@ -1,27 +1,27 @@
 '\" Revision Level 
-'\" Last Delta     02-19-88
+'\" Last Delta     04-21-88
 .TH SZ 1 OMEN
 .SH NAME
 sx, sb, sz \- XMODEM, YMODEM, ZMODEM file send
 .SH SYNOPSIS
 sz
-.RB [\- +1abdefkLlNnopqTtuvyY ]
+.RB [\- +abdefkLlNnopqTtuvyY ]
 .I file ...
 .br
 sb
-.RB [\- 1adfkqtuv ]
+.RB [\- adfkqtuv ]
 .I file ...
 .br
 sx
-.RB [\- 1akqtuv ]
+.RB [\- akqtuv ]
 .I file
 .br
 sz
-.RB [\- 1oqtv ]
+.RB [\- oqtv ]
 .B "-c COMMAND"
 .br
 sz
-.RB [\- 1oqtv ]
+.RB [\- oqtv ]
 .B "-i COMMAND"
 .br
 sz -TT
@@ -178,20 +178,14 @@ The meanings of the available options are:
 .PP
 .PD 0
 .TP
+.B
+\\
+.R
+(VMS) Force the next option letter to upper case.
+.TP
 .B +
 Instruct the receiver to append transmitted data to an existing file
 (ZMODEM only).
-.TP
-.B 1
-Use file descriptor 1 for ioctls and reads.
-By default, file descriptor 0 is used.
-This option allows
-.B sz
-to be used with the
-.I Professional-YAM
-$
-command.
-This also works with some versions of ncu(1), but not cu(1).
 .TP
 .B a
 Convert NL characters in the transmitted file to CR/LF.
@@ -302,8 +296,9 @@ pathname on the destination system.
 .SH EXAMPLES
 .ne 7
 .B "ZMODEM File Transfer"
+(Unix to DSZ/ZCOMM/Professional-YAM)
 .br
-.B "$ sz \-a *.c"
+.B "% sz \-a *.c"
 .br
 This single command transfers all .c files in the current Unix directory
 with conversion
@@ -314,14 +309,21 @@ will automatically recieve
 the files after performing a security check.
 
 .br
-.B "$ sz \-Yan *.c *.h"
+.B "% sz \-Yan *.c *.h"
 .br
 Send only the .c and .h files that exist on both systems,
 and are newer on the sending system than the
 corresponding version on the receiving system, converting Unix to
 DOS text format.
+.br
+.B
+$ sz -\\Yan file1.c file2.c file3.c foo.h baz.h
+.R
+(for VMS)
+.br
 
 .B "ZMODEM Command Download"
+(Unix to Professional-YAM)
 .br
  cpszall:all
     sz \-c "c:;cd /yam/dist"
@@ -352,9 +354,9 @@ form is used to allow
 to exit immediately.
 
 .B "XMODEM File Transfer"
-(To Crosstalk)
+(Unix to Crosstalk)
 .br
-$
+%
 .B "sx \-a foo.c"
 .br
 .B "ESC"
@@ -365,7 +367,7 @@ The above three commands transfer a single file
 from Unix to a PC and Crosstalk with
 .I sz
 translating Unix newlines to DOS CR/LF.
-This combination is much slower than ZMODEM.
+This combination is much slower and far less reliable than ZMODEM.
 .SH ERROR MESSAGES
 "Caught signal 99"
 indicates the program was not properly compiled,
@@ -375,7 +377,7 @@ rz(omen),
 ZMODEM.DOC,
 YMODEM.DOC,
 Professional-YAM,
-IMP(CP/M),
+crc(omen),
 sq(omen),
 todos(omen),
 tocpm(omen),
@@ -385,25 +387,23 @@ yam(omen)
 Compile time options required for various operating systems are described in
 the source file.
 .SH "VMS VERSION"
-The VMS version does not transmit the file date.
-The VMS version calculates the file length by reading the file
-and counting the bytes.
+The VMS version does not support wild cards.
+Because of VMS DCL, upper case option letters muse be represented
+by \\ proceding the letter.
 
-The VMS version does not support YMODEM-g or ZMODEM.
+The current VMS version does not support XMODEM, XMODEM-1k, or YMODEM.
 
-When VMS is lightly loaded, the response time may be too quick for MODEM7
-unless the MODEM7
-.B "q"
-modifier is used.
-
-The VMS C standard i/o package and RMS sometimes interact to modify
-file contents unexpectedly.
+VMS C Standard I/O and RMS may interact to modify the file contents.
 .SH FILES
 32 bit CRC code courtesy Gary S. Brown.
 
-sz.c, rbsb.c, zm.c, zmodem.h source files
+sz.c, crctab.c, rbsb.c, zm.c, zmodem.h Unix source files
+
+sz.c, crctab.c, vrzsz.c, zm.c, zmodem.h, vmodem.h, vvmodem.c,
+VMS source files.
 
 /tmp/szlog stores debugging output (sz -vv)
+(szlog on VMS).
 .SH "TESTING FEATURE"
 The command "sz -T file"
 exercises the

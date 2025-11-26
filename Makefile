@@ -3,7 +3,7 @@
 
 nothing:
 	@echo
-	@echo "Please study the #ifdef's in rbsb.c, rz.c and sz.c,"
+	@echo "Please study the #ifdef's in crctab.c rbsb.c, rz.c and sz.c,"
 	@echo "then type 'make system' where system is one of:"
 	@echo "	sysvr3	SYSTEM 5.3 Unix with mkdir(2)"
 	@echo "	sysv	SYSTEM 3/5 Unix"
@@ -14,11 +14,13 @@ nothing:
 
 usenet:
 	shar -f /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c rbsb.c \
-	  minirb.c *.1 gz ptest.sh zupl.t
+	 crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
+	 *.1 gz ptest.sh zupl.t
 
 shar:
-	 shar -f /tmp/rzsz -m 1000000 README Makefile zmodem.h zm.c \
-	    sz.c rz.c rbsb.c minirb.c *.1 gz ptest.sh zupl.t
+	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
+	 vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
+	 crc.c rbsb.c minirb.c *.1 gz ptest.sh zupl.t
 
 unixforum: shar
 	compress -b12 /tmp/rzsz.sh
@@ -26,14 +28,16 @@ unixforum: shar
 arc:
 	rm -f /tmp/rzsz.arc
 	arc a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
-	    rbsb.c *.1 gz ptest.sh zupl.t minirb.c
+	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c \
+	 crc.c *.1 gz ptest.sh zupl.t minirb.c
 	chmod og-w /tmp/rzsz.arc
 	mv /tmp/rzsz.arc /t/yam
 
 zoo:
 	rm -f /tmp/rzsz.zoo
 	zoo a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
-	    rbsb.c *.1 gz ptest.sh zupl.t minirb.c
+	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c *.1 \
+	 crc.c gz ptest.sh zupl.t minirb.c
 	chmod og-w /tmp/rzsz.zoo
 	mv /tmp/rzsz.zoo /t/yam
 
@@ -60,7 +64,7 @@ x386:
 	-ln sz sx
 
 sysv:
-	cc -O -DMD -DONEREAD rz.c -o rz
+	cc -O -DMD rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx
@@ -80,7 +84,7 @@ sysvr3:
 	-ln sz sx
 
 bsd:
-	cc -DMD -Dstrchr=index -DV7 -DONEREAD -O rz.c -o rz
+	cc -DMD=2 -Dstrchr=index -DV7 -O rz.c -o rz
 	size rz
 	-ln rz rb
 	-ln rz rx

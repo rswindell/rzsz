@@ -1,17 +1,17 @@
 '\" Revision Level 
-'\" Last Delta     03-29-88
+'\" Last Delta     04-22-88
 .TH RZ 1 OMEN
 .SH NAME
 rx, rb, rz \- XMODEM, YMODEM, ZMODEM (Batch) file receive
 .SH SYNOPSIS
 .B rz
-.RB [\- "\ +1abepqtuvy" ]
+.RB [\- "\ +abepqtuvy" ]
 .br
 .B rb
-.RB [\- "\ +1abqtuvy" ]
+.RB [\- "\ +abqtuvy" ]
 .br
 .B rx
-.RB [\- "\ 1abceqtuv" ]
+.RB [\- "\ abceqtuv" ]
 .I file
 .br
 .B gz
@@ -164,17 +164,6 @@ The meanings of the available options are:
 .PP
 .PD 0
 .TP
-.B 1
-Use file descriptor 1 for ioctls and reads (Unix only).
-By default, file descriptor 0 is used for ioctls and reads.
-This option allows
-.B rz
-to be used with the
-.I Professional-YAM
-.B $
-command
-and some versions of ncu(1), but not cu(1).
-.TP
 .B a
 Convert files to
 .SM Unix
@@ -193,6 +182,7 @@ YMODEM and ZMODEM normally use 16 bit CRC.
 .TP
 .B D
 Output file data to /dev/null; for testing.
+(Unix only)
 .TP
 .B e
 Force sender to escape all control characters;
@@ -236,8 +226,8 @@ on the connected system.)
 .SH SEE ALSO
 ZMODEM.DOC,
 YMODEM.DOC,
-IMP(CP/M),
 Professional-YAM,
+crc(omen),
 sz(omen),
 usq(omen),
 undos(omen)
@@ -300,34 +290,44 @@ is still processed as described above.
 The ASCII option\'s CR/LF to NL translation merely deletes CR\'s;
 undos(omen) performs a more intelligent translation.
 .SH "VMS VERSION"
-Some of the #includes with file names enclosed with angle brackets <>
-may need to have the angle brackets changed to "", or vice versa.
-
-The VMS version does not set binary mode according to the incoming
-file type.
-Non binary file processing consists of stripping all characters beginning
-with CPMEOF (^Z).
-
 The VMS version does not set the file time.
 
-At high speeds,
-VMS sometimes loses incoming characters, resulting in retries
-and degradation of throughput.
-
-The mysterious
-VMS C Standard I/O Package and RMS may interact to modify
+VMS C Standard I/O and RMS may interact to modify
 file contents unexpectedly.
 
 The VMS version does not support invocation as
 .B rzCOMMAND .
-ZMODEM has not yet been implemented on the VMS version.
+The current VMS version does not support XMODEM, XMODEM-1k, or YMODEM.
+
+According to the VMS documentation,
+the buffered input routine used on the VMS version of
+.I rz
+introduces a delay
+of up to one second for each protocol transaction.
+This delay may be significant for very short files.
+Removing the "#define BUFREAD" line from rz.c will
+eliminate this delay at the expense of increased
+CPU utilization.
+
+The VMS version causes DCL to generate a random off the wall
+error message under some error conditions; this is a result of
+the incompatibility of the VMS "exit" function with the
+Unix/MSDOS standard.
 .SH "ZMODEM CAPABILITIES"
 .I Rz
 supports incoming ZMODEM binary (-b), ASCII (-a),
 protect (-p),
+clobber (-y),
 and append (-+)
-requests, and ZMODEM command execution.
-.SH FILES
-rz.c, rbsb.c, zm.c, zmodem.h source files.
+requests.
+The default is protect (-p) and binary (-b).
 
-/tmp/rzlog stores debugging output generated with -vv option.
+The Unix versions support ZMODEM command execution.
+.SH FILES
+rz.c, crctab.c, rbsb.c, zm.c, zmodem.h Unix source files.
+
+rz.c, crctab.c, vrzsz.c, zm.c, zmodem.h, vmodem.h, vvmodem.c,
+VMS source files.
+
+/tmp/rzlog stores debugging output generated with -vv option
+(rzlog on VMS).

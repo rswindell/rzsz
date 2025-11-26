@@ -1,3 +1,9 @@
+New for April 1988:  VMS C flavors of rz and sz especially for tired
+frog stompers.  The following performance log entries give the story!
+
+ 2400 Z  splat.arc         3968  220   18  0  0   0  512  30 (rz) 0 ccvax off
+ 2400 K  splat.arc         3968  110   36  0  0   0   89  -1 get  -1 ccvax off
+
 The contents of RZSZ.ARC are designed to be uploaded to a Unix or Xenix
 system by ZCOMM or Professional-YAM using the supplied zupl.t script.
 Connect to your Unix/Xenix system, select an empty directory, and then
