@@ -1,4 +1,4 @@
-#define VERSION "3.11 02-26-91"
+#define VERSION "3.14 07-02-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*% cc -compat -M2 -Ox -K -i -DTXBSIZE=16384  -DNFGVMIN -DREADCHECK sz.c -lx -o sz; size sz
@@ -486,8 +486,8 @@ char *argv[];
 		canit();
 	}
 	if (endmsg[0])
-		printf("\r\n%s", endmsg);
-	printf("\r\n%s %s finished.\r\n", Progname, VERSION);
+		printf("  %s: %s\r\n", Progname, endmsg);
+	printf("%s %s finished.\r\n", Progname, VERSION);
 	fflush(stdout);
 	mode(0);
 	dm = ((errcnt != 0) | Exitcode);
@@ -648,7 +648,7 @@ char *name;
 		Totalleft -= f.st_size;
 	}
 	if (--Filesleft <= 0)
-		Totalleft = 0;
+		Filesleft = Totalleft = 0;
 	if (Totalleft < 0)
 		Totalleft = 0;
 
@@ -1304,7 +1304,7 @@ again:
 			return ERROR;
 		default:
 			sprintf(endmsg, "Got %d frame type on pathname", c);
-			return ERROR;
+			continue;
 		case ERROR:
 		case ZNAK:
 			continue;
@@ -1339,6 +1339,7 @@ again:
 			return zsendfdata();
 		}
 	}
+	fclose(in); return ERROR;
 }
 
 /* Send the data in the file */

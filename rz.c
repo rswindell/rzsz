@@ -1,4 +1,4 @@
-#define VERSION "3.05 03-20-91"
+#define VERSION "3.07 05-30-91"
 #define PUBDIR "/usr/spool/uucppublic"
 
 /*
@@ -118,6 +118,7 @@ unsigned Baudrate = 2400;
 unsigned Effbaud = 2400;
 #include "rbsb.c"	/* most of the system dependent stuff here */
 #include "crctab.c"
+char endmsg[90] = {0};	/* Possible message to display on exit */
 
 char *substr();
 FILE *fout;
@@ -210,7 +211,7 @@ char *argv[];
 	register npats;
 	char *virgin, **patts;
 	char *getenv();
-	int exitcode;
+	int exitcode = 0;
 
 	Rxtimeout = 100;
 	setbuf(stderr, NULL);
@@ -293,6 +294,10 @@ char *argv[];
 		canit();
 	if (exitcode)
 		cucheck();
+	if (endmsg[0])
+		printf("  %s: %s\r\n", Progname, endmsg);
+	printf("%s %s finished.\r\n", Progname, VERSION);
+	fflush(stdout);
 	exit(exitcode ? exitcode:0);
 }
 
@@ -307,7 +312,11 @@ usage()
 	fprintf(stderr,"or	rx [-cv] file	(XMODEM or XMODEM-1k)\n\n");
 	fprintf(stderr,"	  -c Use 16 bit CRC	(XMODEM)\n");
 	fprintf(stderr,"	  -e Escape control characters	(ZMODEM)\n");
-	fprintf(stderr,"	  -v Verbose more v's give more info\n");
+	fprintf(stderr,"	  -v Verbose more v's give more info\n\n");
+	fprintf(stderr,
+"Supports incoming ZMODEM binary (-b), ASCII CR/LF>NL (-a), newer(-n),\n\
+newer+longer(-N), protect (-p), Crash Recovery (-r),\n\
+clobber (-y), match+clobber (-Y), compression (-Z), and append (-+).\n");
 	cucheck();
 	exit(1);
 }
@@ -1149,18 +1158,35 @@ rzfile()
 nxthdr:
 		switch (c = zgethdr(Rxhdr, 0)) {
 		default:
-			vfile("rzfile: zgethdr returned %d", c);
+			vfile("rzfile: Wrong header %d", c);
+			if ( --n < 0) {
+				sprintf(endmsg, "rzfile: Wrong header %d", c);
+				return ERROR;
+			}
+			continue;
+		case ZCAN:
+			sprintf(endmsg, "Sender CANcelled");
 			return ERROR;
 		case ZNAK:
+#ifdef SEGMENTS
+			putsec(secbuf, chinseg);
+			chinseg = 0;
+#endif
+			if ( --n < 0) {
+				sprintf(endmsg, "rzfile: got ZNAK", c);
+				return ERROR;
+			}
+			continue;
 		case TIMEOUT:
 #ifdef SEGMENTS
 			putsec(secbuf, chinseg);
 			chinseg = 0;
 #endif
 			if ( --n < 0) {
-				vfile("rzfile: zgethdr returned %d", c);
+				sprintf(endmsg, "rzfile: TIMEOUT", c);
 				return ERROR;
 			}
+			continue;
 		case ZFILE:
 			zrdata(secbuf, 1024);
 			continue;
@@ -1180,6 +1206,7 @@ nxthdr:
 			if (closeit()) {
 				tryzhdrtype = ZFERR;
 				vfile("rzfile: closeit returned <> 0");
+				sprintf(endmsg,"Error closing file");
 				return ERROR;
 			}
 			vfile("rzfile: normal EOF");
@@ -1190,7 +1217,7 @@ nxthdr:
 			chinseg = 0;
 #endif
 			if ( --n < 0) {
-				vfile("rzfile: zgethdr returned %d", c);
+				sprintf(endmsg, "Persistent CRC or other ERROR");
 				return ERROR;
 			}
 			zmputs(Attn);
@@ -1202,11 +1229,12 @@ nxthdr:
 #endif
 			Modtime = 1;
 			closeit();
-			vfile("rzfile: Sender SKIPPED file");
+			sprintf(endmsg, "Sender SKIPPED file");
 			return c;
 		case ZDATA:
 			if (rclhdr(Rxhdr) != rxbytes) {
 				if ( --n < 0) {
+					sprintf(endmsg,"Data has bad addr");
 					return ERROR;
 				}
 #ifdef SEGMENTS
@@ -1234,7 +1262,7 @@ moredata:
 				putsec(secbuf, chinseg);
 				chinseg = 0;
 #endif
-				vfile("rzfile: zgethdr returned %d", c);
+				sprintf(endmsg, "Sender CANcelled");
 				return ERROR;
 			case ERROR:	/* CRC error */
 #ifdef SEGMENTS
@@ -1242,7 +1270,7 @@ moredata:
 				chinseg = 0;
 #endif
 				if ( --n < 0) {
-					vfile("rzfile: zgethdr returned %d", c);
+					sprintf(endmsg, "Persistent CRC or other ERROR");
 					return ERROR;
 				}
 				zmputs(Attn);
@@ -1253,7 +1281,7 @@ moredata:
 				chinseg = 0;
 #endif
 				if ( --n < 0) {
-					vfile("rzfile: zgethdr returned %d", c);
+					sprintf(endmsg, "TIMEOUT");
 					return ERROR;
 				}
 				continue;

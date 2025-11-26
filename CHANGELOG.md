@@ -1,5 +1,11 @@
 # Changelog
 
+## [1991-07-02] RZ 3.07 / SZ 3.14
+
+  - Better error handling (e.g. closing files)
+  - Man page source (.1) files replaced with .doc files
+    This change actually occurred in previous release (whoops)
+
 ## [1991-03-20] RZ 3.05 / SZ 3.11
 
 This release included this `README` update:
