@@ -6,21 +6,21 @@
  *
  * sz.c By Chuck Forsberg,  Omen Technology INC
  *    Copyright 2003 Omen Technology Inc All Rights Reserved
- * 
+ *
  *********************************************************************
  *********************************************************************
- * 
+ *
  *
  *	This version implements numerous enhancements including ZMODEM
  *	Run Length Encoding and variable length headers.  These
  *	features were not funded by the original Telenet development
  *	contract.
- * 
- * 
+ *
+ *
  * This software may be freely used for educational (didactic
  * only) purposes.  "Didactic" means it is used as a study item
  * in a course teaching the workings of computer protocols.
- * 
+ *
  * This software may also be freely used to support file transfer
  * operations to or from duly licensed Omen Technology products.
  * This includes DSZ, GSZ, ZCOMM, Professional-YAM and PowerCom.
@@ -29,7 +29,7 @@
  * Programs based on stolen or public domain ZMODEM materials are
  * not included.  Use with other commercial or shareware programs
  * (Crosstalk, Procomm, etc.) REQUIRES REGISTRATION.
- * 
+ *
  *
  *  Any programs which incorporate part or all of this code must be
  *  provided in source form with this notice intact except by
@@ -37,7 +37,7 @@
  *  This includes compiled executables of this program.
  *
  *   The .doc files and the file "mailer.rz" must also be included.
- * 
+ *
  * Use of this software for commercial or administrative purposes
  * except when exclusively limited to interfacing Omen Technology
  * products requires license payment of $20.00 US per user or as
@@ -82,9 +82,9 @@ extern int errno;
 #define ERROR (-1)
 /* Ward Christensen / CP/M parameters - Don't change these! */
 #define ENQ 005
-#define CAN ('X'&037)
-#define XOFF ('s'&037)
-#define XON ('q'&037)
+#define CAN ('X' & 037)
+#define XOFF ('s' & 037)
+#define XON ('q' & 037)
 #define SOH 1
 #define STX 2
 #define ETX 3
@@ -94,8 +94,8 @@ extern int errno;
 #define SYN 026
 #define CPMEOF 032
 #define ESC 033
-#define WANTCRC 0103	/* send C not NAK to get crc not checksum */
-#define WANTG 0107	/* Send G not NAK to get nonstop batch xmsn */
+#define WANTCRC 0103    /* send C not NAK to get crc not checksum */
+#define WANTG 0107  /* Send G not NAK to get nonstop batch xmsn */
 #define TIMEOUT (-2)
 #define RCDO (-3)
 #define GCOUNT (-4)
@@ -103,21 +103,21 @@ extern int errno;
 
 
 #define HOWMANY 2
-STATIC int Zmodem=0;		/* ZMODEM protocol requested by receiver */
-unsigned Baudrate = 9600;		/* Default, set by first mode() call */
-STATIC unsigned Txwindow;	/* Control the size of the transmitted window */
-STATIC unsigned Txwspac;	/* Spacing between zcrcq requests */
-STATIC unsigned Txwcnt;	/* Counter used to space ack requests */
-STATIC long Lrxpos;	/* Receiver's last reported offset */
-STATIC int errors;
-char endmsg[80] = {0};	/* Possible message to display on exit */
-char Zsendmask[33];	/* Additional control chars to mask */
+STATIC int      Zmodem = 0; /* ZMODEM protocol requested by receiver */
+unsigned        Baudrate = 9600; /* Default, set by first mode() call */
+STATIC unsigned Txwindow;   /* Control the size of the transmitted window */
+STATIC unsigned Txwspac;    /* Spacing between zcrcq requests */
+STATIC unsigned Txwcnt; /* Counter used to space ack requests */
+STATIC long     Lrxpos; /* Receiver's last reported offset */
+STATIC int      errors;
+char            endmsg[80] = {0}; /* Possible message to display on exit */
+char            Zsendmask[33]; /* Additional control chars to mask */
 
-#include "rbsb.c"	/* most of the system dependent stuff here */
+#include "rbsb.c"   /* most of the system dependent stuff here */
 
 #include "crctab.c"
 
-STATIC int Totfiles, Filesleft;
+STATIC int  Totfiles, Filesleft;
 STATIC long Totbytes, Totalleft;
 
 /*
@@ -133,77 +133,77 @@ STATIC char Myattn[] = { 03, 0336, 0 };
 #endif
 #endif
 
-FILE *in;
+FILE *      in;
 
-STATIC int Canseek = 1;	/* 1: Can seek 0: only rewind -1: neither (pipe) */
+STATIC int  Canseek = 1; /* 1: Can seek 0: only rewind -1: neither (pipe) */
 
 #ifndef SMALL
 #ifndef TXBSIZE
 #define TXBSIZE 32768
 #endif
 
-#define TXBMASK (TXBSIZE-1)
-STATIC char Txb[TXBSIZE + 1024];	/* Circular buffer for file reads */
-STATIC char *txbuf = Txb;		/* Pointer to current file segment */
+#define TXBMASK (TXBSIZE - 1)
+STATIC char     Txb[TXBSIZE + 1024]; /* Circular buffer for file reads */
+STATIC char *   txbuf = Txb;    /* Pointer to current file segment */
 #else
-char txbuf[1024];
+char            txbuf[1024];
 #endif
 
 
-STATIC long vpos = 0;		/* Number of bytes read from file */
+STATIC long     vpos = 0;   /* Number of bytes read from file */
 
-STATIC char Lastrx;
-STATIC char Crcflg;
-STATIC int Modem2=0;		/* XMODEM Protocol - don't send pathnames */
-STATIC int Restricted=0;	/* restricted; no /.. or ../ in filenames */
-STATIC int Fullname=0;		/* transmit full pathname */
-STATIC int Unlinkafter=0;	/* Unlink file after it is sent */
-STATIC int Dottoslash=0;	/* Change foo.bar.baz to foo/bar/baz */
-STATIC int firstsec;
-STATIC int errcnt=0;		/* number of files unreadable */
-STATIC int Skipbitch=0;
-STATIC int Skipcount=0;		/* Count of skipped files */
-STATIC int blklen=128;		/* length of transmitted records */
-STATIC int Optiong;		/* Let it rip no wait for sector ACK's */
-STATIC int Eofseen;		/* EOF seen on input set by zfilbuf */
-STATIC int BEofseen;		/* EOF seen on input set by fooseek */
-STATIC int Totsecs;		/* total number of sectors this file */
-STATIC int Filcnt=0;		/* count of number of files opened */
-STATIC unsigned Rxbuflen=16384;	/* Receiver's max buffer length */
-STATIC long Tframlen = 0;	/* Override for tx frame length */
-STATIC int blkopt=0;		/* Override value for zmodem blklen */
-STATIC int Rxflags = 0;
-STATIC long bytcnt, maxbytcnt;
-STATIC int Wantfcs32 = TRUE;	/* want to send 32 bit FCS */
-STATIC char Lzconv;	/* Local ZMODEM file conversion request */
-STATIC char Lzmanag;	/* Local ZMODEM file management request */
-STATIC int Lskipnocor;
-STATIC char Lztrans;
-STATIC int Command;		/* Send a command, then exit. */
-STATIC char *Cmdstr;		/* Pointer to the command string */
-STATIC int Cmdack1;		/* Rx ACKs command, then do it */
-STATIC int Exitcode;
-STATIC int Test;		/* 1= Force receiver to send Attn, etc with qbf. */
-			/* 2= Character transparency test */
-STATIC char *qbf=
- "The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
-STATIC long Lastsync;	/* Last offset to which we got a ZRPOS */
-STATIC int Beenhereb4;		/* How many times we've been ZRPOS'd here */
-STATIC int Ksendstr;		/* 1= Send esc-?-3-4-l to remote kermit */
-STATIC char *ksendbuf = "\033[?34l";
+STATIC char     Lastrx;
+STATIC char     Crcflg;
+STATIC int      Modem2 = 0; /* XMODEM Protocol - don't send pathnames */
+STATIC int      Restricted = 0; /* restricted; no /.. or ../ in filenames */
+STATIC int      Fullname = 0; /* transmit full pathname */
+STATIC int      Unlinkafter = 0; /* Unlink file after it is sent */
+STATIC int      Dottoslash = 0; /* Change foo.bar.baz to foo/bar/baz */
+STATIC int      firstsec;
+STATIC int      errcnt = 0; /* number of files unreadable */
+STATIC int      Skipbitch = 0;
+STATIC int      Skipcount = 0; /* Count of skipped files */
+STATIC int      blklen = 128; /* length of transmitted records */
+STATIC int      Optiong; /* Let it rip no wait for sector ACK's */
+STATIC int      Eofseen; /* EOF seen on input set by zfilbuf */
+STATIC int      BEofseen;   /* EOF seen on input set by fooseek */
+STATIC int      Totsecs; /* total number of sectors this file */
+STATIC int      Filcnt = 0; /* count of number of files opened */
+STATIC unsigned Rxbuflen = 16384; /* Receiver's max buffer length */
+STATIC long     Tframlen = 0; /* Override for tx frame length */
+STATIC int      blkopt = 0; /* Override value for zmodem blklen */
+STATIC int      Rxflags = 0;
+STATIC long     bytcnt, maxbytcnt;
+STATIC int      Wantfcs32 = TRUE; /* want to send 32 bit FCS */
+STATIC char     Lzconv; /* Local ZMODEM file conversion request */
+STATIC char     Lzmanag; /* Local ZMODEM file management request */
+STATIC int      Lskipnocor;
+STATIC char     Lztrans;
+STATIC int      Command; /* Send a command, then exit. */
+STATIC char *   Cmdstr;     /* Pointer to the command string */
+STATIC int      Cmdack1; /* Rx ACKs command, then do it */
+STATIC int      Exitcode;
+STATIC int      Test;   /* 1= Force receiver to send Attn, etc with qbf. */
+/* 2= Character transparency test */
+STATIC char *   qbf =
+	"The quick brown fox jumped over the lazy dog's back 1234567890\r\n";
+STATIC long     Lastsync; /* Last offset to which we got a ZRPOS */
+STATIC int      Beenhereb4; /* How many times we've been ZRPOS'd here */
+STATIC int      Ksendstr;   /* 1= Send esc-?-3-4-l to remote kermit */
+STATIC char *   ksendbuf = "\033[?34l";
 
-STATIC jmp_buf intrjmp;	/* For the interrupt on RX CAN */
+STATIC jmp_buf  intrjmp; /* For the interrupt on RX CAN */
 
 
 /* send cancel string to get the other end to shut up */
 canit()
 {
 	static char canistr[] = {
-	 24,24,24,24,24,24,24,24,24,24,0
+		24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 0
 	};
 
 	zmputs(canistr);
-	Lleft=0;	/* Do read next time ... */
+	Lleft = 0;    /* Do read next time ... */
 }
 
 
@@ -228,10 +228,10 @@ onintr(c)
 	longjmp(intrjmp, -1);
 }
 
-STATIC int Zctlesc;	/* Encode control characters */
-STATIC int Nozmodem = 0;	/* If invoked as "sb" */
+STATIC int   Zctlesc; /* Encode control characters */
+STATIC int   Nozmodem = 0;  /* If invoked as "sb" */
 STATIC char *Progname = "sz";
-STATIC int Zrwindow = 1400;	/* RX window size (controls garbage count) */
+STATIC int   Zrwindow = 1400; /* RX window size (controls garbage count) */
 
 
 /*
@@ -249,7 +249,7 @@ char *s;
 }
 
 void
-zperr2(s,p)
+zperr2(s, p)
 char *s, *p;
 {
 	if (Verbose <= 0)
@@ -260,7 +260,7 @@ char *s, *p;
 }
 
 void
-zperr3(s,p,u)
+zperr3(s, p, u)
 char *s, *p, *u;
 {
 	if (Verbose <= 0)
@@ -278,120 +278,120 @@ main(argc, argv)
 char *argv[];
 {
 	register char *cp;
-	register npats;
-	char **patts;
+	register       npats;
+	char **        patts;
 
 	if ((cp = getenv("ZNULLS")) && *cp)
 		Znulls = atoi(cp);
-	if ((cp=getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
-		Restricted=TRUE;
+	if ((cp = getenv("SHELL")) && (substr(cp, "rsh") || substr(cp, "rksh")))
+		Restricted = TRUE;
 	Tty = 1;  Ttystream = stdout;
 	chkinvok(argv[0]);
 
 	Rxtimeout = 600;
-	npats=0;
-	if (argc<2)
+	npats = 0;
+	if (argc < 2)
 		usage();
 	while (--argc) {
 		cp = *++argv;
 		if (*cp++ == '-' && *cp) {
-			while ( *cp) {
+			while (*cp) {
 				if (isdigit(*cp)) {
 					++cp;  continue;
 				}
-				switch(*cp++) {
-				case '\\':
-					 *cp = toupper(*cp);  continue;
-				case '+':
-					Lzmanag = ZMAPND; break;
-				case 'a':
-					if (Nozmodem || Modem2)
-						usage();
-					Lzconv = ZCNL;  break;
-				case 'b':
-					Lzconv = ZCBIN; break;
-				case 'c':
-					Lzmanag = ZMCHNG;  break;
-				case 'd':
-					++Dottoslash;
+				switch (*cp++) {
+					case '\\':
+						*cp = toupper(*cp);  continue;
+					case '+':
+						Lzmanag = ZMAPND; break;
+					case 'a':
+						if (Nozmodem || Modem2)
+							usage();
+						Lzconv = ZCNL;  break;
+					case 'b':
+						Lzconv = ZCBIN; break;
+					case 'c':
+						Lzmanag = ZMCHNG;  break;
+					case 'd':
+						++Dottoslash;
 					/* **** FALL THROUGH TO **** */
-				case 'f':
-					Fullname=TRUE; break;
-		                case 'g' :
-					Ksendstr = TRUE; break;
-				case 'e':
-					Zctlesc = 1; break;
-				case 'k':
-					blklen=1024; break;
-				case 'L':
-					if (isdigit(*cp))
-						blkopt = atoi(cp);
-					else {
-						if (--argc < 1)
+					case 'f':
+						Fullname = TRUE; break;
+					case 'g':
+						Ksendstr = TRUE; break;
+					case 'e':
+						Zctlesc = 1; break;
+					case 'k':
+						blklen = 1024; break;
+					case 'L':
+						if (isdigit(*cp))
+							blkopt = atoi(cp);
+						else {
+							if (--argc < 1)
+								usage();
+							blkopt = atoi(*++argv);
+						}
+						if (blkopt < 24 || blkopt > 1024)
 							usage();
-						blkopt = atoi(*++argv);
-					}
-					if (blkopt<24 || blkopt>1024)
-						usage();
-					break;
-				case 'l':
-					if (isdigit(*cp))
-						Tframlen = atol(cp);
-					else {
-						if (--argc < 1)
+						break;
+					case 'l':
+						if (isdigit(*cp))
+							Tframlen = atol(cp);
+						else {
+							if (--argc < 1)
+								usage();
+							Tframlen = atol(*++argv);
+						}
+						if (Tframlen < 32 || Tframlen > 65535L)
 							usage();
-						Tframlen = atol(*++argv);
-					}
-					if (Tframlen<32 || Tframlen>65535L)
-						usage();
-					break;
-				case 'N':
-					Lzmanag = ZMNEWL;  break;
-				case 'n':
-					Lzmanag = ZMNEW;  break;
-				case 'o':
-					Wantfcs32 = FALSE; break;
-				case 'p':
-					Lzmanag = ZMPROT;  break;
-				case 'r':
-					if (Lzconv == ZCRESUM)
-						Lzmanag = (Lzmanag & ZMMASK) | ZMCRC;
-					Lzconv = ZCRESUM; break;
-				case 'T':
-					chartest(1); chartest(2);
-					mode(0);  exit(0);
-				case 'u':
-					++Unlinkafter; break;
-				case 'v':
-					++Verbose; break;
-				case 'w':
-					if (isdigit(*cp))
-						Txwindow = atoi(cp);
-					else {
-						if (--argc < 1)
-							usage();
-						Txwindow = atoi(*++argv);
-					}
-					if (Txwindow < 256)
-						Txwindow = 256;
-					Txwindow = (Txwindow/64) * 64;
-					Txwspac = Txwindow/4;
-					if (blkopt > Txwspac
-					 || (!blkopt && Txwspac < 1024))
-						blkopt = Txwspac;
-					break;
-				case 'x':
-					Skipbitch = 1;  break;
-				case 'Y':
-					Lskipnocor = TRUE;
+						break;
+					case 'N':
+						Lzmanag = ZMNEWL;  break;
+					case 'n':
+						Lzmanag = ZMNEW;  break;
+					case 'o':
+						Wantfcs32 = FALSE; break;
+					case 'p':
+						Lzmanag = ZMPROT;  break;
+					case 'r':
+						if (Lzconv == ZCRESUM)
+							Lzmanag = (Lzmanag & ZMMASK) | ZMCRC;
+						Lzconv = ZCRESUM; break;
+					case 'T':
+						chartest(1); chartest(2);
+						mode(0);  exit(0);
+					case 'u':
+						++Unlinkafter; break;
+					case 'v':
+						++Verbose; break;
+					case 'w':
+						if (isdigit(*cp))
+							Txwindow = atoi(cp);
+						else {
+							if (--argc < 1)
+								usage();
+							Txwindow = atoi(*++argv);
+						}
+						if (Txwindow < 256)
+							Txwindow = 256;
+						Txwindow = (Txwindow / 64) * 64;
+						Txwspac = Txwindow / 4;
+						if (blkopt > Txwspac
+						    || (!blkopt && Txwspac < 1024))
+							blkopt = Txwspac;
+						break;
+					case 'x':
+						Skipbitch = 1;  break;
+					case 'Y':
+						Lskipnocor = TRUE;
 					/* **** FALLL THROUGH TO **** */
-				case 'y':
-					Lzmanag = ZMCLOB; break;
-				case 'Z':
-				case 'z':
-					Lztrans = ZTRLE;  break;
-				default:
-					usage();
+					case 'y':
+						Lzmanag = ZMCLOB; break;
+					case 'Z':
+					case 'z':
+						Lztrans = ZTRLE;  break;
+					default:
+						usage();
 				}
 			}
 		}
@@ -401,18 +401,18 @@ char *argv[];
 			}
 			Cmdstr = *argv;
 		}
-		else if ( !npats && argc>0) {
+		else if (!npats && argc > 0) {
 			if (argv[0][0]) {
-				npats=argc;
-				patts=argv;
+				npats = argc;
+				patts = argv;
 			}
 		}
 	}
-	if (npats < 1 && !Command && !Test) 
+	if (npats < 1 && !Command && !Test)
 		usage();
 	if (Verbose) {
-		if (freopen(LOGFILE, "a", stderr)==NULL)
-			if (freopen(LOGFILE2, "a", stderr)==NULL) {
+		if (freopen(LOGFILE, "a", stderr) == NULL)
+			if (freopen(LOGFILE2, "a", stderr) == NULL) {
 				printf("Can't open log file!");
 				exit(2);
 			}
@@ -440,7 +440,7 @@ char *argv[];
 		if (Ksendstr)
 			printf(ksendbuf);
 		printf("rz\r");  fflush(stdout);
-		stohdr(0x80L);	/* Show we can var header */
+		stohdr(0x80L);  /* Show we can var header */
 		if (Command)
 			Txhdr[ZF0] = ZCOMMAND;
 		zshhdr(4, ZRQINIT, Txhdr);
@@ -450,13 +450,13 @@ char *argv[];
 
 	if (Command) {
 		if (getzrxinit()) {
-			Exitcode=1; canit();
+			Exitcode = 1; canit();
 		}
-		else if (zsendcmd(Cmdstr, 1+strlen(Cmdstr))) {
-			Exitcode=1; canit();
+		else if (zsendcmd(Cmdstr, 1 + strlen(Cmdstr))) {
+			Exitcode = 1; canit();
 		}
-	} else if (wcsend(npats, patts)==ERROR) {
-		Exitcode=1;
+	} else if (wcsend(npats, patts) == ERROR) {
+		Exitcode = 1;
 		canit();
 		printf("Wait please ..."); fflush(stdout);
 		sleep(10);
@@ -464,7 +464,7 @@ char *argv[];
 	if (Skipcount) {
 		printf("%d file(s) skipped by receiver request\r\n", Skipcount);
 		if (Verbose) fprintf(stderr,
-		  "%d file(s) skipped by receiver request\r\n", Skipcount);
+			                 "%d file(s) skipped by receiver request\r\n", Skipcount);
 	}
 	if (endmsg[0]) {
 		printf("\r\n%s: %s\r\n", Progname, endmsg);
@@ -473,7 +473,7 @@ char *argv[];
 	}
 	printf("%s %s finished.\r\n", Progname, VERSION);
 	fflush(stdout);
-	if(errcnt || Exitcode) {
+	if (errcnt || Exitcode) {
 		mode(0); exit(1);
 	}
 
@@ -482,7 +482,7 @@ char *argv[];
 	if ((Totfiles > 0) && (!Usevhdrs))
 	{
 		sprintf(Txb, "echo Unreg %s %s %d %ld | mail rzsz@omen.com",
-		  Progname, VERSION, Totfiles, Totbytes);
+		        Progname, VERSION, Totfiles, Totbytes);
 		system(Txb);
 		canit();
 		sleep(4);
@@ -503,14 +503,14 @@ void
 saybibi()
 {
 	for (;;) {
-		stohdr(0L);		/* CAF Was zsbhdr - minor change */
-		zshhdr(4, ZFIN, Txhdr);	/*  to make debugging easier */
+		stohdr(0L);     /* CAF Was zsbhdr - minor change */
+		zshhdr(4, ZFIN, Txhdr); /*  to make debugging easier */
 		switch (zgethdr(Rxhdr)) {
-		case ZFIN:
-			sendline('O'); sendline('O'); flushmo();
-		case ZCAN:
-		case TIMEOUT:
-			return;
+			case ZFIN:
+				sendline('O'); sendline('O'); flushmo();
+			case ZCAN:
+			case TIMEOUT:
+				return;
 		}
 	}
 }
@@ -520,31 +520,31 @@ char *argp[];
 {
 	register n;
 
-	Crcflg=FALSE;
-	firstsec=TRUE;
+	Crcflg = FALSE;
+	firstsec = TRUE;
 	bytcnt = maxbytcnt = -1;
 	vfile("wcsend: argc=%d", argc);
 	if (Nozmodem) {
 		printf("Start your local YMODEM receive.     ");
 		fflush(stdout);
 	}
-	for (n=0; n<argc; ++n) {
+	for (n = 0; n < argc; ++n) {
 		Totsecs = 0;
-		if (wcs(argp[n])==ERROR)
+		if (wcs(argp[n]) == ERROR)
 			return ERROR;
 	}
 	Totsecs = 0;
-	if (Filcnt==0) {	/* bitch if we couldn't open ANY files */
+	if (Filcnt == 0) {    /* bitch if we couldn't open ANY files */
 		if (!Nozmodem && !Modem2) {
 			Command = TRUE;
 			Cmdstr = "echo \"sz: Can't open any requested files\"";
 			if (getnak()) {
-				Exitcode=1; canit();
+				Exitcode = 1; canit();
 			}
 			if (!Zmodem)
 				canit();
-			else if (zsendcmd(Cmdstr, 1+strlen(Cmdstr))) {
-				Exitcode=1; canit();
+			else if (zsendcmd(Cmdstr, 1 + strlen(Cmdstr))) {
+				Exitcode = 1; canit();
 			}
 			Exitcode = 1; return OK;
 		}
@@ -554,7 +554,7 @@ char *argp[];
 	}
 	if (Zmodem)
 		saybibi();
-	else if ( !Modem2)
+	else if (!Modem2)
 		wctxpn("");
 	return OK;
 }
@@ -562,25 +562,25 @@ char *argp[];
 wcs(oname)
 char *oname;
 {
-	register c;
+	register       c;
 	register char *p;
-	struct stat f;
-	char name[PATHLEN];
+	struct stat    f;
+	char           name[PATHLEN];
 
 	strcpy(name, oname);
 	vfile("wcs: name=%s", name);
 
 	if (Restricted) {
 		/* restrict pathnames to current tree or uucppublic */
-		if ( substr(name, "../")
-		 || (name[0]== '/' && strncmp(name, PUBDIR, strlen(PUBDIR))) ) {
-			canit();  sprintf(endmsg,"Security Violation");
+		if (substr(name, "../")
+		    || (name[0] == '/' && strncmp(name, PUBDIR, strlen(PUBDIR)))) {
+			canit();  sprintf(endmsg, "Security Violation");
 			return ERROR;
 		}
 	}
 
 #ifdef TXBSIZE
-	if ( !strcmp(name, "-")) {
+	if (!strcmp(name, "-")) {
 		if ((p = getenv("ONAME")) && *p)
 			strcpy(name, p);
 		else
@@ -589,11 +589,11 @@ char *oname;
 	}
 	else
 #endif
-		in=fopen(name, "r");
+	in = fopen(name, "r");
 
-	if (in==NULL) {
+	if (in == NULL) {
 		++errcnt;
-		return OK;	/* pass over it, there may be others */
+		return OK;  /* pass over it, there may be others */
 	}
 	BEofseen = Eofseen = 0;  vpos = 0;
 
@@ -612,13 +612,13 @@ char *oname;
 
 	++Filcnt;
 	switch (wctxpn(name)) {
-	case ZSKIP:
-	case ZFERR:
-		return OK;
-	case OK:
-		break;
-	default:
-		return ERROR;
+		case ZSKIP:
+		case ZFERR:
+			return OK;
+		case OK:
+			break;
+		default:
+			return ERROR;
 	}
 	if (!Zmodem && wctx((long)f.st_size))
 		return ERROR;
@@ -640,51 +640,51 @@ wctxpn(name)
 char *name;
 {
 	register char *p, *q;
-	char name2[PATHLEN];
-	struct stat f;
+	char           name2[PATHLEN];
+	struct stat    f;
 
 	vfile("wctxpn: %s", name);
 	if (Modem2) {
-		if (*name && fstat(fileno(in), &f)!= -1) {
+		if (*name && fstat(fileno(in), &f) != -1) {
 			fprintf(stderr, "Sending %s, %ld XMODEM blocks. ",
-			  name, (long)(127+f.st_size)>>7);
+			        name, (long)(127 + f.st_size) >> 7);
 		}
 		printf("Start your local XMODEM receive.     ");
 		fflush(stdout);
 		return OK;
 	}
 	zperr2("Awaiting pathname nak for %s", *name?name:"<END>");
-	if ( !Zmodem)
+	if (!Zmodem)
 		if (getnak())
 			return ERROR;
 
 	q = (char *) 0;
-	if (Dottoslash) {		/* change . to . */
-		for (p=name; *p; ++p) {
+	if (Dottoslash) {       /* change . to . */
+		for (p = name; *p; ++p) {
 			if (*p == '/')
 				q = p;
 			else if (*p == '.')
-				*(q=p) = '/';
+				*(q = p) = '/';
 		}
-		if (q && strlen(++q) > 8) {	/* If name>8 chars */
-			q += 8;			/*   make it .ext */
-			strcpy(name2, q);	/* save excess of name */
+		if (q && strlen(++q) > 8) { /* If name>8 chars */
+			q += 8;         /*   make it .ext */
+			strcpy(name2, q);   /* save excess of name */
 			*q = '.';
-			strcpy(++q, name2);	/* add it back */
+			strcpy(++q, name2); /* add it back */
 		}
 	}
 
-	for (p=name, q=txbuf ; *p; )
+	for (p = name, q = txbuf ; *p; )
 		if ((*q++ = *p++) == '/' && !Fullname)
 			q = txbuf;
 	*q++ = 0;
-	p=q;
+	p = q;
 	while (q < (txbuf + 1024))
 		*q++ = 0;
 	if (*name) {
-		if (fstat(fileno(in), &f)!= -1)
+		if (fstat(fileno(in), &f) != -1)
 			sprintf(p, "%lu %lo %o 3 %d %ld", (long)f.st_size, f.st_mtime,
-			  f.st_mode, Filesleft, Totalleft);
+			        f.st_mode, Filesleft, Totalleft);
 		Totalleft -= f.st_size;
 	}
 	if (--Filesleft <= 0)
@@ -694,15 +694,15 @@ char *name;
 
 	/* force 1k blocks if name won't fit in 128 byte block */
 	if (txbuf[125])
-		blklen=1024;
-	else {		/* A little goodie for IMP/KMD */
-		txbuf[127] = (f.st_size + 127) >>7;
-		txbuf[126] = (f.st_size + 127) >>15;
+		blklen = 1024;
+	else {      /* A little goodie for IMP/KMD */
+		txbuf[127] = (f.st_size + 127) >> 7;
+		txbuf[126] = (f.st_size + 127) >> 15;
 	}
 	vfile("wctxpn: %s", p);
 	if (Zmodem)
-		return zsendfile(txbuf, ((int)1+strlen(p)+(p-txbuf)));
-	if (wcputsec(txbuf, 0, blklen)==ERROR)
+		return zsendfile(txbuf, ((int)1 + strlen(p) + (p - txbuf)));
+	if (wcputsec(txbuf, 0, blklen) == ERROR)
 		return ERROR;
 	return OK;
 }
@@ -714,43 +714,43 @@ getnak()
 	Lastrx = 0;
 	for (;;) {
 		switch (firstch = readline(800)) {
-		case ZPAD:
-			if (getzrxinit())
-				return ERROR;
-			return FALSE;
-		case TIMEOUT:
-			sprintf(endmsg, "Timeout waiting for ZRINIT");
-			return TRUE;
-		case WANTG:
+			case ZPAD:
+				if (getzrxinit())
+					return ERROR;
+				return FALSE;
+			case TIMEOUT:
+				sprintf(endmsg, "Timeout waiting for ZRINIT");
+				return TRUE;
+			case WANTG:
 #ifdef MODE2OK
-			mode(2);	/* Set cbreak, XON/XOFF, etc. */
+				mode(2); /* Set cbreak, XON/XOFF, etc. */
 #endif
-			Optiong = TRUE;
-			blklen=1024;
-		case WANTCRC:
-			Crcflg = TRUE;
-		case NAK:
-			return FALSE;
-		case ETX:
-			if ((firstch = readline(20)) == ETX && Lastrx == ETX) {
-				sprintf(endmsg, "Got ETX waiting to send file");
-				return TRUE;
-			}
-			break;
-		case ESC:
-			if ((firstch = readline(20)) == ESC && Lastrx == ESC) {
-				sprintf(endmsg, "Got ESC waiting to send file");
-				return TRUE;
-			}
-			break;
-		case CAN:
-			if ((firstch = readline(20)) == CAN && Lastrx == CAN) {
-				sprintf(endmsg, "Got CAN waiting to send file");
-				return TRUE;
-			}
-			break;
-		default:
-			break;
+				Optiong = TRUE;
+				blklen = 1024;
+			case WANTCRC:
+				Crcflg = TRUE;
+			case NAK:
+				return FALSE;
+			case ETX:
+				if ((firstch = readline(20)) == ETX && Lastrx == ETX) {
+					sprintf(endmsg, "Got ETX waiting to send file");
+					return TRUE;
+				}
+				break;
+			case ESC:
+				if ((firstch = readline(20)) == ESC && Lastrx == ESC) {
+					sprintf(endmsg, "Got ESC waiting to send file");
+					return TRUE;
+				}
+				break;
+			case CAN:
+				if ((firstch = readline(20)) == CAN && Lastrx == CAN) {
+					sprintf(endmsg, "Got CAN waiting to send file");
+					return TRUE;
+				}
+				break;
+			default:
+				break;
 		}
 		Lastrx = firstch;
 	}
@@ -762,42 +762,42 @@ long flen;
 {
 	register int thisblklen;
 	register int sectnum, attempts, firstch;
-	long charssent;
+	long         charssent;
 
-	charssent = 0;  firstsec=TRUE;  thisblklen = blklen;
+	charssent = 0;  firstsec = TRUE;  thisblklen = blklen;
 	vfile("wctx:file length=%ld", flen);
 
-	while ((firstch=readline(Rxtimeout))!=NAK && firstch != WANTCRC
-	  && firstch != WANTG && firstch!=TIMEOUT && firstch!=CAN)
+	while ((firstch = readline(Rxtimeout)) != NAK && firstch != WANTCRC
+	       && firstch != WANTG && firstch != TIMEOUT && firstch != CAN)
 		;
-	if (firstch==CAN) {
+	if (firstch == CAN) {
 		zperr1("Receiver CANcelled");
 		return ERROR;
 	}
-	if (firstch==WANTCRC)
-		Crcflg=TRUE;
-	if (firstch==WANTG)
-		Crcflg=TRUE;
-	sectnum=0;
+	if (firstch == WANTCRC)
+		Crcflg = TRUE;
+	if (firstch == WANTG)
+		Crcflg = TRUE;
+	sectnum = 0;
 	for (;;) {
 		if (flen <= (charssent + 896L))
 			thisblklen = 128;
-		if ( !filbuf(txbuf, thisblklen))
+		if (!filbuf(txbuf, thisblklen))
 			break;
-		if (wcputsec(txbuf, ++sectnum, thisblklen)==ERROR)
+		if (wcputsec(txbuf, ++sectnum, thisblklen) == ERROR)
 			return ERROR;
 		charssent += thisblklen;
 		Totbytes += thisblklen;
 	}
 	fclose(in);
-	attempts=0;
+	attempts = 0;
 	do {
 		purgeline();
 		sendline(EOT);
 		flushmo();
 		++attempts;
 	}
-		while ((firstch=(readline(Rxtimeout)) != ACK) && attempts < RETRYMAX);
+	while ((firstch = (readline(Rxtimeout)) != ACK) && attempts < RETRYMAX);
 	if (attempts == RETRYMAX) {
 		zperr1("No ACK on EOT");
 		return ERROR;
@@ -810,32 +810,32 @@ long flen;
 wcputsec(buf, sectnum, cseclen)
 char *buf;
 int sectnum;
-int cseclen;	/* data length of this sector to send */
+int cseclen;    /* data length of this sector to send */
 {
-	register checksum, wcj;
+	register       checksum, wcj;
 	register char *cp;
-	unsigned oldcrc;
-	int firstch;
-	int attempts;
+	unsigned       oldcrc;
+	int            firstch;
+	int            attempts;
 
-	firstch=0;	/* part of logic to detect CAN CAN */
+	firstch = 0;  /* part of logic to detect CAN CAN */
 
-	if (Verbose>1)
-		fprintf(stderr, "Sector %3d %2dk\n", Totsecs, Totsecs/8 );
-	for (attempts=0; attempts <= RETRYMAX; attempts++) {
-		Lastrx= firstch;
-		sendline(cseclen==1024?STX:SOH);
+	if (Verbose > 1)
+		fprintf(stderr, "Sector %3d %2dk\n", Totsecs, Totsecs / 8 );
+	for (attempts = 0; attempts <= RETRYMAX; attempts++) {
+		Lastrx = firstch;
+		sendline(cseclen == 1024?STX:SOH);
 		sendline(sectnum);
-		sendline(-sectnum -1);
-		oldcrc=checksum=0;
-		for (wcj=cseclen,cp=buf; --wcj>=0; ) {
+		sendline(-sectnum - 1);
+		oldcrc = checksum = 0;
+		for (wcj = cseclen, cp = buf; --wcj >= 0; ) {
 			sendline(*cp);
-			oldcrc=updcrc((0377& *cp), oldcrc);
+			oldcrc = updcrc((0377 & *cp), oldcrc);
 			checksum += *cp++;
 		}
 		if (Crcflg) {
-			oldcrc=updcrc(0,updcrc(0,oldcrc));
-			sendline((int)oldcrc>>8);
+			oldcrc = updcrc(0, updcrc(0, oldcrc));
+			sendline((int)oldcrc >> 8);
 			sendline((int)oldcrc);
 		}
 		else
@@ -848,27 +848,27 @@ int cseclen;	/* data length of this sector to send */
 		firstch = readline(Rxtimeout);
 gotnak:
 		switch (firstch) {
-		case CAN:
-			if(Lastrx == CAN) {
+			case CAN:
+				if (Lastrx == CAN) {
 cancan:
-				zperr1("Cancelled");  return ERROR;
-			}
-			break;
-		case TIMEOUT:
-			zperr1("Timeout on sector ACK"); continue;
-		case WANTCRC:
-			if (firstsec)
-				Crcflg = TRUE;
-		case NAK:
-			zperr1("NAK on sector"); continue;
-		case ACK: 
-			firstsec=FALSE;
-			Totsecs += (cseclen>>7);
-			return OK;
-		case ERROR:
-			zperr1("Got burst for sector ACK"); break;
-		default:
-			zperr2("Got %02x for sector ACK", firstch); break;
+					zperr1("Cancelled");  return ERROR;
+				}
+				break;
+			case TIMEOUT:
+				zperr1("Timeout on sector ACK"); continue;
+			case WANTCRC:
+				if (firstsec)
+					Crcflg = TRUE;
+			case NAK:
+				zperr1("NAK on sector"); continue;
+			case ACK:
+				firstsec = FALSE;
+				Totsecs += (cseclen >> 7);
+				return OK;
+			case ERROR:
+				zperr1("Got burst for sector ACK"); break;
+			default:
+				zperr2("Got %02x for sector ACK", firstch); break;
 		}
 		for (;;) {
 			Lastrx = firstch;
@@ -916,11 +916,11 @@ zfilbuf()
 		vfile("zfilbuf: n=%d vpos=%lu Eofseen=%d", n, vpos, Eofseen);
 		return n;
 	}
-	if (vpos >= (bytcnt+blklen))
+	if (vpos >= (bytcnt + blklen))
 		return blklen;
 	/* May be a short block if crash recovery etc. */
 	Eofseen = BEofseen;
-	return (vpos - bytcnt);
+	return vpos - bytcnt;
 #else
 	n = fread(txbuf, 1, blklen, in);
 	if (n < blklen) {
@@ -941,7 +941,7 @@ long pos;
 
 	vfile("fooseek: pos =%lu vpos=%lu Canseek=%d", pos, vpos, Canseek);
 	/* Seek offset < current buffer */
-	if (pos < (vpos -TXBSIZE +1024)) {
+	if (pos < (vpos - TXBSIZE + 1024)) {
 		BEofseen = 0;
 		if (Canseek > 0) {
 			vpos = pos & ~TXBMASK;
@@ -977,11 +977,11 @@ long pos;
 		while (vpos <= pos) {
 			txbuf = Txb + (vpos & TXBMASK);
 			m = TXBSIZE - (vpos & TXBMASK);
-			vfile("m=%ld vpos=%ld", m,vpos);
-				n = fread(txbuf, (size_t)1, (size_t)m, fptr);
-			vfile("n=%ld vpos=%ld", n,vpos);
+			vfile("m=%ld vpos=%ld", m, vpos);
+			n = fread(txbuf, (size_t)1, (size_t)m, fptr);
+			vfile("n=%ld vpos=%ld", n, vpos);
 			vpos += n;
-			vfile("bo=%d m=%ld vpos=%ld", txbuf-Txb,m,vpos);
+			vfile("bo=%d m=%ld vpos=%ld", txbuf - Txb, m, vpos);
 			if (n < m) {
 				BEofseen = 1;
 				break;
@@ -1003,14 +1003,14 @@ long pos;
  */
 char *
 substr(s, t)
-register char *s,*t;
+register char *s, *t;
 {
-	register char *ss,*tt;
+	register char *ss, *tt;
 	/* search for first char of token */
-	for (ss=s; *s; s++)
+	for (ss = s; *s; s++)
 		if (*s == *t)
 			/* compare token with substring */
-			for (ss=s,tt=t; ;) {
+			for (ss = s, tt = t; ;) {
 				if (*tt == 0)
 					return s;
 				if (*ss++ != *tt++)
@@ -1033,17 +1033,17 @@ usage()
 {
 	char **pp;
 
-	for (pp=usinfo; **pp; ++pp)
+	for (pp = usinfo; **pp; ++pp)
 		fprintf(stderr, "%s\n", *pp);
-	fprintf(stderr,"\n%s %s by Chuck Forsberg,  Omen Technology INC\n",
-	  Progname, VERSION);
+	fprintf(stderr, "\n%s %s by Chuck Forsberg,  Omen Technology INC\n",
+	        Progname, VERSION);
 	fprintf(stderr, "\t\t\042The High Reliability Software\042\n\n");
-	fprintf(stderr,"Copyright (c) 2000 Omen Technology INC All Rights Reserved\n");
+	fprintf(stderr, "Copyright (c) 2000 Omen Technology INC All Rights Reserved\n");
 	fprintf(stderr,
-	"See sz.doc and README for option descriptions and licensing information.\n\n");
-	fprintf(stderr,"\t\t\tCompiled for %s\n", OS);
+	        "See sz.doc and README for option descriptions and licensing information.\n\n");
+	fprintf(stderr, "\t\t\tCompiled for %s\n", OS);
 	fprintf(stderr,
-	"\nThis program is designed to talk to terminal programs,\nnot to be called by one.\n");
+	        "\nThis program is designed to talk to terminal programs,\nnot to be called by one.\n");
 #ifndef REGISTERED
 	fprintf(stderr, "\n      **** UNREGISTERED COPY *****\r\n");
 	fprintf(stderr, "Please read the License Agreement in sz.doc\r\n");
@@ -1056,123 +1056,123 @@ usage()
  */
 getzrxinit()
 {
-	register n;
+	register    n;
 	struct stat f;
 
-	for (n=10; --n>=0; ) {
-		
+	for (n = 10; --n >= 0; ) {
+
 		switch (zgethdr(Rxhdr)) {
-		case ZCHALLENGE:	/* Echo receiver's challenge numbr */
-			stohdr(Rxpos);
-			zshhdr(4, ZACK, Txhdr);
-			continue;
-		case ZCOMMAND:		/* They didn't see out ZRQINIT */
-			stohdr(0L);
-			zshhdr(4, ZRQINIT, Txhdr);
-			continue;
-		case ZRINIT:
-			if (Rxhlen==4 && (Rxhdr[ZF1] & ZRQNVH)) {
-				stohdr(0x80L);	/* Show we can var header */
+			case ZCHALLENGE: /* Echo receiver's challenge numbr */
+				stohdr(Rxpos);
+				zshhdr(4, ZACK, Txhdr);
+				continue;
+			case ZCOMMAND:  /* They didn't see out ZRQINIT */
+				stohdr(0L);
 				zshhdr(4, ZRQINIT, Txhdr);
 				continue;
-			}
-			Rxflags = 0377 & Rxhdr[ZF0];
+			case ZRINIT:
+				if (Rxhlen == 4 && (Rxhdr[ZF1] & ZRQNVH)) {
+					stohdr(0x80L); /* Show we can var header */
+					zshhdr(4, ZRQINIT, Txhdr);
+					continue;
+				}
+				Rxflags = 0377 & Rxhdr[ZF0];
 #if COMPL
-			Usevhdrs = 1;
+				Usevhdrs = 1;
 #else
-			Usevhdrs = Rxhdr[ZF1] & CANVHDR;
+				Usevhdrs = Rxhdr[ZF1] & CANVHDR;
 #endif
-			Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
-			Zctlesc |= Rxflags & TESCCTL;
-			if (Rxhdr[ZF1] & ZRRQQQ)	/* Escape ctrls */
-				initzsendmsk(Rxhdr+ZRPXQQ);
-			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
-			if ( !(Rxflags & CANFDX))
-				Txwindow = 0;
-			vfile("Rxbuflen=%d Tframlen=%ld", Rxbuflen, Tframlen);
-			signal(SIGINT, SIG_IGN);
+				Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
+				Zctlesc |= Rxflags & TESCCTL;
+				if (Rxhdr[ZF1] & ZRRQQQ) /* Escape ctrls */
+					initzsendmsk(Rxhdr + ZRPXQQ);
+				Rxbuflen = (0377 & Rxhdr[ZP0]) + ((0377 & Rxhdr[ZP1]) << 8);
+				if (!(Rxflags & CANFDX))
+					Txwindow = 0;
+				vfile("Rxbuflen=%d Tframlen=%ld", Rxbuflen, Tframlen);
+				signal(SIGINT, SIG_IGN);
 #ifdef MODE2OK
-			mode(2);	/* Set cbreak, XON/XOFF, etc. */
+				mode(2); /* Set cbreak, XON/XOFF, etc. */
 #endif
 
 #ifndef READCHECK
 #ifndef USG
-			/* Use 1024 byte frames if no sample/interrupt */
-			if (Rxbuflen < 32 || Rxbuflen > 1024) {
-				Rxbuflen = 1024;
-				vfile("Rxbuflen=%d", Rxbuflen);
-			}
-#endif
-#endif
-
-			/* Override to force shorter frame length */
-			if (Rxbuflen && (Rxbuflen>Tframlen) && (Tframlen>=32))
-				Rxbuflen = Tframlen;
-			if ( !Rxbuflen && (Tframlen>=32))
-				Rxbuflen = Tframlen;
-			vfile("Rxbuflen=%d", Rxbuflen);
-
-
-			/*
-			 * If input is not a regular file, force ACK's to
-			 *  prevent running beyond the buffer limits
-			 */
-			if ( !Command) {
-				fstat(fileno(in), &f);
-				if (
-#ifdef POSIX
-				    !S_ISREG(f.st_mode)
-#else
-				    (f.st_mode & S_IFMT) != S_IFREG
-#endif
-				    ) {
-					Canseek = -1;
-					f.st_size = 0;
-					f.st_mtime = 0;
-#ifdef TXBSIZE
-					Txwindow = TXBSIZE - 1024;
-					Txwspac = TXBSIZE/4;
-#else
-					sprintf(endmsg, "Can't seek on input");
-					return ERROR;
-#endif
+				/* Use 1024 byte frames if no sample/interrupt */
+				if (Rxbuflen < 32 || Rxbuflen > 1024) {
+					Rxbuflen = 1024;
+					vfile("Rxbuflen=%d", Rxbuflen);
 				}
-			}
+#endif
+#endif
 
-			/* Set initial subpacket length */
-			if (blklen < 1024) {	/* Command line override? */
-				if (Baudrate > 300)
-					blklen = 256;
-				if (Baudrate > 1200)
-					blklen = 512;
-				if (Baudrate > 2400)
-					blklen = 1024;
-				if (Baudrate < 300)
-					blklen = 1024;
-			}
-			if (Rxbuflen && blklen>Rxbuflen)
-				blklen = Rxbuflen;
-			if (blkopt && blklen > blkopt)
-				blklen = blkopt;
-			vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
-			vfile("Txwindow = %u Txwspac = %d", Txwindow, Txwspac);
+				/* Override to force shorter frame length */
+				if (Rxbuflen && (Rxbuflen > Tframlen) && (Tframlen >= 32))
+					Rxbuflen = Tframlen;
+				if (!Rxbuflen && (Tframlen >= 32))
+					Rxbuflen = Tframlen;
+				vfile("Rxbuflen=%d", Rxbuflen);
 
 
-			if (Lztrans == ZTRLE && (Rxflags & CANRLE))
-				Txfcs32 = 2;
-			else
-				Lztrans = 0;
+				/*
+				 * If input is not a regular file, force ACK's to
+				 *  prevent running beyond the buffer limits
+				 */
+				if (!Command) {
+					fstat(fileno(in), &f);
+					if (
+#ifdef POSIX
+						!S_ISREG(f.st_mode)
+#else
+						(f.st_mode & S_IFMT) != S_IFREG
+#endif
+						) {
+						Canseek = -1;
+						f.st_size = 0;
+						f.st_mtime = 0;
+#ifdef TXBSIZE
+						Txwindow = TXBSIZE - 1024;
+						Txwspac = TXBSIZE / 4;
+#else
+						sprintf(endmsg, "Can't seek on input");
+						return ERROR;
+#endif
+					}
+				}
 
-			return (sendzsinit());
-		case ZCAN:
-		case TIMEOUT:
-			return ERROR;
-		case ZRQINIT:
-			if (Rxhdr[ZF0] == ZCOMMAND)
+				/* Set initial subpacket length */
+				if (blklen < 1024) { /* Command line override? */
+					if (Baudrate > 300)
+						blklen = 256;
+					if (Baudrate > 1200)
+						blklen = 512;
+					if (Baudrate > 2400)
+						blklen = 1024;
+					if (Baudrate < 300)
+						blklen = 1024;
+				}
+				if (Rxbuflen && blklen > Rxbuflen)
+					blklen = Rxbuflen;
+				if (blkopt && blklen > blkopt)
+					blklen = blkopt;
+				vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
+				vfile("Txwindow = %u Txwspac = %d", Txwindow, Txwspac);
+
+
+				if (Lztrans == ZTRLE && (Rxflags & CANRLE))
+					Txfcs32 = 2;
+				else
+					Lztrans = 0;
+
+				return sendzsinit();
+			case ZCAN:
+			case TIMEOUT:
+				return ERROR;
+			case ZRQINIT:
+				if (Rxhdr[ZF0] == ZCOMMAND)
+					continue;
+			default:
+				zshhdr(4, ZNAK, Txhdr);
 				continue;
-		default:
-			zshhdr(4, ZNAK, Txhdr);
-			continue;
 		}
 	}
 	return ERROR;
@@ -1199,14 +1199,14 @@ sendzsinit()
 		zsdata(Myattn, ZATTNLEN, ZCRCW);
 		c = zgethdr(Rxhdr);
 		switch (c) {
-		case ZCAN:
-			return ERROR;
-		case ZACK:
-			return OK;
-		default:
-			if (++errors > 19)
+			case ZCAN:
 				return ERROR;
-			continue;
+			case ZACK:
+				return OK;
+			default:
+				if (++errors > 19)
+					return ERROR;
+				continue;
 		}
 	}
 }
@@ -1215,98 +1215,98 @@ sendzsinit()
 zsendfile(buf, blen)
 char *buf;
 {
-	register c;
+	register               c;
 	register unsigned long crc;
-	int m, n, i;
-	char *p;
-	long lastcrcrq = -1;
-	long lastcrcof = -1;
-	long l;
+	int                    m, n, i;
+	char *                 p;
+	long                   lastcrcrq = -1;
+	long                   lastcrcof = -1;
+	long                   l;
 
-	for (errors=0; ++errors<11;) {
-		Txhdr[ZF0] = Lzconv;	/* file conversion request */
-		Txhdr[ZF1] = Lzmanag;	/* file management request */
+	for (errors = 0; ++errors < 11;) {
+		Txhdr[ZF0] = Lzconv;    /* file conversion request */
+		Txhdr[ZF1] = Lzmanag;   /* file management request */
 		if (Lskipnocor)
 			Txhdr[ZF1] |= ZMSKNOLOC;
-		Txhdr[ZF2] = Lztrans;	/* file transport request */
+		Txhdr[ZF2] = Lztrans;   /* file transport request */
 		Txhdr[ZF3] = 0;
 		zsbhdr(4, ZFILE, Txhdr);
 		zsdata(buf, blen, ZCRCW);
 again:
 		c = zgethdr(Rxhdr);
 		switch (c) {
-		case ZRINIT:
-			while ((c = readline(50)) > 0)
-				if (c == ZPAD) {
-					goto again;
-				}
-			continue;
-		case ZCAN:
-		case TIMEOUT:
-		case ZABORT:
-		case ZFIN:
-			sprintf(endmsg, "Got %s on pathname", frametypes[c+FTOFFSET]);
-			return ERROR;
-		default:
-			sprintf(endmsg, "Got %d frame type on pathname", c);
-			continue;
-		case ERROR:
-		case ZNAK:
-			continue;
-		case ZCRC:
-			l = Rxhdr[9] & 0377;
-			l = (l<<8) + (Rxhdr[8] & 0377);
-			l = (l<<8) + (Rxhdr[7] & 0377);
-			l = (l<<8) + (Rxhdr[6] & 0377);
-			if (Rxpos != lastcrcrq || l != lastcrcof) {
-				lastcrcrq = Rxpos;
-				crc = 0xFFFFFFFFL;
-				if (Canseek >= 0) {
-					fseek(in, bytcnt = l, 0);  i = 0;
-					vfile("CRC32 on %ld bytes", Rxpos);
-					do {
-						/* No rx timeouts! */
-						if (--i < 0) {
-							i = 32768L/blklen;
-							sendline(SYN);
-							flushmoc();
-						}
-						bytcnt += m = n = zfilbuf();
-						if (bytcnt > maxbytcnt)
-							maxbytcnt = bytcnt;
-						for (p = txbuf; --m >= 0; ++p) {
-							c = *p & 0377;
-							crc = UPDC32(c, crc);
-						}
-#ifdef DEBUG
-						vfile("bytcnt=%ld crc=%08lX",
-						  bytcnt, crc);
-#endif
-					} while (n && bytcnt < lastcrcrq);
-					crc = ~crc;
-#ifndef MMIO
-					clearerr(in);	/* Clear possible EOF */
-#endif
-				}
-			}
-			stohdr(crc);
-			zsbhdr(4, ZCRC, Txhdr);
-			goto again;
-		case ZFERR:
-		case ZSKIP:
-			++Skipcount;
-			if (Skipbitch)
-				++errcnt;
-			fclose(in); return c;
-		case ZRPOS:
-			/*
-			 * Suppress zcrcw request otherwise triggered by
-			 * lastyunc==bytcnt
-			 */
-			if (fseek(in, Rxpos, 0))
+			case ZRINIT:
+				while ((c = readline(50)) > 0)
+					if (c == ZPAD) {
+						goto again;
+					}
+				continue;
+			case ZCAN:
+			case TIMEOUT:
+			case ZABORT:
+			case ZFIN:
+				sprintf(endmsg, "Got %s on pathname", frametypes[c + FTOFFSET]);
 				return ERROR;
-			Lastsync = (maxbytcnt = bytcnt = Txpos = Lrxpos = Rxpos) -1;
-			return zsendfdata();
+			default:
+				sprintf(endmsg, "Got %d frame type on pathname", c);
+				continue;
+			case ERROR:
+			case ZNAK:
+				continue;
+			case ZCRC:
+				l = Rxhdr[9] & 0377;
+				l = (l << 8) + (Rxhdr[8] & 0377);
+				l = (l << 8) + (Rxhdr[7] & 0377);
+				l = (l << 8) + (Rxhdr[6] & 0377);
+				if (Rxpos != lastcrcrq || l != lastcrcof) {
+					lastcrcrq = Rxpos;
+					crc = 0xFFFFFFFFL;
+					if (Canseek >= 0) {
+						fseek(in, bytcnt = l, 0);  i = 0;
+						vfile("CRC32 on %ld bytes", Rxpos);
+						do {
+							/* No rx timeouts! */
+							if (--i < 0) {
+								i = 32768L / blklen;
+								sendline(SYN);
+								flushmoc();
+							}
+							bytcnt += m = n = zfilbuf();
+							if (bytcnt > maxbytcnt)
+								maxbytcnt = bytcnt;
+							for (p = txbuf; --m >= 0; ++p) {
+								c = *p & 0377;
+								crc = UPDC32(c, crc);
+							}
+#ifdef DEBUG
+							vfile("bytcnt=%ld crc=%08lX",
+							      bytcnt, crc);
+#endif
+						} while (n && bytcnt < lastcrcrq);
+						crc = ~crc;
+#ifndef MMIO
+						clearerr(in); /* Clear possible EOF */
+#endif
+					}
+				}
+				stohdr(crc);
+				zsbhdr(4, ZCRC, Txhdr);
+				goto again;
+			case ZFERR:
+			case ZSKIP:
+				++Skipcount;
+				if (Skipbitch)
+					++errcnt;
+				fclose(in); return c;
+			case ZRPOS:
+				/*
+				 * Suppress zcrcw request otherwise triggered by
+				 * lastyunc==bytcnt
+				 */
+				if (fseek(in, Rxpos, 0))
+					return ERROR;
+				Lastsync = (maxbytcnt = bytcnt = Txpos = Lrxpos = Rxpos) - 1;
+				return zsendfdata();
 		}
 	}
 	fclose(in); return ERROR;
@@ -1315,11 +1315,11 @@ again:
 /* Send the data in the file */
 zsendfdata()
 {
-	register c, e, n;
-	register newcnt;
+	register      c, e, n;
+	register      newcnt;
 	register long tcount = 0;
-	int junkcount;		/* Counts garbage chars received by TX */
-	static int tleft = 6;	/* Counter for test mode */
+	int           junkcount; /* Counts garbage chars received by TX */
+	static int    tleft = 6; /* Counter for test mode */
 
 	junkcount = 0;
 	Beenhereb4 = 0;
@@ -1330,22 +1330,22 @@ waitack:
 		c = getinsync(0);
 gotack:
 		switch (c) {
-		default:
-		case ZCAN:
-			fclose(in);
-			return ERROR;
-		case ZRINIT:
-			fclose(in);
-			return ZSKIP;
-		case ZSKIP:
-			++Skipcount;
-			if (Skipbitch)
-				++errcnt;
-			fclose(in);
-			return c;
-		case ZACK:
-		case ZRPOS:
-			break;
+			default:
+			case ZCAN:
+				fclose(in);
+				return ERROR;
+			case ZRINIT:
+				fclose(in);
+				return ZSKIP;
+			case ZSKIP:
+				++Skipcount;
+				if (Skipbitch)
+					++errcnt;
+				fclose(in);
+				return c;
+			case ZACK:
+			case ZRPOS:
+				break;
 		}
 #ifdef READCHECK
 		/*
@@ -1361,12 +1361,12 @@ gotack:
 			switch (readline(1))
 #endif
 			{
-			case CAN:
-			case ZPAD:
-				c = getinsync(1);
-				goto gotack;
-			case XOFF:		/* Wait a while for an XON */
-				readline(100);
+				case CAN:
+				case ZPAD:
+					c = getinsync(1);
+					goto gotack;
+				case XOFF:  /* Wait a while for an XON */
+					readline(100);
 			}
 		}
 #endif
@@ -1384,7 +1384,7 @@ gotack:
 	 *  file to be started over from the beginning.
 	 */
 	if (Test) {
-		if ( --tleft)
+		if (--tleft)
 			while (tcount < 20000) {
 				printf(qbf); fflush(stdout);
 				tcount += strlen(qbf);
@@ -1396,11 +1396,11 @@ gotack:
 					switch (readline(1))
 #endif
 					{
-					case CAN:
-					case ZPAD:
-						goto waitack;
-					case XOFF:	/* Wait for XON */
-						readline(100);
+						case CAN:
+						case ZPAD:
+							goto waitack;
+						case XOFF: /* Wait for XON */
+							readline(100);
 					}
 				}
 #endif
@@ -1429,9 +1429,9 @@ gotack:
 			Txwcnt = 0;  e = ZCRCQ;
 		} else
 			e = ZCRCG;
-		if (Verbose>1)
+		if (Verbose > 1)
 			fprintf(stderr, "%7ld ZMODEM%s\n",
-			  Txpos, Crc32t?" CRC-32":"");
+			        Txpos, Crc32t?" CRC-32":"");
 		zsdata(txbuf, n, e);
 		bytcnt = Txpos += n;
 		if (bytcnt > maxbytcnt)
@@ -1453,21 +1453,21 @@ gotack:
 			switch (readline(1))
 #endif
 			{
-			case CAN:
-			case ZPAD:
-				c = getinsync(1);
-				if (c == ZACK)
-					break;
-				/* zcrce - dinna wanna starta ping-pong game */
-				zsdata(txbuf, 0, ZCRCE);
-				goto gotack;
-			case XOFF:		/* Wait a while for an XON */
-				readline(100);
-			default:
-				++junkcount;
+				case CAN:
+				case ZPAD:
+					c = getinsync(1);
+					if (c == ZACK)
+						break;
+					/* zcrce - dinna wanna starta ping-pong game */
+					zsdata(txbuf, 0, ZCRCE);
+					goto gotack;
+				case XOFF:  /* Wait a while for an XON */
+					readline(100);
+				default:
+					++junkcount;
 			}
 		}
-#endif	/* READCHECK */
+#endif  /* READCHECK */
 		if (Txwindow) {
 			while ((tcount = (Txpos - Lrxpos)) >= Txwindow) {
 				vfile("%ld window >= %u", tcount, Txwindow);
@@ -1489,26 +1489,26 @@ gotack:
 		zsbhdr(4, ZEOF, Txhdr);
 egotack:
 		switch (getinsync(0)) {
-		case ZACK:
-			goto egotack;
-		case ZNAK:
-			continue;
-		case ZRPOS:
-			goto somemore;
-		case ZRINIT:
-			fclose(in);
-			return OK;
-		case ZSKIP:
-			++Skipcount;
-			if (Skipbitch)
-				++errcnt;
-			fclose(in);
-			return ZSKIP;
-		default:
-			sprintf(endmsg, "Failure sending end of file");
-		case ERROR:
-			fclose(in);
-			return ERROR;
+			case ZACK:
+				goto egotack;
+			case ZNAK:
+				continue;
+			case ZRPOS:
+				goto somemore;
+			case ZRINIT:
+				fclose(in);
+				return OK;
+			case ZSKIP:
+				++Skipcount;
+				if (Skipbitch)
+					++errcnt;
+				fclose(in);
+				return ZSKIP;
+			default:
+				sprintf(endmsg, "Failure sending end of file");
+			case ERROR:
+				fclose(in);
+				return ERROR;
 		}
 	}
 }
@@ -1527,60 +1527,60 @@ getinsync(flag)
 		} else
 			c = zgethdr(Rxhdr);
 		switch (c) {
-		case ZCAN:
-		case ZABORT:
-		case ZFIN:
-		case TIMEOUT:
-			sprintf(endmsg, "Got %s sending data", frametypes[c+FTOFFSET]);
-			return ERROR;
-		case ZRPOS:
-			if (Rxpos > bytcnt) {
-				vfile("getinsync: Rxpos=%lx bytcnt=%lx Maxbytcnt=%lx",
-				  Rxpos, bytcnt, maxbytcnt);
-				if (Rxpos > maxbytcnt)
-					sprintf(endmsg,
-					  "Nonstandard Protocol at %lX", Rxpos);
-				return ZRPOS;
-			}
-			/* ************************************* */
-			/*  If sending to a buffered modem, you  */
-			/*   might send a break at this point to */
-			/*   dump the modem's buffer.		 */
-			clearerr(in);	/* In case file EOF seen */
-			if (fseek(in, Rxpos, 0)) {
-				sprintf(endmsg, "Bad Seek to %ld", Rxpos);
+			case ZCAN:
+			case ZABORT:
+			case ZFIN:
+			case TIMEOUT:
+				sprintf(endmsg, "Got %s sending data", frametypes[c + FTOFFSET]);
 				return ERROR;
-			}
-			Eofseen = 0;
-			bytcnt = Lrxpos = Txpos = Rxpos;
-			if (Lastsync == Rxpos) {
-				if (++Beenhereb4 > 12) {
-					sprintf(endmsg, "Can't send block");
+			case ZRPOS:
+				if (Rxpos > bytcnt) {
+					vfile("getinsync: Rxpos=%lx bytcnt=%lx Maxbytcnt=%lx",
+					      Rxpos, bytcnt, maxbytcnt);
+					if (Rxpos > maxbytcnt)
+						sprintf(endmsg,
+						        "Nonstandard Protocol at %lX", Rxpos);
+					return ZRPOS;
+				}
+				/* ************************************* */
+				/*  If sending to a buffered modem, you  */
+				/*   might send a break at this point to */
+				/*   dump the modem's buffer.		 */
+				clearerr(in); /* In case file EOF seen */
+				if (fseek(in, Rxpos, 0)) {
+					sprintf(endmsg, "Bad Seek to %ld", Rxpos);
 					return ERROR;
 				}
-				if (Beenhereb4 > 4)
-					if (blklen > 32)
-						blklen /= 2;
-			} else
-				Beenhereb4 = 0;
-			Lastsync = Rxpos;
-			return c;
-		case ZACK:
-			Lrxpos = Rxpos;
-			if (flag || Txpos == Rxpos)
-				return ZACK;
-			continue;
-		case ZRINIT:
-			return c;
-		case ZSKIP:
-			++Skipcount;
-			if (Skipbitch)
-				++errcnt;
-			return c;
-		case ERROR:
-		default:
-			zsbhdr(4, ZNAK, Txhdr);
-			continue;
+				Eofseen = 0;
+				bytcnt = Lrxpos = Txpos = Rxpos;
+				if (Lastsync == Rxpos) {
+					if (++Beenhereb4 > 12) {
+						sprintf(endmsg, "Can't send block");
+						return ERROR;
+					}
+					if (Beenhereb4 > 4)
+						if (blklen > 32)
+							blklen /= 2;
+				} else
+					Beenhereb4 = 0;
+				Lastsync = Rxpos;
+				return c;
+			case ZACK:
+				Lrxpos = Rxpos;
+				if (flag || Txpos == Rxpos)
+					return ZACK;
+				continue;
+			case ZRINIT:
+				return c;
+			case ZSKIP:
+				++Skipcount;
+				if (Skipbitch)
+					++errcnt;
+				return c;
+			case ERROR:
+			default:
+				zsbhdr(4, ZNAK, Txhdr);
+				continue;
 		}
 	}
 }
@@ -1591,7 +1591,7 @@ zsendcmd(buf, blen)
 char *buf;
 {
 	register c;
-	long cmdnum;
+	long     cmdnum;
 
 	cmdnum = getpid();
 	errors = 0;
@@ -1601,38 +1601,38 @@ char *buf;
 		zsbhdr(4, ZCOMMAND, Txhdr);
 		zsdata(buf, blen, ZCRCW);
 listen:
-		Rxtimeout = 100;		/* Ten second wait for resp. */
-		Usevhdrs = 0;		/* Allow rx to send fixed len headers */
+		Rxtimeout = 100;        /* Ten second wait for resp. */
+		Usevhdrs = 0;       /* Allow rx to send fixed len headers */
 		c = zgethdr(Rxhdr);
 
 		switch (c) {
-		case ZRINIT:
-			goto listen;	/* CAF 8-21-87 */
-		case ERROR:
-		case GCOUNT:
-		case TIMEOUT:
-			if (++errors > 11)
+			case ZRINIT:
+				goto listen; /* CAF 8-21-87 */
+			case ERROR:
+			case GCOUNT:
+			case TIMEOUT:
+				if (++errors > 11)
+					return ERROR;
+				continue;
+			case ZCAN:
+			case ZABORT:
+			case ZFIN:
+			case ZSKIP:
+			case ZRPOS:
 				return ERROR;
-			continue;
-		case ZCAN:
-		case ZABORT:
-		case ZFIN:
-		case ZSKIP:
-		case ZRPOS:
-			return ERROR;
-		default:
-			if (++errors > 20)
-				return ERROR;
-			continue;
-		case ZCOMPL:
-			Exitcode = Rxpos;
-			saybibi();
-			return OK;
-		case ZRQINIT:
-			vfile("******** RZ *******");
-			system("rz");
-			vfile("******** SZ *******");
-			goto listen;
+			default:
+				if (++errors > 20)
+					return ERROR;
+				continue;
+			case ZCOMPL:
+				Exitcode = Rxpos;
+				saybibi();
+				return OK;
+			case ZRQINIT:
+				vfile("******** RZ *******");
+				system("rz");
+				vfile("******** SZ *******");
+				goto listen;
 		}
 	}
 }
@@ -1652,18 +1652,18 @@ char *s;
 		if (*p++ == '/')
 			s = p;
 	if (*s == 'v') {
-		Verbose=1; ++s;
+		Verbose = 1; ++s;
 	}
 	Progname = s;
-	if (s[0]=='z' && s[1] == 'c') {
+	if (s[0] == 'z' && s[1] == 'c') {
 		Command = TRUE;
 		if (s[8] == 'i')
 			Cmdack1 = ZCACK1;
 	}
-	if (s[0]=='s' && s[1]=='b') {
-		Nozmodem = TRUE; blklen=1024;
+	if (s[0] == 's' && s[1] == 'b') {
+		Nozmodem = TRUE; blklen = 1024;
 	}
-	if (s[0]=='s' && s[1]=='x') {
+	if (s[0] == 's' && s[1] == 'x') {
 		Modem2 = TRUE;
 	}
 }
@@ -1673,21 +1673,21 @@ register char **argv;
 {
 	struct stat f;
 
-	for (Totalleft = 0, Filesleft = 0; --argc >=0; ++argv) {
+	for (Totalleft = 0, Filesleft = 0; --argc >= 0; ++argv) {
 		f.st_size = -1;
-		if (Verbose>2) {
+		if (Verbose > 2) {
 			fprintf(stderr, "\nCountem: %03d %s ", argc, *argv);
 			fflush(stderr);
 		}
 		if (access(*argv, 04) >= 0 && stat(*argv, &f) >= 0) {
 			++Filesleft;  Totalleft += f.st_size;
 		}
-		if (Verbose>2)
+		if (Verbose > 2)
 			fprintf(stderr, " %ld", f.st_size);
 	}
-	if (Verbose>2)
+	if (Verbose > 2)
 		fprintf(stderr, "\ncountem: Total %d %ld\n",
-		  Filesleft, Totalleft);
+		        Filesleft, Totalleft);
 	Totfiles = Filesleft;  Totbytes = Totalleft;
 }
 
@@ -1702,10 +1702,10 @@ chartest(m)
 	readline(500);
 
 	for (n = 0; n < 256; ++n) {
-		if (!(n%8))
+		if (!(n % 8))
 			printf("\r\n");
 		printf("%02x ", n);  fflush(stdout);
-		sendline(n);	flushmo();
+		sendline(n);    flushmo();
 		printf("  ");  fflush(stdout);
 		if (n == 127) {
 			printf("Hit Enter.\021");  fflush(stdout);
@@ -1735,7 +1735,7 @@ register char *p;
 	register c;
 
 	for (c = 0; c < 33; ++c) {
-		if (p[c>>3] & (1 << (c & 7))) {
+		if (p[c >> 3] & (1 << (c & 7))) {
 			Zsendmask[c] = 1;
 			vfile("Escaping %02o", c);
 		}
