@@ -296,28 +296,37 @@ int main(int argc, char *argv[])
 				}
 				switch (*cp++) {
 					case '\\':
-						*cp = toupper(*cp);  continue;
+						*cp = toupper(*cp);
+						continue;
 					case '+':
-						Lzmanag = ZMAPND; break;
+						Lzmanag = ZMAPND;
+						break;
 					case 'a':
 						if (Nozmodem || Modem2)
 							usage();
-						Lzconv = ZCNL;  break;
+						Lzconv = ZCNL;
+						break;
 					case 'b':
-						Lzconv = ZCBIN; break;
+						Lzconv = ZCBIN;
+						break;
 					case 'c':
-						Lzmanag = ZMCHNG;  break;
+						Lzmanag = ZMCHNG;
+						break;
 					case 'd':
 						++Dottoslash;
 					/* **** FALL THROUGH TO **** */
 					case 'f':
-						Fullname = TRUE; break;
+						Fullname = TRUE;
+						break;
 					case 'g':
-						Ksendstr = TRUE; break;
+						Ksendstr = TRUE;
+						break;
 					case 'e':
-						Zctlesc = 1; break;
+						Zctlesc = 1;
+						break;
 					case 'k':
-						blklen = 1024; break;
+						blklen = 1024;
+						break;
 					case 'L':
 						if (isdigit(*cp))
 							blkopt = atoi(cp);
@@ -341,24 +350,33 @@ int main(int argc, char *argv[])
 							usage();
 						break;
 					case 'N':
-						Lzmanag = ZMNEWL;  break;
+						Lzmanag = ZMNEWL;
+						break;
 					case 'n':
-						Lzmanag = ZMNEW;  break;
+						Lzmanag = ZMNEW;
+						break;
 					case 'o':
-						Wantfcs32 = FALSE; break;
+						Wantfcs32 = FALSE;
+						break;
 					case 'p':
-						Lzmanag = ZMPROT;  break;
+						Lzmanag = ZMPROT;
+						break;
 					case 'r':
 						if (Lzconv == ZCRESUM)
 							Lzmanag = (Lzmanag & ZMMASK) | ZMCRC;
-						Lzconv = ZCRESUM; break;
+						Lzconv = ZCRESUM;
+						break;
 					case 'T':
-						chartest(1); chartest(2);
-						mode(0);  exit(0);
+						chartest(1);
+						chartest(2);
+						mode(0);
+						exit(0);
 					case 'u':
-						++Unlinkafter; break;
+						++Unlinkafter;
+						break;
 					case 'v':
-						++Verbose; break;
+						++Verbose;
+						break;
 					case 'w':
 						if (isdigit(*cp))
 							Txwindow = atoi(cp);
@@ -376,15 +394,18 @@ int main(int argc, char *argv[])
 							blkopt = Txwspac;
 						break;
 					case 'x':
-						Skipbitch = 1;  break;
+						Skipbitch = 1;
+						break;
 					case 'Y':
 						Lskipnocor = TRUE;
 					/* **** FALLL THROUGH TO **** */
 					case 'y':
-						Lzmanag = ZMCLOB; break;
+						Lzmanag = ZMCLOB;
+						break;
 					case 'Z':
 					case 'z':
-						Lztrans = ZTRLE;  break;
+						Lztrans = ZTRLE;
+						break;
 					default:
 						usage();
 				}
@@ -540,7 +561,8 @@ int wcsend(int argc, char *argp[])
 			else if (zsendcmd(Cmdstr, 1 + strlen(Cmdstr))) {
 				Exitcode = 1; canit();
 			}
-			Exitcode = 1; return OK;
+			Exitcode = 1;
+			return OK;
 		}
 		canit();
 		sprintf(endmsg, "Can't open any requested files");
@@ -794,7 +816,8 @@ int wctx(long flen)
 		return ERROR;
 	}
 	else {
-		++Totfiles;  return OK;
+		++Totfiles;
+		return OK;
 	}
 }
 
@@ -831,7 +854,8 @@ int wcputsec(char *buf, int sectnum, int cseclen /* data length of this sector t
 		flushmo();
 
 		if (Optiong) {
-			firstsec = FALSE; return OK;
+			firstsec = FALSE;
+			return OK;
 		}
 		firstch = readline(Rxtimeout);
 gotnak:
@@ -854,9 +878,11 @@ cancan:
 				Totsecs += (cseclen >> 7);
 				return OK;
 			case ERROR:
-				zperr("Got burst for sector ACK"); break;
+				zperr("Got burst for sector ACK");
+				break;
 			default:
-				zperr("Got %02x for sector ACK", firstch); break;
+				zperr("Got %02x for sector ACK", firstch);
+				break;
 		}
 		for (;;) {
 			Lastrx = firstch;
@@ -1280,7 +1306,8 @@ again:
 				++Skipcount;
 				if (Skipbitch)
 					++errcnt;
-				fclose(in); return c;
+				fclose(in);
+				return c;
 			case ZRPOS:
 				/*
 				 * Suppress zcrcw request otherwise triggered by
@@ -1292,7 +1319,8 @@ again:
 				return zsendfdata();
 		}
 	}
-	fclose(in); return ERROR;
+	fclose(in);
+	return ERROR;
 }
 
 /* Send the data in the file */

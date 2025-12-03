@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
 #ifndef REGISTERED
 						if (!Batch || Nozmodem)
 #endif
-						Rxascii = TRUE;
+							Rxascii = TRUE;
 #ifndef REGISTERED
 						else
 							usage();
@@ -610,7 +610,7 @@ bilge:
 			zperr("TIMEOUT");
 		}
 		else
-			zperr("Got 0%o sector header", firstch);
+			zperr("Got 0x%x sector header", firstch);
 
 humbug:
 		Lastrx = 0;

@@ -55,29 +55,38 @@ void zsdar32(char *buf, int length, int frameend)
 				zsendline(l);
 				crc = UPDC32(l, crc);
 				if (l == ZRESC) {
-					zsendline(0x40); crc = UPDC32(0x40, crc);
+					zsendline(0x40);
+					crc = UPDC32(0x40, crc);
 				}
-				l = c; break;
+				l = c;
+				break;
 			case 1:
 				if (l != ZRESC) {
 					zsendline(l); zsendline(l);
 					crc = UPDC32(l, crc);
 					crc = UPDC32(l, crc);
-					n = 0; l = c; break;
+					n = 0;
+					l = c;
+					break;
 				}
 			/* **** FALL THRU TO **** */
 			default:
 				zsendline(ZRESC); crc = UPDC32(ZRESC, crc);
 				if (l == 0x20 && n < 34) {
 					n += 0x1E;
-					zsendline(n); crc = UPDC32(n, crc);
+					zsendline(n);
+					crc = UPDC32(n, crc);
 				}
 				else {
 					n += 0x41;
-					zsendline(n); crc = UPDC32(n, crc);
-					zsendline(l); crc = UPDC32(l, crc);
+					zsendline(n);
+					crc = UPDC32(n, crc);
+					zsendline(l);
+					crc = UPDC32(l, crc);
 				}
-				n = 0; l = c; break;
+				n = 0;
+				l = c;
+				break;
 		}
 	}
 	xsendline(ZDLE); xsendline(frameend);
@@ -108,7 +117,8 @@ crcfoo:
 				case GOTCRCG:
 				case GOTCRCQ:
 				case GOTCRCW:
-					d = c;  c &= 0xFF;
+					d = c;
+					c &= 0xFF;
 					crc = UPDC32(c, crc);
 					if ((c = zdlread()) & ~0xFF)
 						goto crcfoo;
@@ -147,18 +157,24 @@ crcfoo:
 		switch (d) {
 			case 0:
 				if (c == ZRESC) {
-					d = -1;  continue;
+					d = -1;
+					continue;
 				}
-				*buf++ = c;  continue;
+				*buf++ = c;
+				continue;
 			case -1:
 				if (c >= 0x20 && c < 0x40) {
-					d = c - 0x1D; c = 0x20;  goto spaces;
+					d = c - 0x1D;
+					c = 0x20;
+					goto spaces;
 				}
 				if (c == 0x40) {
 					d = 0;
-					*buf++ = ZRESC;  continue;
+					*buf++ = ZRESC;
+					continue;
 				}
-				d = c;  continue;
+				d = c;
+				continue;
 			default:
 				d -= 0x40;
 				if (d < 1)
@@ -168,7 +184,8 @@ spaces:
 					goto badpkt;
 				while (--d >= 0)
 					*buf++ = c;
-				d = 0;  continue;
+				d = 0;
+				continue;
 		}
 	}
 badpkt:

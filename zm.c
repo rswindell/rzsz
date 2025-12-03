@@ -142,9 +142,11 @@ void zsbhdr(int len, int type, register char *hdr)
 	switch (Crc32t = Txfcs32) {
 		case 2:
 			zsbh32(len, hdr, type, Usevhdrs?ZVBINR32:ZBINR32);
-			flushmo();  break;
+			flushmo();
+			break;
 		case 1:
-			zsbh32(len, hdr, type, Usevhdrs?ZVBIN32:ZBIN32);  break;
+			zsbh32(len, hdr, type, Usevhdrs?ZVBIN32:ZBIN32);
+			break;
 		default:
 			if (Usevhdrs) {
 				xsendline(ZVBIN);
@@ -201,7 +203,9 @@ void zshhdr(int len, int type, register char *hdr)
 	vfile("zshhdr: %c %d %s %lx", Usevhdrs?'v':'f', len,
 	      (long)frametypes[type + FTOFFSET], rclhdr(hdr));
 #endif
-	sendline(ZPAD); sendline(ZPAD); sendline(ZDLE);
+	sendline(ZPAD);
+	sendline(ZPAD);
+	sendline(ZDLE);
 	if (Usevhdrs) {
 		sendline(ZVHEX);
 		zputhex(len);
@@ -216,10 +220,13 @@ void zshhdr(int len, int type, register char *hdr)
 		zputhex(*hdr); crc = updcrc((0xFF & *hdr), crc);
 	}
 	crc = updcrc(0, updcrc(0, crc));
-	zputhex(((int)(crc >> 8))); zputhex(crc);
+	zputhex(((int)(crc >> 8)));
+	zputhex(crc);
 
 	/* Make it printable on remote machine */
-	sendline(0x0D); sendline(0x8A);
+	sendline(0x0D);
+	sendline(0x8A);
+
 	/*
 	 * Uncork the remote in case a fake XOFF has stopped data flow
 	 */
@@ -241,15 +248,18 @@ void zsdata(register char * buf, int length, int frameend)
 #endif
 	switch (Crc32t) {
 		case 1:
-			zsda32(buf, length, frameend);  break;
+			zsda32(buf, length, frameend);
+			break;
 		case 2:
-			zsdar32(buf, length, frameend);  break;
+			zsdar32(buf, length, frameend);
+			break;
 		default:
 			crc = 0;
 			for (; --length >= 0; ++buf) {
 				zsendline(*buf); crc = updcrc((0xFF & *buf), crc);
 			}
-			xsendline(ZDLE); xsendline(frameend);
+			xsendline(ZDLE);
+			xsendline(frameend);
 			crc = updcrc(frameend, crc);
 
 			crc = updcrc(0, updcrc(0, crc));
@@ -272,7 +282,8 @@ void zsda32(register char *buf, int length, int frameend)
 		zsendline(c);
 		crc = UPDC32(c, crc);
 	}
-	xsendline(ZDLE); xsendline(frameend);
+	xsendline(ZDLE);
+	xsendline(frameend);
 	crc = UPDC32(frameend, crc);
 
 	crc = ~crc;
@@ -300,7 +311,8 @@ int zrdata(register char *buf, int length)
 			return zrdatr32(buf, length);
 	}
 
-	crc = Rxcount = 0;  end = buf + length;
+	crc = Rxcount = 0;
+	end = buf + length;
 	while (buf <= end) {
 		if ((c = zdlread()) & ~0xFF) {
 crcfoo:
@@ -333,7 +345,8 @@ crcfoo:
 					zperr("TIMEOUT");
 					return c;
 				default:
-					garbitch(); return c;
+					garbitch();
+					return c;
 			}
 		}
 		*buf++ = c;
@@ -394,7 +407,8 @@ crcfoo:
 					zperr("TIMEOUT");
 					return c;
 				default:
-					garbitch(); return c;
+					garbitch();
+					return c;
 			}
 		}
 		*buf++ = c;
@@ -493,21 +507,29 @@ splat:
 				goto fifi;
 			if (c > ZMAXHLEN)
 				goto agn2;
-			Crc32r = 1;  c = zrbhd32(hdr); break;
+			Crc32r = 1;
+			c = zrbhd32(hdr);
+			break;
 		case ZBIN32:
 			if (Usevhdrs)
 				goto agn2;
-			Crc32r = 1;  c = zrbhd32(hdr); break;
+			Crc32r = 1;
+			c = zrbhd32(hdr);
+			break;
 		case ZVBINR32:
 			if ((Rxhlen = c = zdlread()) < 0)
 				goto fifi;
 			if (c > ZMAXHLEN)
 				goto agn2;
-			Crc32r = 2;  c = zrbhd32(hdr); break;
+			Crc32r = 2;
+			c = zrbhd32(hdr);
+			break;
 		case ZBINR32:
 			if (Usevhdrs)
 				goto agn2;
-			Crc32r = 2;  c = zrbhd32(hdr); break;
+			Crc32r = 2;
+			c = zrbhd32(hdr);
+			break;
 		case RCDO:
 		case TIMEOUT:
 			goto fifi;
@@ -516,21 +538,29 @@ splat:
 				goto fifi;
 			if (c > ZMAXHLEN)
 				goto agn2;
-			Crc32r = 0;  c = zrbhdr(hdr); break;
+			Crc32r = 0;
+			c = zrbhdr(hdr);
+			break;
 		case ZBIN:
 			if (Usevhdrs)
 				goto agn2;
-			Crc32r = 0;  c = zrbhdr(hdr); break;
+			Crc32r = 0;
+			c = zrbhdr(hdr);
+			break;
 		case ZVHEX:
 			if ((Rxhlen = c = zgethex()) < 0)
 				goto fifi;
 			if (c > ZMAXHLEN)
 				goto agn2;
-			Crc32r = 0;  c = zrhhdr(hdr); break;
+			Crc32r = 0;
+			c = zrhhdr(hdr);
+			break;
 		case ZHEX:
 			if (Usevhdrs)
 				goto agn2;
-			Crc32r = 0;  c = zrhhdr(hdr); break;
+			Crc32r = 0;
+			c = zrhhdr(hdr);
+			break;
 		case CAN:
 			goto gotcan;
 		default:
@@ -672,7 +702,8 @@ int zrhhdr(char *hdr)
 		return c;
 	crc = updcrc(c, crc);
 	if (crc & 0xFFFF) {
-		zperr(badcrc); return ERROR;
+		zperr(badcrc);
+		return ERROR;
 	}
 	c = readline(Rxtimeout);
 	if (c < 0)
