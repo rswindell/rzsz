@@ -81,21 +81,21 @@ extern int errno;
 #define TRUE 1
 #define ERROR (-1)
 /* Ward Christensen / CP/M parameters - Don't change these! */
-#define ENQ 005
-#define CAN ('X' & 037)
-#define XOFF ('s' & 037)
-#define XON ('q' & 037)
+#define ENQ 0x05
+#define CAN ('X' & 0x1F)
+#define XOFF ('s' & 0x1F)
+#define XON ('q' & 0x1F)
 #define SOH 1
 #define STX 2
 #define ETX 3
 #define EOT 4
 #define ACK 6
-#define NAK 025
-#define SYN 026
-#define CPMEOF 032
-#define ESC 033
-#define WANTCRC 0103    /* send C not NAK to get crc not checksum */
-#define WANTG 0107  /* Send G not NAK to get nonstop batch xmsn */
+#define NAK 0x15
+#define SYN 0x16
+#define CPMEOF 0x1A
+#define ESC 0x1B
+#define WANTCRC 0x43    /* send C not NAK to get crc not checksum */
+#define WANTG 0x47  /* Send G not NAK to get nonstop batch xmsn */
 #define TIMEOUT (-2)
 #define RCDO (-3)
 #define GCOUNT (-4)
@@ -129,7 +129,7 @@ STATIC long Totbytes, Totalleft;
 STATIC char Myattn[] = { 0 };
 #else
 #ifdef USG
-STATIC char Myattn[] = { 03, 0336, 0 };
+STATIC char Myattn[] = { 0x03, 0xDE, 0 };
 #endif
 #endif
 
@@ -830,7 +830,7 @@ int cseclen;    /* data length of this sector to send */
 		oldcrc = checksum = 0;
 		for (wcj = cseclen, cp = buf; --wcj >= 0; ) {
 			sendline(*cp);
-			oldcrc = updcrc((0377 & *cp), oldcrc);
+			oldcrc = updcrc((0xFF & *cp), oldcrc);
 			checksum += *cp++;
 		}
 		if (Crcflg) {
@@ -894,7 +894,7 @@ register char *buf;
 	if (m <= 0)
 		return 0;
 	while (m < count)
-		buf[m++] = 032;
+		buf[m++] = 0x1A;
 	return count;
 }
 
@@ -1076,7 +1076,7 @@ getzrxinit()
 					zshhdr(4, ZRQINIT, Txhdr);
 					continue;
 				}
-				Rxflags = 0377 & Rxhdr[ZF0];
+				Rxflags = 0xFF & Rxhdr[ZF0];
 #if COMPL
 				Usevhdrs = 1;
 #else
@@ -1086,7 +1086,7 @@ getzrxinit()
 				Zctlesc |= Rxflags & TESCCTL;
 				if (Rxhdr[ZF1] & ZRRQQQ) /* Escape ctrls */
 					initzsendmsk(Rxhdr + ZRPXQQ);
-				Rxbuflen = (0377 & Rxhdr[ZP0]) + ((0377 & Rxhdr[ZP1]) << 8);
+				Rxbuflen = (0xFF & Rxhdr[ZP0]) + ((0xFF & Rxhdr[ZP1]) << 8);
 				if (!(Rxflags & CANFDX))
 					Txwindow = 0;
 				vfile("Rxbuflen=%d Tframlen=%ld", Rxbuflen, Tframlen);
@@ -1254,10 +1254,10 @@ again:
 			case ZNAK:
 				continue;
 			case ZCRC:
-				l = Rxhdr[9] & 0377;
-				l = (l << 8) + (Rxhdr[8] & 0377);
-				l = (l << 8) + (Rxhdr[7] & 0377);
-				l = (l << 8) + (Rxhdr[6] & 0377);
+				l = Rxhdr[9] & 0xFF;
+				l = (l << 8) + (Rxhdr[8] & 0xFF);
+				l = (l << 8) + (Rxhdr[7] & 0xFF);
+				l = (l << 8) + (Rxhdr[6] & 0xFF);
 				if (Rxpos != lastcrcrq || l != lastcrcof) {
 					lastcrcrq = Rxpos;
 					crc = 0xFFFFFFFFL;
@@ -1275,7 +1275,7 @@ again:
 							if (bytcnt > maxbytcnt)
 								maxbytcnt = bytcnt;
 							for (p = txbuf; --m >= 0; ++p) {
-								c = *p & 0377;
+								c = *p & 0xFF;
 								crc = UPDC32(c, crc);
 							}
 #ifdef DEBUG
@@ -1679,7 +1679,7 @@ register char **argv;
 			fprintf(stderr, "\nCountem: %03d %s ", argc, *argv);
 			fflush(stderr);
 		}
-		if (access(*argv, 04) >= 0 && stat(*argv, &f) >= 0) {
+		if (access(*argv, 0x4) >= 0 && stat(*argv, &f) >= 0) {
 			++Filesleft;  Totalleft += f.st_size;
 		}
 		if (Verbose > 2)

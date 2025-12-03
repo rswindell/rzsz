@@ -4,8 +4,8 @@
  *    Copyright 1993 Omen Technology Inc All Rights Reserved
  */
 #define ZPAD '*'    /* 052 Padding character begins frames */
-#define ZDLE 030    /* Ctrl-X Zmodem escape - `ala BISYNC DLE */
-#define ZDLEE (ZDLE ^ 0100)   /* Escaped ZDLE as transmitted */
+#define ZDLE 0x18    /* Ctrl-X Zmodem escape - `ala BISYNC DLE */
+#define ZDLEE (ZDLE ^ 0x40)   /* Escaped ZDLE as transmitted */
 #define ZBIN 'A'    /* Binary frame indicator (CRC-16) */
 #define ZHEX 'B'    /* HEX frame indicator */
 #define ZBIN32 'C'  /* Binary frame with 32 bit FCS */
@@ -14,7 +14,7 @@
 #define ZVHEX 'b'   /* HEX frame indicator */
 #define ZVBIN32 'c' /* Binary frame with 32 bit FCS */
 #define ZVBINR32 'd'    /* RLE packed Binary frame with 32 bit FCS */
-#define ZRESC   0176    /* RLE flag/escape character */
+#define ZRESC   0x7E    /* RLE flag/escape character */
 #define ZMAXHLEN 16 /* Max header information length  NEVER CHANGE */
 #define ZMAXSPLEN 1024  /* Max subpacket length  NEVER CHANGE */
 
@@ -49,12 +49,12 @@
 
 /* zdlread return values (internal) */
 /* -1 is general error, -2 is timeout */
-#define GOTOR 0400
+#define GOTOR 0x100
 #define GOTCRCE (ZCRCE | GOTOR)   /* ZDLE-ZCRCE received */
 #define GOTCRCG (ZCRCG | GOTOR)   /* ZDLE-ZCRCG received */
 #define GOTCRCQ (ZCRCQ | GOTOR)   /* ZDLE-ZCRCQ received */
 #define GOTCRCW (ZCRCW | GOTOR)   /* ZDLE-ZCRCW received */
-#define GOTCAN  (GOTOR | 030) /* CAN*5 seen */
+#define GOTCAN  (GOTOR | 0x18) /* CAN*5 seen */
 
 /* Byte positions within header array */
 #define ZF0 3   /* First flags byte */
@@ -70,17 +70,17 @@
 #define ZRPXWN  8   /* 9th byte in header contains window size/256 */
 #define ZRPXQQ  9   /* 10th to 14th bytes contain quote mask */
 /* Bit Masks for ZRINIT flags byte ZF0 */
-#define CANFDX  01  /* Rx can send and receive true FDX */
-#define CANOVIO 02  /* Rx can receive data during disk I/O */
-#define CANBRK  04  /* Rx can send a break signal */
-#define CANRLE  010 /* Receiver can decode RLE */
-#define CANLZW  020 /* Receiver can uncompress */
-#define CANFC32 040 /* Receiver can use 32 bit Frame Check */
-#define ESCCTL 0100 /* Receiver expects ctl chars to be escaped */
-#define ESC8   0200 /* Receiver expects 8th bit to be escaped */
+#define CANFDX  0x1  /* Rx can send and receive true FDX */
+#define CANOVIO 0x2  /* Rx can receive data during disk I/O */
+#define CANBRK  0x4  /* Rx can send a break signal */
+#define CANRLE  0x8 /* Receiver can decode RLE */
+#define CANLZW  0x10 /* Receiver can uncompress */
+#define CANFC32 0x20 /* Receiver can use 32 bit Frame Check */
+#define ESCCTL 0x40 /* Receiver expects ctl chars to be escaped */
+#define ESC8   0x80 /* Receiver expects 8th bit to be escaped */
 
 /* Bit Masks for ZRINIT flags byte ZF1 */
-#define CANVHDR 01  /* Variable headers OK */
+#define CANVHDR 0x1  /* Variable headers OK */
 #define ZRRQWN  8   /* Receiver specified window size in ZRPXWN */
 #define ZRRQQQ  16  /* Additional control chars to quote in ZRPXQQ	*/
 #define ZRQNVH  (ZRRQWN | ZRRQQQ) /* Variable len hdr reqd to access info */
@@ -89,8 +89,8 @@
 #define ZATTNLEN 32 /* Max length of attention string */
 #define ALTCOFF ZF1 /* Offset to alternate canit string, 0 if not used */
 /* Bit Masks for ZSINIT flags byte ZF0 */
-#define TESCCTL 0100    /* Transmitter expects ctl chars to be escaped */
-#define TESC8   0200    /* Transmitter expects 8th bit to be escaped */
+#define TESCCTL 0x40    /* Transmitter expects ctl chars to be escaped */
+#define TESC8   0x80    /* Transmitter expects 8th bit to be escaped */
 
 /* Parameters for ZFILE frame */
 /* Conversion options one of these in ZF0 */
@@ -98,9 +98,9 @@
 #define ZCNL    2   /* Convert NL to local end of line convention */
 #define ZCRESUM 3   /* Resume interrupted file transfer */
 /* Management include options, one of these ored in ZF1 */
-#define ZMSKNOLOC   0200    /* Skip file if not present at rx */
+#define ZMSKNOLOC   0x80    /* Skip file if not present at rx */
 /* Management options, one of these ored in ZF1 */
-#define ZMMASK  037 /* Mask for the choices below */
+#define ZMMASK  0x1F /* Mask for the choices below */
 #define ZMNEWL  1   /* Transfer if source newer or longer */
 #define ZMCRC   2   /* Transfer if different file CRC or length */
 #define ZMAPND  3   /* Append contents to existing file (if any) */
@@ -115,7 +115,7 @@
 #define ZTRLE   3   /* Run Length encoding */
 /* Extended options for ZF3, bit encoded */
 #define ZXSPARS 64  /* Encoding for sparse file operations */
-#define ZCANVHDR    01  /* Variable headers OK */
+#define ZCANVHDR    0x1  /* Variable headers OK */
 /* Receiver window size override */
 #define ZRWOVR 4    /* byte position for receive window override/256 */
 

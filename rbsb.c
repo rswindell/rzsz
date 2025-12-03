@@ -140,7 +140,7 @@ rdchk(f)
 #endif
 	lf = read(f, &bchecked, 1);
 	fcntl(f, F_SETFL, savestat);
-	checked = bchecked & 0377;  /* force unsigned byte */
+	checked = bchecked & 0xFF;  /* force unsigned byte */
 	return lf > 0;
 }
 #endif
@@ -235,10 +235,10 @@ mode(n)
 
 #ifdef READCHECK
 			tty.c_lflag = Zmodem ? 0 : ISIG;
-			tty.c_cc[VINTR] = Zmodem ? -1:030; /* Interrupt char */
+			tty.c_cc[VINTR] = Zmodem ? -1:0x18; /* Interrupt char */
 #else
 			tty.c_lflag = ISIG;
-			tty.c_cc[VINTR] = Zmodem ? 03:030; /* Interrupt char */
+			tty.c_cc[VINTR] = Zmodem ? 0x3:0x18; /* Interrupt char */
 #endif
 			tty.c_cc[VQUIT] = -1;       /* Quit char */
 #ifdef NFGVMIN
@@ -314,9 +314,9 @@ mode(n)
 			tty = oldtty;
 			tch = oldtch;
 #ifdef READCHECK
-			tch.t_intrc = Zmodem ? -1:030; /* Interrupt char */
+			tch.t_intrc = Zmodem ? -1:0x18; /* Interrupt char */
 #else
-			tch.t_intrc = Zmodem ? 03:030; /* Interrupt char */
+			tch.t_intrc = Zmodem ? 0x3:0x18; /* Interrupt char */
 #endif
 			tty.sg_flags |= (ODDP | EVENP | CBREAK);
 			tty.sg_flags &= ~(ALLDELAY | CRMOD | ECHO | LCASE);
@@ -427,7 +427,7 @@ int timeout;
 	static char *cdq;   /* pointer for removing chars from linbuf */
 
 	if (--Lleft >= 0) {
-		return *cdq ++ & 0377;
+		return *cdq ++ & 0xFF;
 	}
 	n = timeout / 10;
 	if (n < 2)
@@ -456,12 +456,12 @@ int timeout;
 		return TIMEOUT;
 	if (Verbose > 8) {
 		for (p = cdq, n = Lleft; --n >= 0; ) {
-			fprintf(stderr, "%02x ", *p ++ & 0377);
+			fprintf(stderr, "%02x ", *p ++ & 0xFF);
 		}
 		fprintf(stderr, "\n");
 	}
 	--Lleft;
-	return *cdq ++ & 0377;
+	return *cdq ++ & 0xFF;
 }
 
 
@@ -494,9 +494,9 @@ char *s;
 
 	while (*s) {
 		switch (c = *s ++) {
-			case '\336':
+			case '\xDE':
 				sleep(1); continue;
-			case '\335':
+			case '\xDD':
 				sendbrk(); continue;
 			default:
 				sendline(c);

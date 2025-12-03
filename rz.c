@@ -92,17 +92,17 @@ extern int errno;
 #endif
 
 /* Ward Christensen / CP/M parameters - Don't change these! */
-#define ENQ 005
-#define CAN ('X' & 037)
-#define XOFF ('s' & 037)
-#define XON ('q' & 037)
+#define ENQ 0x05
+#define CAN ('X' & 0x1F)
+#define XOFF ('s' & 0x1F)
+#define XON ('q' & 0x1F)
 #define SOH 1
 #define STX 2
 #define EOT 4
 #define ACK 6
-#define NAK 025
-#define CPMEOF 032
-#define WANTCRC 0103    /* send C not NAK to get crc not checksum */
+#define NAK 0x15
+#define CPMEOF 0x1A
+#define WANTCRC 0x43    /* send C not NAK to get crc not checksum */
 #define TIMEOUT (-2)
 #define RCDO (-3)
 #define GCOUNT (-4)
@@ -505,8 +505,8 @@ wcrx()
 		sendline(sendchar); /* send it now, we're ready! */
 		flushmo();
 		Lleft = 0;    /* Do read next time ... */
-		sectcurr = wcgetsec(secbuf, (sectnum & 0177)?50:130);
-		if (sectcurr == (sectnum + 1 & 0377)) {
+		sectcurr = wcgetsec(secbuf, (sectnum & 0x7F)?50:130);
+		if (sectcurr == (sectnum + 1 & 0xFF)) {
 			sectnum++;
 			cblklen = Bytesleft > Blklen ? Blklen:Bytesleft;
 			if (putsec(secbuf, cblklen) == ERROR)
@@ -516,7 +516,7 @@ wcrx()
 				Bytesleft = 0;
 			sendchar = ACK;
 		}
-		else if (sectcurr == (sectnum & 0377)) {
+		else if (sectcurr == (sectnum & 0xFF)) {
 			zperr1( "Received dup Sector");
 			sendchar = ACK;
 		}
@@ -566,7 +566,7 @@ int maxtime;
 			Blklen = 128;
 get2:
 			sectcurr = readline(1);
-			if ((sectcurr + (oldcrc = readline(1))) == 0377) {
+			if ((sectcurr + (oldcrc = readline(1))) == 0xFF) {
 				oldcrc = checksum = 0;
 				for (p = rxbuf, wcj = Blklen; --wcj >= 0; ) {
 					if ((firstch = readline(1)) < 0)
@@ -588,7 +588,7 @@ get2:
 						return sectcurr;
 					}
 				}
-				else if (((checksum - firstch) & 0377) == 0) {
+				else if (((checksum - firstch) & 0xFF) == 0) {
 					Firstsec = FALSE;
 					return sectcurr;
 				}
@@ -792,7 +792,7 @@ register char *pathname;
 		if (p[-1] == '.' && (p == pathname + 1 || p[-2] == '/'))
 			continue;
 		*p = 0;             /* Truncate the path there */
-		if (!mkdir(pathname, 0777)) {   /* Try to create it as a dir */
+		if (!mkdir(pathname, 0x1FF)) {   /* Try to create it as a dir */
 			vfile("Made directory %s\n", pathname);
 			madeone++;      /* Remember if we made one */
 			*p = '/';
@@ -846,7 +846,7 @@ int dmode;
 			 * directory.  Does anybody care?
 			 */
 			status = umask(0); /* Get current umask */
-			status = umask(status | (0777 & ~dmode)); /* Set for mkdir */
+			status = umask(status | (0x1FF & ~dmode)); /* Set for mkdir */
 			execl("/bin/mkdir", "mkdir", dpath, (char *)0);
 			_exit(2);   /* Can't exec /bin/mkdir */
 

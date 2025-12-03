@@ -46,9 +46,9 @@ char *buf;
 	register int           c, l, n;
 	register unsigned long crc;
 
-	crc = 0xFFFFFFFFL;  l = *buf++ & 0377;
+	crc = 0xFFFFFFFFL;  l = *buf++ & 0xFF;
 	for (n = 0; --length >= 0; ++buf) {
-		if ((c = *buf & 0377) == l && n < 126 && length > 0) {
+		if ((c = *buf & 0xFF) == l && n < 126 && length > 0) {
 			++n;  continue;
 		}
 		switch (n) {
@@ -56,7 +56,7 @@ char *buf;
 				zsendline(l);
 				crc = UPDC32(l, crc);
 				if (l == ZRESC) {
-					zsendline(0100); crc = UPDC32(0100, crc);
+					zsendline(0x40); crc = UPDC32(0x40, crc);
 				}
 				l = c; break;
 			case 1:
@@ -69,12 +69,12 @@ char *buf;
 			/* **** FALL THRU TO **** */
 			default:
 				zsendline(ZRESC); crc = UPDC32(ZRESC, crc);
-				if (l == 040 && n < 34) {
-					n += 036;
+				if (l == 0x20 && n < 34) {
+					n += 0x1E;
 					zsendline(n); crc = UPDC32(n, crc);
 				}
 				else {
-					n += 0101;
+					n += 0x41;
 					zsendline(n); crc = UPDC32(n, crc);
 					zsendline(l); crc = UPDC32(l, crc);
 				}
@@ -103,25 +103,25 @@ register char *buf;
 	crc = 0xFFFFFFFFL;  Rxcount = 0;  end = buf + length;
 	d = 0;  /* Use for RLE decoder state */
 	while (buf <= end) {
-		if ((c = zdlread()) & ~0377) {
+		if ((c = zdlread()) & ~0xFF) {
 crcfoo:
 			switch (c) {
 				case GOTCRCE:
 				case GOTCRCG:
 				case GOTCRCQ:
 				case GOTCRCW:
-					d = c;  c &= 0377;
+					d = c;  c &= 0xFF;
 					crc = UPDC32(c, crc);
-					if ((c = zdlread()) & ~0377)
+					if ((c = zdlread()) & ~0xFF)
 						goto crcfoo;
 					crc = UPDC32(c, crc);
-					if ((c = zdlread()) & ~0377)
+					if ((c = zdlread()) & ~0xFF)
 						goto crcfoo;
 					crc = UPDC32(c, crc);
-					if ((c = zdlread()) & ~0377)
+					if ((c = zdlread()) & ~0xFF)
 						goto crcfoo;
 					crc = UPDC32(c, crc);
-					if ((c = zdlread()) & ~0377)
+					if ((c = zdlread()) & ~0xFF)
 						goto crcfoo;
 					crc = UPDC32(c, crc);
 					if (crc != 0xDEBB20E3) {
@@ -153,16 +153,16 @@ crcfoo:
 				}
 				*buf++ = c;  continue;
 			case -1:
-				if (c >= 040 && c < 0100) {
-					d = c - 035; c = 040;  goto spaces;
+				if (c >= 0x20 && c < 0x40) {
+					d = c - 0x1D; c = 0x20;  goto spaces;
 				}
-				if (c == 0100) {
+				if (c == 0x40) {
 					d = 0;
 					*buf++ = ZRESC;  continue;
 				}
 				d = c;  continue;
 			default:
-				d -= 0100;
+				d -= 0x40;
 				if (d < 1)
 					goto badpkt;
 spaces:
