@@ -421,8 +421,7 @@ alrm(int c)
 {
 	longjmp(tohere, -1);
 }
-int readline(timeout)
-int timeout;
+int readline(int timeout)
 {
 	register int n;
 	register char *p;
@@ -489,8 +488,7 @@ void purgeline()
  * Send a string to the modem, processing for \336 (sleep 1 sec)
  *   and \335 (break signal)
  */
-void zmputs(s)
-char *s;
+void zmputs(char *s)
 {
 	register int c;
 
