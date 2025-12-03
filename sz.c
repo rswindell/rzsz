@@ -194,9 +194,28 @@ STATIC char *   ksendbuf = "\033[?34l";
 
 STATIC jmp_buf  intrjmp; /* For the interrupt on RX CAN */
 
+/* Function prototypes */
+void usage();
+void chartest(int m);
+void initzsendmsk(register char * p);
+int  getinsync(int flag);
+void chkinvok(char *s);
+int  wcputsec(char *buf, int sectnum, int cseclen);
+int  wctxpn(char *name);
+int  wcs(char *oname);
+int  wcsend(int argc, char *argp[]);
+int  wctx(long flen);
+int  sendzsinit();
+int  zsendfdata();
+int  zsendfile(char *buf, int blen);
+int  getzrxinit();
+int  getnak();
+void countem(int argc, register char **argv);
+int  zsendcmd(char *buf, int blen);
+int  filbuf(register char *buf, int count);
 
 /* send cancel string to get the other end to shut up */
-canit()
+void canit()
 {
 	static char canistr[] = {
 		24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 0
@@ -208,8 +227,7 @@ canit()
 
 
 /* called by signal interrupt or terminate to clean things up */
-void
-bibi(n)
+void bibi(int n)
 {
 	canit(); fflush(stdout); mode(0);
 	fprintf(stderr, "sz: caught signal %d; exiting\n", n);
@@ -221,8 +239,7 @@ bibi(n)
 }
 
 /* Called when ZMODEM gets an interrupt (^X) */
-void
-onintr(c)
+void onintr(int c)
 {
 	signal(SIGINT, SIG_IGN);
 	longjmp(intrjmp, -1);
@@ -237,9 +254,7 @@ STATIC int   Zrwindow = 1400; /* RX window size (controls garbage count) */
 /*
  * Log an error
  */
-void
-zperr1(s)
-char *s;
+void zperr1(char *s)
 {
 	if (Verbose <= 0)
 		return;
@@ -248,9 +263,7 @@ char *s;
 	fprintf(stderr, "\n");
 }
 
-void
-zperr2(s, p)
-char *s, *p;
+void zperr2(char *s, char *p)
 {
 	if (Verbose <= 0)
 		return;
@@ -259,9 +272,7 @@ char *s, *p;
 	fprintf(stderr, "\n");
 }
 
-void
-zperr3(s, p, u)
-char *s, *p, *u;
+void zperr3(char *s, char *p, char *u)
 {
 	if (Verbose <= 0)
 		return;
@@ -274,11 +285,10 @@ char *s, *p, *u;
 #include "zm.c"
 #include "zmr.c"
 
-main(argc, argv)
-char *argv[];
+int main(int argc, char *argv[])
 {
 	register char *cp;
-	register       npats;
+	register int   npats;
 	char **        patts;
 
 	if ((cp = getenv("ZNULLS")) && *cp)
@@ -515,10 +525,9 @@ saybibi()
 	}
 }
 
-wcsend(argc, argp)
-char *argp[];
+int wcsend(int argc, char *argp[])
 {
-	register n;
+	register int n;
 
 	Crcflg = FALSE;
 	firstsec = TRUE;
@@ -559,10 +568,9 @@ char *argp[];
 	return OK;
 }
 
-wcs(oname)
-char *oname;
+int wcs(char *oname)
 {
-	register       c;
+	register int   c;
 	register char *p;
 	struct stat    f;
 	char           name[PATHLEN];
@@ -636,8 +644,7 @@ char *oname;
  *  as provided by the Unix fstat call.
  *  N.B.: modifies the passed name, may extend it!
  */
-wctxpn(name)
-char *name;
+int wctxpn(char *name)
 {
 	register char *p, *q;
 	char           name2[PATHLEN];
@@ -707,9 +714,9 @@ char *name;
 	return OK;
 }
 
-getnak()
+int getnak()
 {
-	register firstch;
+	register int firstch;
 
 	Lastrx = 0;
 	for (;;) {
@@ -757,8 +764,7 @@ getnak()
 }
 
 
-wctx(flen)
-long flen;
+int wctx(long flen)
 {
 	register int thisblklen;
 	register int sectnum, attempts, firstch;
@@ -807,12 +813,9 @@ long flen;
 	}
 }
 
-wcputsec(buf, sectnum, cseclen)
-char *buf;
-int sectnum;
-int cseclen;    /* data length of this sector to send */
+int wcputsec(char *buf, int sectnum, int cseclen /* data length of this sector to send */)
 {
-	register       checksum, wcj;
+	register int   checksum, wcj;
 	register char *cp;
 	unsigned       oldcrc;
 	int            firstch;
@@ -885,10 +888,9 @@ cancan:
 }
 
 /* fill buf with count chars padding with ^Z for CPM */
-filbuf(buf, count)
-register char *buf;
+int filbuf(register char *buf, int count)
 {
-	register m;
+	register int m;
 
 	m = read(fileno(in), buf, (size_t) count);
 	if (m <= 0)
@@ -899,7 +901,7 @@ register char *buf;
 }
 
 /* Fill buffer with blklen chars */
-zfilbuf()
+int zfilbuf()
 {
 	int n;
 
@@ -933,9 +935,7 @@ zfilbuf()
 
 #ifdef TXBSIZE
 /* Replacement for brain damaged fseek function.  Returns 0==success */
-fooseek(fptr, pos, whence)
-FILE *fptr;
-long pos;
+int fooseek(FILE* fptr, long pos, int whence)
 {
 	long m, n;
 
@@ -1002,8 +1002,7 @@ long pos;
  * returns pointer to token within string if found, NULL otherwise
  */
 char *
-substr(s, t)
-register char *s, *t;
+substr(register char *s, register char* t)
 {
 	register char *ss, *tt;
 	/* search for first char of token */
@@ -1029,7 +1028,7 @@ char *usinfo[] = {
 	""
 };
 
-usage()
+void usage()
 {
 	char **pp;
 
@@ -1054,9 +1053,9 @@ usage()
 /*
  * Get the receiver's init parameters
  */
-getzrxinit()
+int getzrxinit()
 {
-	register    n;
+	register int n;
 	struct stat f;
 
 	for (n = 10; --n >= 0; ) {
@@ -1179,9 +1178,9 @@ getzrxinit()
 }
 
 /* Send send-init information */
-sendzsinit()
+int sendzsinit()
 {
-	register c;
+	register int c;
 
 	if (Myattn[0] == '\0' && (!Zctlesc || (Rxflags & TESCCTL)))
 		return OK;
@@ -1212,10 +1211,9 @@ sendzsinit()
 }
 
 /* Send file name and related info */
-zsendfile(buf, blen)
-char *buf;
+int zsendfile(char *buf, int blen)
 {
-	register               c;
+	register int           c;
 	register unsigned long crc;
 	int                    m, n, i;
 	char *                 p;
@@ -1313,10 +1311,10 @@ again:
 }
 
 /* Send the data in the file */
-zsendfdata()
+int zsendfdata()
 {
-	register      c, e, n;
-	register      newcnt;
+	register int  c, e, n;
+	register int  newcnt;
 	register long tcount = 0;
 	int           junkcount; /* Counts garbage chars received by TX */
 	static int    tleft = 6; /* Counter for test mode */
@@ -1516,9 +1514,9 @@ egotack:
 /*
  * Respond to receiver's complaint, get back in sync with receiver
  */
-getinsync(flag)
+int getinsync(int flag)
 {
-	register c;
+	register int c;
 
 	for (;;) {
 		if (Test) {
@@ -1587,10 +1585,9 @@ getinsync(flag)
 
 
 /* Send command and related info */
-zsendcmd(buf, blen)
-char *buf;
+int zsendcmd(char *buf, int blen)
 {
-	register c;
+	register int c;
 	long     cmdnum;
 
 	cmdnum = getpid();
@@ -1640,8 +1637,7 @@ listen:
 /*
  * If called as sb use YMODEM protocol
  */
-chkinvok(s)
-char *s;
+void chkinvok(char *s)
 {
 	register char *p;
 
@@ -1668,8 +1664,7 @@ char *s;
 	}
 }
 
-countem(argc, argv)
-register char **argv;
+void countem(int argc, register char **argv)
 {
 	struct stat f;
 
@@ -1691,9 +1686,9 @@ register char **argv;
 	Totfiles = Filesleft;  Totbytes = Totalleft;
 }
 
-chartest(m)
+void chartest(int m)
 {
-	register n;
+	register int n;
 
 	mode(m);
 	printf("\r\n\nCharacter Transparency Test Mode %d\r\n", m);
@@ -1729,10 +1724,9 @@ chartest(m)
  * Set additional control chars to mask in Zsendmask
  * according to bit array stored in char array at p
  */
-initzsendmsk(p)
-register char *p;
+void initzsendmsk(register char * p)
 {
-	register c;
+	register int c;
 
 	for (c = 0; c < 33; ++c) {
 		if (p[c >> 3] & (1 << (c & 7))) {

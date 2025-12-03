@@ -95,7 +95,6 @@ int Readnum = HOWMANY;  /* Number of bytes to ask for in read() from modem */
 #endif
 int Verbose = 0;
 
-
 /*
  *  The following uses an external rdchk() routine if available,
  *  otherwise defines the function for BSD or fakes it for SYSV.
@@ -107,7 +106,7 @@ int Verbose = 0;
 /*
  *  Return non 0 iff something to read from io descriptor f
  */
-rdchk(f)
+int rdchk(int f)
 {
 	static long lf;
 
@@ -127,7 +126,7 @@ int checked = 0;
  *  sender because protocol design anticipates this problem.
  */
 #define EATSIT
-rdchk(f)
+int rdchk(int f)
 {
 	int lf, savestat;
 	static char bchecked;
@@ -177,9 +176,9 @@ struct {
 	0,  0
 };
 static unsigned
-getspeed(code)
+getspeed(int code)
 {
-	register n;
+	register int n;
 
 	for (n = 0; speeds[n].baudr; ++n)
 		if (speeds[n].speedcode == code)
@@ -208,9 +207,9 @@ struct tchars  oldtch, tch;
  *  1: save old tty stat, set raw mode
  *  0: restore original tty mode
  */
-mode(n)
+int mode(int n)
 {
-	static did0 = FALSE;
+	static int did0 = FALSE;
 
 	vfile("mode:%d", n);
 	switch (n) {
@@ -378,7 +377,7 @@ mode(n)
 	}
 }
 
-sendbrk()
+void sendbrk()
 {
 #ifdef V7
 #ifdef TIOCSBRK
@@ -399,11 +398,11 @@ sendbrk()
 #endif
 }
 
-flushmoc()
+void flushmoc()
 {
 	fflush(stdout);
 }
-flushmo()
+void flushmo()
 {
 	fflush(stdout);
 }
@@ -415,14 +414,14 @@ flushmo()
  * timeout is in tenths of seconds
  */
 void
-alrm(c)
+alrm(int c)
 {
 	longjmp(tohere, -1);
 }
-readline(timeout)
+int readline(timeout)
 int timeout;
 {
-	register n;
+	register int n;
 	register char *p;
 	static char *cdq;   /* pointer for removing chars from linbuf */
 
@@ -469,7 +468,7 @@ int timeout;
 /*
  * Purge the modem input queue of all characters
  */
-purgeline()
+void purgeline()
 {
 	Lleft = 0;
 #ifdef USG
@@ -487,10 +486,10 @@ purgeline()
  * Send a string to the modem, processing for \336 (sleep 1 sec)
  *   and \335 (break signal)
  */
-zmputs(s)
+void zmputs(s)
 char *s;
 {
-	register c;
+	register int c;
 
 	while (*s) {
 		switch (c = *s ++) {
@@ -507,7 +506,7 @@ char *s;
 
 
 /* VARARGS */
-vfile(f, a, b, c, d)
+int vfile(f, a, b, c, d)
 /* VARARGS */
 char *f;
 long a, b, c, d;

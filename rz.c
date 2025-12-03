@@ -122,12 +122,30 @@ unsigned Baudrate = 9600;
 char  endmsg[90] = {0}; /* Possible message to display on exit */
 char  Zsendmask[33]; /* Additional control chars to mask */
 
+/* Function prototypes */
+void chkinvok(char *s);
+void checkpath(char *name);
+int  make_dirs(register char *pathname);
+int  putsec(char *buf, register int n);
+void openit(char *name, char *openmode);
+int  closeit();
+int  tryz();
+int  rzfile();
+int  rzfiles();
 char *substr();
+int  sys2(register char *s);
+int  wcgetsec(char *rxbuf, int maxtime);
+int  wcreceive(int argc, char **argp);
+int  wcrx();
+int  wcrxpn(char * rpn);
+void usage();
+int  procheader(char *name);
+
 FILE *fout;
 
 
 /* send cancel string to get the other end to shut up */
-canit()
+void canit()
 {
 	static char canistr[] = {
 		24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 0
@@ -228,8 +246,7 @@ char *s, *p, *u;
 int tryzhdrtype = ZRINIT; /* Header type to send corresponding to Last rx close */
 
 /* called by signal interrupt or terminate to clean things up */
-void
-bibi(n)
+void bibi(int n)
 {
 	if (Zmodem)
 		zmputs(Attn);
@@ -238,11 +255,10 @@ bibi(n)
 	exit(3);
 }
 
-main(argc, argv)
-char *argv[];
+int main(int argc, char *argv[])
 {
 	register char *cp;
-	register       npats;
+	register int   npats;
 	char *         virgin, **patts;
 	int            exitcode = 0;
 
@@ -370,7 +386,7 @@ char *argv[];
 }
 
 
-usage()
+void usage()
 {
 	fprintf(stderr,
 	        "Receive Files and Commands with ZMODEM/YMODEM/XMODEM Protocol\n\n");
@@ -405,10 +421,9 @@ usage()
 
 char *rbmsg = "%s ready. Type \"%s file ...\" to your modem program\n\r";
 
-wcreceive(argc, argp)
-char **argp;
+int wcreceive(int argc, char **argp)
 {
-	register c;
+	register int c;
 
 	if (Batch || argc == 0) {
 		Crcflg = 1;
@@ -462,10 +477,9 @@ fubar:
  * Length is indeterminate as long as less than Blklen
  * A null string represents no more files (YMODEM)
  */
-wcrxpn(rpn)
-char *rpn;  /* receive a pathname */
+int wcrxpn(char * rpn /* receive a pathname */)
 {
-	register c;
+	register int c;
 
 	purgeline();
 
@@ -492,7 +506,7 @@ et_tu:
  * Jack M. Wierda and Roderick W. Hart
  */
 
-wcrx()
+int wcrx()
 {
 	register int  sectnum, sectcurr;
 	register char sendchar;
@@ -548,11 +562,9 @@ wcrx()
  *    (Caller must do that when he is good and ready to get next sector)
  */
 
-wcgetsec(rxbuf, maxtime)
-char *rxbuf;
-int maxtime;
+int wcgetsec(char *rxbuf, int maxtime)
 {
-	register                checksum, wcj, firstch;
+	register int            checksum, wcj, firstch;
 	register unsigned short oldcrc;
 	register char *         p;
 	int                     sectcurr;
@@ -642,11 +654,10 @@ humbug:
  *  Returns 0 for success, other codes for errors
  *  or skip conditions.
  */
-procheader(name)
-char *name;
+int procheader(char *name)
 {
 	register char *openmode, *p;
-	static         dummy;
+	static int     dummy;
 	struct stat    f;
 
 	/* set default parameters and overrides */
@@ -753,8 +764,7 @@ doopen:
 	return 0;
 }
 
-openit(name, openmode)
-char *name, *openmode;
+void openit(char *name, char *openmode)
 {
 	if (strcmp(name, "-"))
 		fout = fopen(name, openmode);
@@ -774,8 +784,7 @@ char *name, *openmode;
  * it's because some required directory was not present, and if
  * so, create all required dirs.
  */
-make_dirs(pathname)
-register char *pathname;
+int make_dirs(register char *pathname)
 {
 	register char *p;       /* Points into path */
 	int            madeone = 0; /* Did we do anything yet? */
@@ -869,9 +878,7 @@ int dmode;
  *  If not in binary mode, carriage returns, and all characters
  *  starting with CPMEOF are discarded.
  */
-putsec(buf, n)
-char *buf;
-register n;
+int putsec(char *buf, register int n)
 {
 	register char *p;
 
@@ -922,8 +929,7 @@ register char *s, *t;
 /*
  * If called as rb use YMODEM protocol, etc.
  */
-chkinvok(s)
-char *s;
+void chkinvok(char *s)
 {
 	register char *p;
 
@@ -948,8 +954,7 @@ char *s;
 /*
  * Totalitarian Communist pathname processing
  */
-checkpath(name)
-char *name;
+void checkpath(char *name)
 {
 	if (Restricted) {
 		if (fopen(name, "r") != NULL) {
@@ -972,7 +977,7 @@ char *name;
 void
 ackbibi()
 {
-	register n;
+	register int n;
 
 	vfile("ackbibi:");
 	Readnum = 1;
@@ -1001,10 +1006,10 @@ ackbibi()
  *  Return ZFILE if Zmodem filename received, -1 on error,
  *   ZCOMPL if transaction finished,  else 0
  */
-tryz()
+int tryz()
 {
-	register c, n;
-	register cmdzack1flg;
+	register int c, n;
+	register int cmdzack1flg;
 
 	if (Nozmodem)       /* Check for "rb" program name */
 		return 0;
@@ -1108,9 +1113,9 @@ again:
 /*
  * Receive 1 or more files with ZMODEM protocol
  */
-rzfiles()
+int rzfiles()
 {
-	register c;
+	register int c;
 
 	for (;;) {
 		switch (c = rzfile()) {
@@ -1139,9 +1144,9 @@ rzfiles()
  * Receive a file with ZMODEM protocol
  *  Assumes file name frame is in secbuf
  */
-rzfile()
+int rzfile()
 {
-	register c, n;
+	register int c, n;
 
 	Eofseen = FALSE;
 	n = 20; rxbytes = 0l;
@@ -1338,7 +1343,7 @@ moredata:
 /*
  * Close the receive dataset, return OK or ERROR
  */
-closeit()
+int closeit()
 {
 	time_t time();
 
@@ -1361,8 +1366,7 @@ closeit()
 /*
  * Strip leading ! if present, do shell escape.
  */
-sys2(s)
-register char *s;
+int sys2(register char *s)
 {
 	if (*s == '!')
 		++s;
@@ -1371,9 +1375,7 @@ register char *s;
 /*
  * Strip leading ! if present, do exec.
  */
-void
-exec2(s)
-register char *s;
+void exec2(register char *s)
 {
 	if (*s == '!')
 		++s;
