@@ -81,6 +81,9 @@ Howmany must be 255 or less
 #define sendline(c) putchar(c)
 #define xsendline(c) putchar(c)
 
+/* Function prototypes */
+int vfile(const char* f, ...);
+
 FILE *Ttystream;
 int Tty;
 char linbuf[HOWMANY];
@@ -505,14 +508,13 @@ char *s;
 }
 
 
-/* VARARGS */
-int vfile(f, a, b, c, d)
-/* VARARGS */
-char *f;
-long a, b, c, d;
+int vfile(const char* f, ...)
 {
+	va_list args;
 	if (Verbose > 2) {
-		fprintf(stderr, f, a, b, c, d);
+		va_start(args, f);
+		vfprintf(stderr, f, args);
+		va_end(args);
 		fprintf(stderr, "\n");
 	}
 }
