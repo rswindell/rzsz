@@ -76,6 +76,7 @@ char *Copyrrz = "Copyright 1999 Omen Technology Inc All Rights Reserved";
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
+#include <utime.h>
 extern int errno;
 
 #define OK 0
@@ -195,7 +196,7 @@ char   secbuf[1025];
 #endif
 
 
-time_t timep[2];
+struct utimbuf timep;
 char   Lzmanag;     /* Local file management request */
 char   Lzconv;      /* Local ZMODEM file conversion request */
 char   zconv;   /* ZMODEM file conversion request */
@@ -1355,9 +1356,9 @@ int closeit()
 		return ERROR;
 	}
 	if (Modtime) {
-		timep[0] = time(NULL);
-		timep[1] = Modtime;
-		utime(Pathname, timep);
+		timep.actime = time(NULL);
+		timep.modtime = Modtime;
+		utime(Pathname, &timep);
 	}
 	return OK;
 }
