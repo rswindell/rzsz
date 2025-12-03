@@ -66,6 +66,7 @@ char *substr();
 #define LOGFILE "/tmp/szlog"
 #define LOGFILE2 "szlog"
 #include <stdio.h>
+#include <stdarg.h>
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
@@ -254,33 +255,17 @@ STATIC int   Zrwindow = 1400; /* RX window size (controls garbage count) */
 /*
  * Log an error
  */
-void zperr1(char *s)
+void zperr(const char* s, ...)
 {
+	va_list args;
 	if (Verbose <= 0)
 		return;
 	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s);
+	va_start(args, s);
+	vfprintf(stderr, s, args);
+	va_end(args);
 	fprintf(stderr, "\n");
 }
-
-void zperr2(char *s, char *p)
-{
-	if (Verbose <= 0)
-		return;
-	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s, p);
-	fprintf(stderr, "\n");
-}
-
-void zperr3(char *s, char *p, char *u)
-{
-	if (Verbose <= 0)
-		return;
-	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s, p, u);
-	fprintf(stderr, "\n");
-}
-
 
 #include "zm.c"
 #include "zmr.c"
@@ -660,7 +645,7 @@ int wctxpn(char *name)
 		fflush(stdout);
 		return OK;
 	}
-	zperr2("Awaiting pathname nak for %s", *name?name:"<END>");
+	zperr("Awaiting pathname nak for %s", *name?name:"<END>");
 	if (!Zmodem)
 		if (getnak())
 			return ERROR;
@@ -777,7 +762,7 @@ int wctx(long flen)
 	       && firstch != WANTG && firstch != TIMEOUT && firstch != CAN)
 		;
 	if (firstch == CAN) {
-		zperr1("Receiver CANcelled");
+		zperr("Receiver CANcelled");
 		return ERROR;
 	}
 	if (firstch == WANTCRC)
@@ -805,7 +790,7 @@ int wctx(long flen)
 	}
 	while ((firstch = (readline(Rxtimeout)) != ACK) && attempts < RETRYMAX);
 	if (attempts == RETRYMAX) {
-		zperr1("No ACK on EOT");
+		zperr("No ACK on EOT");
 		return ERROR;
 	}
 	else {
@@ -854,24 +839,24 @@ gotnak:
 			case CAN:
 				if (Lastrx == CAN) {
 cancan:
-					zperr1("Cancelled");  return ERROR;
+					zperr("Cancelled");  return ERROR;
 				}
 				break;
 			case TIMEOUT:
-				zperr1("Timeout on sector ACK"); continue;
+				zperr("Timeout on sector ACK"); continue;
 			case WANTCRC:
 				if (firstsec)
 					Crcflg = TRUE;
 			case NAK:
-				zperr1("NAK on sector"); continue;
+				zperr("NAK on sector"); continue;
 			case ACK:
 				firstsec = FALSE;
 				Totsecs += (cseclen >> 7);
 				return OK;
 			case ERROR:
-				zperr1("Got burst for sector ACK"); break;
+				zperr("Got burst for sector ACK"); break;
 			default:
-				zperr2("Got %02x for sector ACK", firstch); break;
+				zperr("Got %02x for sector ACK", firstch); break;
 		}
 		for (;;) {
 			Lastrx = firstch;
@@ -883,7 +868,7 @@ cancan:
 				goto cancan;
 		}
 	}
-	zperr1("Retry Count Exceeded");
+	zperr("Retry Count Exceeded");
 	return ERROR;
 }
 

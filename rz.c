@@ -73,6 +73,7 @@ char *Copyrrz = "Copyright 1999 Omen Technology Inc All Rights Reserved";
 #define LOGFILE "/tmp/rzlog"
 #define LOGFILE2 "rzlog"
 #include <stdio.h>
+#include <stdarg.h>
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
@@ -208,36 +209,15 @@ int    Zrwindow = 1400; /* RX window size (controls garbage count) */
 /*
  * Log an error
  */
-void
-zperr1(s)
-char *s;
+void zperr(const char* s, ...)
 {
+	va_list args;
 	if (Verbose <= 0)
 		return;
 	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s);
-	fprintf(stderr, "\n");
-}
-
-void
-zperr2(s, p)
-char *s, *p;
-{
-	if (Verbose <= 0)
-		return;
-	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s, p);
-	fprintf(stderr, "\n");
-}
-
-void
-zperr3(s, p, u)
-char *s, *p, *u;
-{
-	if (Verbose <= 0)
-		return;
-	fprintf(stderr, "Retry %d: ", errors);
-	fprintf(stderr, s, p, u);
+	va_start(args, s);
+	vfprintf(stderr, s, args);
+	va_end(args);
 	fprintf(stderr, "\n");
 }
 
@@ -490,7 +470,7 @@ et_tu:
 	Lleft = 0;    /* Do read next time ... */
 	switch (c = wcgetsec(rpn, 100)) {
 		case WCEOT:
-			zperr2( "Pathname fetch returned %d", c);
+			zperr("Pathname fetch returned %d", c);
 			sendline(ACK);  flushmo();
 			Lleft = 0; /* Do read next time ... */
 			readline(1);
@@ -532,7 +512,7 @@ int wcrx()
 			sendchar = ACK;
 		}
 		else if (sectcurr == (sectnum & 0xFF)) {
-			zperr1( "Received dup Sector");
+			zperr("Received dup Sector");
 			sendchar = ACK;
 		}
 		else if (sectcurr == WCEOT) {
@@ -546,7 +526,7 @@ int wcrx()
 		else if (sectcurr == ERROR)
 			return ERROR;
 		else {
-			zperr1( "Sync Error");
+			zperr("Sync Error");
 			return ERROR;
 		}
 	}
@@ -595,7 +575,7 @@ get2:
 						goto bilge;
 					oldcrc = updcrc(firstch, oldcrc);
 					if (oldcrc & 0xFFFF)
-						zperr1( "CRC");
+						zperr("CRC");
 					else {
 						Firstsec = FALSE;
 						return sectcurr;
@@ -606,17 +586,17 @@ get2:
 					return sectcurr;
 				}
 				else
-					zperr1( "Checksum");
+					zperr("Checksum");
 			}
 			else
-				zperr1("Sector number garbled");
+				zperr("Sector number garbled");
 		}
 		/* make sure eot really is eot and not just mixmash */
 		else if (firstch == EOT && Lleft == 0)
 			return WCEOT;
 		else if (firstch == CAN) {
 			if (Lastrx == CAN) {
-				zperr1( "Sender CANcelled");
+				zperr("Sender CANcelled");
 				return ERROR;
 			} else {
 				Lastrx = CAN;
@@ -627,10 +607,10 @@ get2:
 			if (Firstsec)
 				goto humbug;
 bilge:
-			zperr1( "TIMEOUT");
+			zperr("TIMEOUT");
 		}
 		else
-			zperr2( "Got 0%o sector header", firstch);
+			zperr("Got 0%o sector header", firstch);
 
 humbug:
 		Lastrx = 0;

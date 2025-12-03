@@ -317,7 +317,7 @@ crcfoo:
 						goto crcfoo;
 					crc = updcrc(c, crc);
 					if (crc & 0xFFFF) {
-						zperr1(badcrc);
+						zperr(badcrc);
 						return ERROR;
 					}
 					Rxcount = length - (end - buf);
@@ -327,10 +327,10 @@ crcfoo:
 #endif
 					return d;
 				case GOTCAN:
-					zperr1("Sender Canceled");
+					zperr("Sender Canceled");
 					return ZCAN;
 				case TIMEOUT:
-					zperr1("TIMEOUT");
+					zperr("TIMEOUT");
 					return c;
 				default:
 					garbitch(); return c;
@@ -342,7 +342,7 @@ crcfoo:
 #ifdef DSZ
 	garbitch();
 #else
-	zperr1("Data subpacket too long");
+	zperr("Data subpacket too long");
 #endif
 	return ERROR;
 }
@@ -378,7 +378,7 @@ crcfoo:
 						goto crcfoo;
 					crc = UPDC32(c, crc);
 					if (crc != 0xDEBB20E3) {
-						zperr1(badcrc);
+						zperr(badcrc);
 						return ERROR;
 					}
 					Rxcount = length - (end - buf);
@@ -388,10 +388,10 @@ crcfoo:
 #endif
 					return d;
 				case GOTCAN:
-					zperr1("Sender Canceled");
+					zperr("Sender Canceled");
 					return ZCAN;
 				case TIMEOUT:
-					zperr1("TIMEOUT");
+					zperr("TIMEOUT");
 					return c;
 				default:
 					garbitch(); return c;
@@ -400,13 +400,13 @@ crcfoo:
 		*buf++ = c;
 		crc = UPDC32(c, crc);
 	}
-	zperr1("Data subpacket too long");
+	zperr("Data subpacket too long");
 	return ERROR;
 }
 
 void garbitch()
 {
-	zperr1("Garbled data subpacket");
+	zperr("Garbled data subpacket");
 }
 
 /*
@@ -553,7 +553,7 @@ fifi:
 		case TIMEOUT:
 		case RCDO:
 		case GCOUNT:
-			zperr2("Got %s", frametypes[c + FTOFFSET]);
+			zperr("Got %s", frametypes[c + FTOFFSET]);
 			/* **** FALL THRU TO **** */
 #ifndef DSZ
 		default:
@@ -594,7 +594,7 @@ int zrbhdr(register char *hdr)
 		return c;
 	crc = updcrc(c, crc);
 	if (crc & 0xFFFF) {
-		zperr1(badcrc);
+		zperr(badcrc);
 		return ERROR;
 	}
 #ifdef ZMODEM
@@ -636,7 +636,7 @@ int zrbhd32(register char *hdr)
 #endif
 	}
 	if (crc != 0xDEBB20E3) {
-		zperr1(badcrc);
+		zperr(badcrc);
 		return ERROR;
 	}
 #ifdef ZMODEM
@@ -672,7 +672,7 @@ int zrhhdr(char *hdr)
 		return c;
 	crc = updcrc(c, crc);
 	if (crc & 0xFFFF) {
-		zperr1(badcrc); return ERROR;
+		zperr(badcrc); return ERROR;
 	}
 	c = readline(Rxtimeout);
 	if (c < 0)
@@ -823,7 +823,7 @@ again2:
 			break;
 	}
 	if (Verbose > 1)
-		zperr2("Bad escape sequence %x", c);
+		zperr("Bad escape sequence %x", c);
 	return ERROR;
 }
 
