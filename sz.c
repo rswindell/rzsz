@@ -493,21 +493,6 @@ int main(int argc, char *argv[])
 		mode(0); exit(1);
 	}
 
-#ifndef REGISTERED
-	/* Removing or disabling this code without registering is theft */
-	if ((Totfiles > 0) && (!Usevhdrs))
-	{
-		sprintf(Txb, "echo Unreg %s %s %d %ld | mail rzsz@omen.com",
-		        Progname, VERSION, Totfiles, Totbytes);
-		system(Txb);
-		canit();
-		sleep(4);
-		printf("%s %s finished.\r\n", Progname, VERSION);
-		printf("\n\n\n**** UNREGISTERED COPY *****\r\n");
-		printf("\n\n\nPlease read the License Agreement in sz.doc\r\n");
-		fflush(stdout);
-	}
-#endif
 	fflush(stdout);
 	mode(0);
 	exit(0);
@@ -1054,10 +1039,6 @@ void usage()
 	fprintf(stderr, "\t\t\tCompiled for %s\n", OS);
 	fprintf(stderr,
 	        "\nThis program is designed to talk to terminal programs,\nnot to be called by one.\n");
-#ifndef REGISTERED
-	fprintf(stderr, "\n      **** UNREGISTERED COPY *****\r\n");
-	fprintf(stderr, "Please read the License Agreement in sz.doc\r\n");
-#endif
 	exit(3);
 }
 

@@ -265,14 +265,7 @@ int main(int argc, char *argv[])
 					case '\\':
 						*cp = toupper(*cp);  continue;
 					case 'a':
-#ifndef REGISTERED
-						if (!Batch || Nozmodem)
-#endif
-							Rxascii = TRUE;
-#ifndef REGISTERED
-						else
-							usage();
-#endif
+						Rxascii = TRUE;
 						break;
 					case 't':
 						if (isdigit(*cp))
@@ -346,19 +339,6 @@ int main(int argc, char *argv[])
 	if (exitcode) {
 		mode(0); exit(1);
 	}
-#ifndef REGISTERED
-	/* Removing or disabling this code without registering is theft */
-	if ((Totfiles > 0) && (!Usevhdrs)) {
-		sprintf(endmsg, "echo Unreg %s %s %ld %ld | mail rzsz@omen.com",
-		        Progname, VERSION, Totfiles, Totbytes );
-		system(endmsg);
-		canit();
-		sleep(4);
-		fprintf(stderr, "\n\n\n**** UNREGISTERED COPY *****\r\n");
-		fprintf(stderr, "Please read the License Agreement in rz.doc\r\n");
-		fflush(stderr);
-	}
-#endif
 	mode(0);
 	if (exitcode)
 		exit(1);
@@ -389,10 +369,6 @@ void usage()
 	fprintf(stderr, "\t\t\tCompiled for %s\n", OS);
 	fprintf(stderr,
 	        "\nThis program is designed to talk to terminal programs,\nnot to be called by one.\n");
-#ifndef REGISTERED
-	fprintf(stderr, "\n      **** UNREGISTERED COPY *****\r\n");
-	fprintf(stderr, "Please read the License Agreement in rz.doc\r\n");
-#endif
 	exit(2);
 }
 
@@ -1052,13 +1028,10 @@ again:
 				zshhdr(4, ZACK, Txhdr);
 				goto again;
 			case ZCOMMAND:
-#ifdef REGISTERED
-				/* Enabling this code without registering is theft */
 				if (Restricted) {
 					sprintf(endmsg, "ZCOMMAND Restricted.");
 					return ERROR;
 				}
-#endif
 				cmdzack1flg = Rxhdr[ZF0];
 				if (zrdata(secbuf, 1024) == GOTCRCW) {
 					void exec2();
