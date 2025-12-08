@@ -17,7 +17,7 @@ Technology cannot accept liability for Y2K problems caused
 by third party software.
 ```
 Note: Although the `README` now makes reference to an apparent 3.54 release,
-no archive file for this release has been located. Given the 5 year gap
+no archive file for this release has been located.  Given the 5 year gap
 between versions 3.48 and 3.73, it's likely that there were more official
 public releases in that window of time.
 
@@ -43,7 +43,7 @@ value sent to the receiving (rz) side over the wire.
 Note: Although the VERSION string in sz.c is "3.43 01-06-96", that appears to
 be a typo/oversight and the actual release date was 01-06-97, as is validated
 by file timestamps within the contents of this found archive file:
- 
+
 ```
  Length   Method    Size  Cmpr    Date    Time   CRC-32   Name
 --------  ------  ------- ---- ---------- ----- --------  ----
@@ -303,7 +303,7 @@ especially Xmodem, Ymodem, and Zmodem.  Chuck Forsberg was the guest of honor.
   - Corrections for undefined variable and multiply defined rdchk()
   - Long source lines are now wrapped
   - sz `-z` option treated the same as `-Z`
-  
+
 ## [1989-04-22] RZ 3.00 / SZ 3.01
 
 This release included this README update:
@@ -338,7 +338,7 @@ Previous versions of rz and sz (April 1988) remain Public Domain.
     or *not* set in the LF following a received hex header.
 	It seems Chuck was using this scheme to detect if the high bit was being
 	stripped in transit.
-	The included ZMODEM.DOC file still documents the HEX header format as
+	The included `ZMODEM.DOC` file still documents the HEX header format as
 	HEX Header Packet
        * * ZDLE TYPE F3/P0 F2/P1 F1/P2 F0/P3 CRC-1 CRC-2 CR LF XON
 
@@ -383,7 +383,7 @@ feedback before shipping off to the comp.sources.unix black hole.
 ### RZ
 
   - Same version number (1.26), but slight changes to code
-  
+
 ### SZ
 
   - Improved support for XMODEM protocol
@@ -785,9 +785,9 @@ VerySource.com -- 领先的源码共享网站。
 
 As you might have guessed from the naming, the files were in "MS-DOS format"
 with CRLF terminated lines.  I renamed the files to lowercase and used dos2unix
-to convert their line-endings to the traditional UNIX (LF-termianted) form.
-I will later need to perform these same steps with many of the DOS archives I
-discovered and used to create this Git repo.
+to convert their line-endings to the traditional UNIX (LF-terminated) form.
+I needed to perform these same steps with the extracted files of many of the DOS
+archives I discovered and used to create this Git repo.
 
 No Build/Makefiles were included.  The 'rz.c' and 'sz.c' files include comments
 near their top with the suggested command-lines used to compile and link the
@@ -799,7 +799,7 @@ purposes only.
 
 ### ZMODEM.DOC
 
-I am not including the ZMODEM.DOC file (and its change history) in this repo.
+I am not including the `ZMODEM.DOC` file (and its change history) in this repo.
 Since that file is formatted for line-printing (e.g. includes form-feeds and
 backspace control characters for over-striking/bold), it's not suitable as-is
 for tracking changes via a Git repo.  After some effort to convert to a more
