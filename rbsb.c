@@ -89,7 +89,12 @@ int Tty;
 char linbuf[HOWMANY];
 char xXbuf[BUFSIZ];
 int Lleft = 0;        /* number of characters in linbuf */
-jmp_buf tohere;     /* For the interrupt on RX timeout */
+#ifdef POSIX
+	sigjmp_buf
+#else
+	jmp_buf
+#endif
+	tohere;     /* For the interrupt on RX timeout */
 #ifdef ONEREAD
 /* Sorry, Regulus and some others don't work right in raw mode! */
 int Readnum = 1;    /* Number of bytes to ask for in read() from modem */
@@ -410,6 +415,7 @@ void flushmo()
 	fflush(stdout);
 }
 
+
 /*
  * This version of readline is reasoably well suited for
  * reading many characters.
@@ -419,7 +425,12 @@ void flushmo()
 void
 alrm(int c)
 {
-	longjmp(tohere, -1);
+#ifdef POSIX
+	siglongjmp
+#else
+	longjmp
+#endif
+	(tohere, -1);
 }
 int readline(int timeout)
 {
@@ -436,7 +447,11 @@ int readline(int timeout)
 	if (Verbose > 5)
 		fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
 		        n, Readnum);
+#ifdef POSIX
+	if (sigsetjmp(tohere, 1)) {
+#else
 	if (setjmp(tohere)) {
+#endif
 #ifdef TIOCFLUSH
 /*		ioctl(Tty, TIOCFLUSH, 0); */
 #endif
