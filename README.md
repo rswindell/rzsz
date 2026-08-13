@@ -1,6 +1,6 @@
 # The History of Chuck Forsberg's RZ/SZ
 
-The ZMODEM file transfer protocol is notable in the history of computers as a radically improved protocol featuring superior performance, restartable transfers, and 8-bit clean operation.  This source code repository was created to reproduce the development history of the definitive implementation of the ZMODEM protocol: Chuck Forsberg's rz and sz programs for UNIX and UNIX-like operating systems.
+The ZMODEM file transfer protocol is notable in the history of computers as a radically improved protocol for the transfer of files featuring superior performance, restartable transfers, and 8-bit clean operation.  This source code repository was created to reproduce the development history of the definitive implementation of the ZMODEM protocol: Chuck Forsberg's rz and sz programs for UNIX and UNIX-like operating systems.
 
 The "main" branch of this repository tracks Chuck's changes to his released files from 1986 through 2003 as accurately as possible.  This repository also includes a "modern" branch which includes subsequent minor modifications to aid code readability and resolve compilation warnings.
 
